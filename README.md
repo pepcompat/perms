@@ -60,3 +60,20 @@ src/
 
 DB tables: `servers`, `secrets`, `sessions`, `commands`, `ai_history`, `runbooks`, `settings`
 (เก็บที่ `app.getPath('userData')/perms.db`)
+
+## Release (CI)
+
+- **Source (private):** `pepcompat/perms` · **Desktop release (public):** `pepcompat/perms-desktop`
+- Workflow: [.github/workflows/release.yml](.github/workflows/release.yml) — trigger เมื่อ push tag `v*.*.*`
+  build บน macOS / Windows / Linux แล้ว publish installer ไปยัง releases ของ `perms-desktop`
+- ต้องมี secret **`RELEASE_TOKEN`** (PAT ที่มี `contents:write` ของ perms-desktop) ในรีโป perms
+
+ออก release ใหม่:
+
+```bash
+# bump version ใน package.json ก่อน (เช่น 1.0.2) แล้ว
+git tag v1.0.2
+git push origin v1.0.2     # → CI build + publish อัตโนมัติ
+```
+
+เวอร์ชันใน tag ต้องตรงกับ `version` ใน `package.json`

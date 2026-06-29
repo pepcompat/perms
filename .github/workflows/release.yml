@@ -15,8 +15,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, windows-latest, ubuntu-latest]
+        # windows-2022 = Visual Studio 2022 (v17) ที่ node-gyp รองรับ
+        # (windows-latest เลื่อนไป VS 18 ที่ node-gyp ยัง detect ไม่ได้)
+        os: [macos-latest, windows-2022, ubuntu-latest]
     runs-on: ${{ matrix.os }}
+
+    env:
+      # บังคับ node-gyp ให้ target VS 2022 (กัน auto-detect ล้ม/buffer overflow)
+      npm_config_msvs_version: '2022'
 
     steps:
       - name: Checkout

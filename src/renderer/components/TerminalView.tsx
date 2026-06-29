@@ -27,7 +27,9 @@ export default function TerminalView({
   useEffect(() => {
     if (!ref.current) return
     const term = new Terminal({
-      fontFamily: "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+      // Anuphan เป็น fallback ให้ glyph ไทย (JetBrains Mono ไม่มีอักษรไทย)
+      fontFamily:
+        "'JetBrains Mono', 'Anuphan', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
       fontSize: 13,
       lineHeight: 1.2,
       cursorBlink: true,

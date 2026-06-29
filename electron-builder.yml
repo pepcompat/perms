@@ -15,12 +15,17 @@ asarUnpack:
   - '**/node_modules/better-sqlite3/**'
   - '**/node_modules/node-pty/**'
   - '**/node_modules/ssh2/**'
+afterSign: build/notarize.cjs
 mac:
   category: public.app-category.developer-tools
   target:
     - dmg
     - zip
   artifactName: ${productName}-${version}-${arch}.${ext}
+  # เซ็นแบบ hardened runtime (จำเป็นสำหรับ notarization)
+  # ใช้ default entitlements ของ electron-builder (รองรับ Electron อยู่แล้ว)
+  hardenedRuntime: true
+  gatekeeperAssess: false
 win:
   target:
     - nsis

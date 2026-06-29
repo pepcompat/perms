@@ -9,6 +9,25 @@ function defaultShell(override?: string | null): string {
   return process.env.SHELL || '/bin/bash'
 }
 
+/**
+ * env สำหรับ pty — บังคับ locale เป็น UTF-8 ถ้ายังไม่ตั้ง
+ * (แอปที่เปิดจาก Finder/dock มักไม่มี LANG ทำให้ ls แสดงชื่อไฟล์ไทยเป็น ?)
+ */
+function buildEnv(): Record<string, string> {
+  const env = { ...process.env } as Record<string, string>
+  if (platform() !== 'win32') {
+    const hasUtf8 =
+      /utf-?8/i.test(env.LC_ALL || '') ||
+      /utf-?8/i.test(env.LC_CTYPE || '') ||
+      /utf-?8/i.test(env.LANG || '')
+    if (!hasUtf8) {
+      // ตั้งแค่ LANG (ขับ LC_CTYPE ให้เอง) — เลี่ยง warning locale ที่ไม่มีบน Linux
+      env.LANG = 'en_US.UTF-8'
+    }
+  }
+  return env
+}
+
 export class PtySession implements TermSession {
   readonly kind = 'local' as const
   private pty: IPty
@@ -27,7 +46,7 @@ export class PtySession implements TermSession {
       cols,
       rows,
       cwd: process.env.HOME || process.cwd(),
-      env: process.env as Record<string, string>
+      env: buildEnv()
     })
     this.pty.onData((d) => this.dataCbs.forEach((cb) => cb(d)))
     this.pty.onExit(({ exitCode }) => this.exitCbs.forEach((cb) => cb(exitCode)))
@@ -57,7 +76,7 @@ export class PtySession implements TermSession {
     return new Promise((resolve) => {
       cpExec(
         command,
-        { maxBuffer: 1024 * 1024 * 8, shell: defaultShell() },
+        { maxBuffer: 1024 * 1024 * 8, shell: defaultShell(), env: buildEnv() },
         (err, stdout, stderr) => {
           const output = (stdout || '') + (stderr || '')
           const exitCode = err && typeof (err as { code?: number }).code === 'number'

@@ -50,6 +50,12 @@ jobs:
         env:
           # PAT ที่มีสิทธิ์ contents:write ของ repo perms-desktop
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          # ไม่เซ็น code บน macOS (ยังไม่มี certificate)
-          CSC_IDENTITY_AUTO_DISCOVERY: false
+          # macOS code-sign cert (.p12 base64) — เฉพาะ runner mac เท่านั้น
+          # (ถ้าใส่ตอน build win/linux electron-builder จะเข้าใจผิดว่าเป็น cert ของ OS นั้น)
+          CSC_LINK: ${{ matrix.os == 'macos-latest' && secrets.MAC_CERT_BASE64 || '' }}
+          CSC_KEY_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.MAC_CERT_PASSWORD || '' }}
+          # notarization (afterSign hook อ่านค่าพวกนี้ — runner อื่นจะถูกข้าม)
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: pnpm run release

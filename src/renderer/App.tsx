@@ -1,0 +1,72 @@
+import { useEffect, useState } from 'react'
+import ServerList from './components/ServerList'
+import TabBar from './components/TabBar'
+import TerminalView from './components/TerminalView'
+import AISidebar from './components/AISidebar'
+import Settings from './components/Settings'
+import SessionHistory from './components/SessionHistory'
+import Runbooks from './components/Runbooks'
+import { TooltipProvider } from './components/ui/tooltip'
+import { Resizer, useResizable } from './components/Resizer'
+import { logoUrl } from './lib/logo'
+import { useTabs } from './store/useTabs'
+import { useSettings } from './store/useSettings'
+
+export default function App(): JSX.Element {
+  const { tabs, activeId } = useTabs()
+  const { refresh } = useSettings()
+  const [showSettings, setShowSettings] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [showRunbooks, setShowRunbooks] = useState(false)
+
+  const sidebar = useResizable('ui.sidebarWidth', 256, 180, 460, 'left')
+  const ai = useResizable('ui.aiWidth', 384, 280, 640, 'right')
+
+  useEffect(() => {
+    void refresh()
+  }, [refresh])
+
+  return (
+    <TooltipProvider delayDuration={300}>
+      <div className="flex h-full w-full bg-background text-foreground">
+        <ServerList
+          width={sidebar.width}
+          onOpenSettings={() => setShowSettings(true)}
+          onOpenHistory={() => setShowHistory(true)}
+          onOpenRunbooks={() => setShowRunbooks(true)}
+        />
+
+        <Resizer onMouseDown={sidebar.startDrag} active={sidebar.dragging} />
+
+        <div className="flex min-w-0 flex-1 flex-col">
+          <TabBar />
+          <div className="relative flex-1 overflow-hidden bg-[#0c0c10]">
+            {tabs.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground">
+                <img src={logoUrl} alt="perms" className="size-20 rounded-2xl shadow-xl" />
+                <div className="text-center">
+                  <p className="text-base font-semibold text-foreground">perms</p>
+                  <p className="mt-1 text-sm">เลือก server เพื่อเชื่อม SSH หรือเปิด local terminal</p>
+                </div>
+              </div>
+            ) : (
+              tabs.map((t) => (
+                <div key={t.sessionId} className="absolute inset-0">
+                  <TerminalView sessionId={t.sessionId} visible={t.sessionId === activeId} />
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        <Resizer onMouseDown={ai.startDrag} active={ai.dragging} />
+
+        <AISidebar width={ai.width} />
+
+        {showSettings && <Settings open onClose={() => setShowSettings(false)} />}
+        {showHistory && <SessionHistory open onClose={() => setShowHistory(false)} />}
+        {showRunbooks && <Runbooks open onClose={() => setShowRunbooks(false)} />}
+      </div>
+    </TooltipProvider>
+  )
+}

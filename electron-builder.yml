@@ -39,7 +39,7 @@ linux:
     - deb
   category: Development
   artifactName: ${productName}-${version}.${ext}
-npmRebuild: true
+npmRebuild: false
 # เผยแพร่ release ไปยัง repo public (source อยู่ repo private คนละตัว)
 publish:
   provider: github

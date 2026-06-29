@@ -8,6 +8,7 @@ import SessionHistory from './components/SessionHistory'
 import Runbooks from './components/Runbooks'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Resizer, useResizable } from './components/Resizer'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { logoUrl } from './lib/logo'
 import { useTabs } from './store/useTabs'
 import { useSettings } from './store/useSettings'
@@ -52,7 +53,9 @@ export default function App(): JSX.Element {
             ) : (
               tabs.map((t) => (
                 <div key={t.sessionId} className="absolute inset-0">
-                  <TerminalView sessionId={t.sessionId} visible={t.sessionId === activeId} />
+                  <ErrorBoundary resetKey={t.sessionId}>
+                    <TerminalView sessionId={t.sessionId} visible={t.sessionId === activeId} />
+                  </ErrorBoundary>
                 </div>
               ))
             )}

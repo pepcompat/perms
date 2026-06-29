@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import './styles.css'
 
 // แท็ก platform ไว้ที่ <html> เพื่อให้ CSS เว้นที่ปุ่ม traffic-light บน macOS
@@ -8,6 +9,8 @@ document.documentElement.dataset.platform = window.api.platform
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </React.StrictMode>
 )

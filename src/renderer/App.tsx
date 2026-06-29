@@ -44,9 +44,9 @@ export default function App(): JSX.Element {
           <div className="relative flex-1 overflow-hidden bg-[#0c0c10]">
             {tabs.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-muted-foreground">
-                <img src={logoUrl} alt="perms" className="size-20 rounded-2xl shadow-xl" />
+                <img src={logoUrl} alt="Perms" className="size-20 rounded-2xl shadow-xl" />
                 <div className="text-center">
-                  <p className="text-base font-semibold text-foreground">perms</p>
+                  <p className="text-base font-semibold text-foreground">Perms</p>
                   <p className="mt-1 text-sm">เลือก server เพื่อเชื่อม SSH หรือเปิด local terminal</p>
                 </div>
               </div>

@@ -1,5 +1,5 @@
 appId: com.perms.aiterminal
-productName: AI Terminal
+productName: Perms
 directories:
   buildResources: build
   output: release

@@ -1,7 +1,8 @@
 {
   "name": "perms",
+  "productName": "Perms",
   "version": "1.0.1",
-  "description": "AI Terminal — Electron SSH manager with built-in AI agent",
+  "description": "Perms — Electron SSH manager with built-in AI agent",
   "main": "./out/main/index.js",
   "author": {
     "name": "pepcompat",

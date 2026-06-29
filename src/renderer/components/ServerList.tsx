@@ -76,8 +76,8 @@ export default function ServerList({
     <div className="flex h-full shrink-0 flex-col bg-sidebar" style={{ width }}>
       <div className="titlebar mac-inset flex h-titlebar shrink-0 items-center justify-between border-b border-border pl-3 pr-2">
         <div className="flex items-center gap-2">
-          <img src={logoUrl} alt="perms" className="size-6 rounded-md shadow-sm" />
-          <span className="text-sm font-semibold tracking-tight">perms</span>
+          <img src={logoUrl} alt="Perms" className="size-6 rounded-md shadow-sm" />
+          <span className="text-sm font-semibold tracking-tight">Perms</span>
         </div>
         <div className="flex gap-0.5">
           <Tooltip>

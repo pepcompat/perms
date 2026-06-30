@@ -21,6 +21,12 @@ import type {
 const api = {
   platform: process.platform,
 
+  onFullscreen: (cb: (isFullscreen: boolean) => void): (() => void) => {
+    const listener = (_e: unknown, v: boolean): void => cb(v)
+    ipcRenderer.on(IPC.windowFullscreen, listener)
+    return () => ipcRenderer.removeListener(IPC.windowFullscreen, listener)
+  },
+
   servers: {
     list: (): Promise<ServerRecord[]> => ipcRenderer.invoke(IPC.serversList),
     get: (id: string): Promise<ServerRecord | null> => ipcRenderer.invoke(IPC.serversGet, id),

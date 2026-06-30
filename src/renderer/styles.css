@@ -83,6 +83,10 @@
 html[data-platform='darwin'] .mac-inset {
   padding-left: 80px;
 }
+/* fullscreen: traffic-light หาย → ไม่ต้องเว้น (ให้ชิดซ้ายเหมือนปกติ) */
+html[data-platform='darwin'][data-fullscreen='true'] .mac-inset {
+  padding-left: 12px;
+}
 
 ::-webkit-scrollbar {
   width: 9px;

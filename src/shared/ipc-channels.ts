@@ -44,6 +44,10 @@ export const IPC = {
   settingsClearAiKey: 'settings:clearAiKey',
   settingsUpdateAi: 'settings:updateAi',
 
+  // window
+  /** event main→renderer: ส่ง boolean ว่าอยู่ fullscreen ไหม */
+  windowFullscreen: 'window:fullscreen',
+
   // auto-update
   updateCheck: 'update:check',
   updateRestart: 'update:restart',

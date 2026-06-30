@@ -1,6 +1,7 @@
 import { app, shell, BrowserWindow, nativeImage } from 'electron'
 import { join } from 'path'
 import { existsSync } from 'fs'
+import { IPC } from '@shared/ipc-channels'
 import { getDb, closeDb } from './db'
 import { registerIpc } from './ipc'
 import { disposeAll } from './terminal/session-manager'
@@ -28,6 +29,14 @@ function createWindow(): void {
   })
 
   win.on('ready-to-show', () => win.show())
+
+  // แจ้ง renderer เรื่อง fullscreen (บน mac จะได้เอา inset ของ traffic-light ออก)
+  const sendFullscreen = (): void => {
+    if (!win.isDestroyed()) win.webContents.send(IPC.windowFullscreen, win.isFullScreen())
+  }
+  win.on('enter-full-screen', sendFullscreen)
+  win.on('leave-full-screen', sendFullscreen)
+  win.webContents.on('did-finish-load', sendFullscreen)
 
   win.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)

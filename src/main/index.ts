@@ -4,6 +4,7 @@ import { existsSync } from 'fs'
 import { getDb, closeDb } from './db'
 import { registerIpc } from './ipc'
 import { disposeAll } from './terminal/session-manager'
+import { initAutoUpdate } from './updater'
 
 // โลโก้แอป (dev: อยู่ที่ public/, prod: ใช้ icon ของ bundle อยู่แล้ว)
 const LOGO_PATH = join(__dirname, '../../public/images/perms-logo.png')
@@ -49,6 +50,7 @@ app.whenReady().then(() => {
   getDb() // เปิด DB + รัน migration
   registerIpc()
   createWindow()
+  initAutoUpdate()
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

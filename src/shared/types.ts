@@ -134,6 +134,14 @@ export interface AiChatInput {
   message: string
 }
 
+// ---- auto-update ----
+export interface UpdateProgress {
+  percent: number
+  bytesPerSecond: number
+  transferred: number
+  total: number
+}
+
 /** event ที่ stream กลับมาระหว่าง AI ทำงาน */
 export type AiStreamEvent =
   | { type: 'text'; delta: string }

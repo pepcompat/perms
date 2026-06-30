@@ -40,7 +40,16 @@ export const IPC = {
   settingsGet: 'settings:get',
   settingsSetAiKey: 'settings:setAiKey',
   settingsClearAiKey: 'settings:clearAiKey',
-  settingsUpdateAi: 'settings:updateAi'
+  settingsUpdateAi: 'settings:updateAi',
+
+  // auto-update
+  updateCheck: 'update:check',
+  updateRestart: 'update:restart',
+  /** event main→renderer */
+  updateAvailable: 'update:available',
+  updateProgress: 'update:progress',
+  updateDownloaded: 'update:downloaded',
+  updateError: 'update:error'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

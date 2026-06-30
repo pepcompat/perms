@@ -14,7 +14,8 @@ import type {
   AiMode,
   RunbookRecord,
   RunbookStep,
-  AppSettings
+  AppSettings,
+  UpdateProgress
 } from '../shared/types'
 
 const api = {
@@ -83,6 +84,32 @@ const api = {
       steps: RunbookStep[]
     }): Promise<RunbookRecord> => ipcRenderer.invoke(IPC.runbooksSave, input),
     remove: (id: string): Promise<void> => ipcRenderer.invoke(IPC.runbooksDelete, id)
+  },
+
+  updates: {
+    check: (): Promise<{ ok: boolean; version?: string; reason?: string }> =>
+      ipcRenderer.invoke(IPC.updateCheck),
+    restart: (): void => ipcRenderer.send(IPC.updateRestart),
+    onAvailable: (cb: (version: string) => void): (() => void) => {
+      const listener = (_e: unknown, v: string): void => cb(v)
+      ipcRenderer.on(IPC.updateAvailable, listener)
+      return () => ipcRenderer.removeListener(IPC.updateAvailable, listener)
+    },
+    onProgress: (cb: (p: UpdateProgress) => void): (() => void) => {
+      const listener = (_e: unknown, p: UpdateProgress): void => cb(p)
+      ipcRenderer.on(IPC.updateProgress, listener)
+      return () => ipcRenderer.removeListener(IPC.updateProgress, listener)
+    },
+    onDownloaded: (cb: (version: string) => void): (() => void) => {
+      const listener = (_e: unknown, v: string): void => cb(v)
+      ipcRenderer.on(IPC.updateDownloaded, listener)
+      return () => ipcRenderer.removeListener(IPC.updateDownloaded, listener)
+    },
+    onError: (cb: (message: string) => void): (() => void) => {
+      const listener = (_e: unknown, m: string): void => cb(m)
+      ipcRenderer.on(IPC.updateError, listener)
+      return () => ipcRenderer.removeListener(IPC.updateError, listener)
+    }
   },
 
   settings: {

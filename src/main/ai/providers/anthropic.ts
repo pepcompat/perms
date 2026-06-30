@@ -36,13 +36,19 @@ export class AnthropicProvider implements Provider {
       input_schema: t.parameters as Tool['input_schema']
     }))
 
+    // web search (server-side ของ Anthropic) — Claude ค้นเองและสรุปผลกลับมาเป็น text
+    const allTools: unknown[] = [...tools]
+    if (params.webSearch) {
+      allTools.push({ type: 'web_search_20250305', name: 'web_search', max_uses: 5 })
+    }
+
     const stream = this.client.messages.stream(
       {
         model: params.model,
         max_tokens: 4096,
         system: params.system,
         messages,
-        tools: tools.length ? tools : undefined
+        tools: allTools.length ? (allTools as Tool[]) : undefined
       },
       { signal: params.signal }
     )

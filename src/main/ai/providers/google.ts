@@ -42,12 +42,17 @@ export class GoogleProvider implements Provider {
       parameters: t.parameters as FunctionDeclaration['parameters']
     }))
 
+    // รวม function tools + Google Search grounding (ถ้าเปิด web search)
+    const tools: Record<string, unknown>[] = []
+    if (functionDeclarations.length) tools.push({ functionDeclarations })
+    if (params.webSearch) tools.push({ googleSearch: {} })
+
     const stream = await this.client.models.generateContentStream({
       model: params.model,
       contents,
       config: {
         systemInstruction: params.system,
-        tools: functionDeclarations.length ? [{ functionDeclarations }] : undefined
+        tools: tools.length ? (tools as never) : undefined
       }
     })
 

@@ -26,6 +26,8 @@ export interface RunParams {
   messages: ChatMessage[]
   tools: ToolSchema[]
   signal?: AbortSignal
+  /** เปิด web search ของ provider (server-side) */
+  webSearch?: boolean
   /** callback ทุกครั้งที่มี text delta ใหม่ */
   onText: (delta: string) => void
 }

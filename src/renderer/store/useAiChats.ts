@@ -32,6 +32,7 @@ interface SendOpts {
   provider: AiProvider
   model?: string
   mode: AiMode
+  webSearch?: boolean
 }
 
 interface State {
@@ -142,6 +143,7 @@ export const useAiChats = create<State>((set, get) => {
         provider: opts.provider,
         model: opts.model,
         mode: opts.mode,
+        webSearch: opts.webSearch,
         message
       })
     }

@@ -16,7 +16,8 @@ import {
   AlertTriangle,
   Sparkles,
   ChevronDown,
-  RotateCcw
+  RotateCcw,
+  Globe
 } from 'lucide-react'
 import type { AiMode, AiProvider } from '@shared/types'
 import { useSettings } from '../store/useSettings'
@@ -61,6 +62,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
   const [provider, setProvider] = useState<AiProvider>('anthropic')
   const [mode, setMode] = useState<AiMode>('approve')
   const [model, setModel] = useState('')
+  const [webSearch, setWebSearch] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const draftSeq = useAiDraft((s) => s.seq)
@@ -107,8 +109,12 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
 
   const configured = settings?.ai.configured[provider]
 
+  // web search ใช้ได้เฉพาะ provider ที่รองรับ + ไม่ใช่โหมด agentic
+  const webSupported = provider === 'anthropic' || provider === 'google'
+  const webOn = webSearch && webSupported && mode !== 'agentic'
+
   const doSend = (): void => {
-    void send(chatKey, activeId, { provider, model: model || undefined, mode })
+    void send(chatKey, activeId, { provider, model: model || undefined, mode, webSearch: webOn })
   }
   const respondApproval = (approved: boolean): void => approveAction(chatKey, approved)
   const cancel = (): void => cancelAction(chatKey)
@@ -264,6 +270,29 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                 ))}
               </DropdownMenuContent>
             </DropdownMenu>
+
+            {/* Web search toggle */}
+            <button
+              onClick={() => setWebSearch((v) => !v)}
+              disabled={!webSupported || mode === 'agentic'}
+              title={
+                mode === 'agentic'
+                  ? 'web search ปิดในโหมด agentic (กัน prompt injection)'
+                  : !webSupported
+                    ? 'web search รองรับเฉพาะ Anthropic / Google'
+                    : webOn
+                      ? 'web search: เปิด'
+                      : 'web search: ปิด'
+              }
+              className={cn(
+                'flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-medium transition-colors disabled:opacity-40',
+                webOn
+                  ? 'bg-primary/15 text-primary'
+                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+              )}
+            >
+              <Globe className="size-3.5" /> Web
+            </button>
 
             {activeId && (
               <span title="session ใช้งานอยู่" className="flex items-center text-[hsl(var(--success))]">

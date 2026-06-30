@@ -161,8 +161,8 @@ export default function TerminalView({
       fontSize: 13,
       fontWeight: 400,
       fontWeightBold: 700,
-      lineHeight: 1.0,
-      letterSpacing: 0.2,
+      lineHeight: 0.9,
+      letterSpacing: 0,
       cursorBlink: true,
       cursorStyle: 'bar',
       cursorWidth: 2,
@@ -398,8 +398,10 @@ export default function TerminalView({
       {/* toolbar ลอยมุมขวาบน โผล่ตอน hover */}
       <div
         className={cn(
-          'absolute right-3 top-2 flex items-center gap-0.5 rounded-lg border border-border/60 bg-card/80 p-0.5 shadow-lg backdrop-blur transition-opacity',
-          searchOpen ? 'opacity-0' : 'opacity-0 group-hover:opacity-100'
+          'absolute right-3 top-2 z-40 flex items-center gap-0.5 rounded-lg border border-border/60 bg-card/80 p-0.5 shadow-lg backdrop-blur transition-opacity',
+          searchOpen
+            ? 'pointer-events-none opacity-0'
+            : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100'
         )}
       >
         <ToolBtn title="ค้นหา (⌘F)" onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchInputRef.current?.focus()) }}>
@@ -422,7 +424,7 @@ export default function TerminalView({
 
       {/* search overlay */}
       {searchOpen && (
-        <div className="absolute right-3 top-2 flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-xl">
+        <div className="absolute right-3 top-2 z-50 flex items-center gap-1 rounded-lg border border-border bg-card p-1 shadow-xl">
           <Search className="ml-1 size-3.5 text-muted-foreground" />
           <input
             ref={searchInputRef}

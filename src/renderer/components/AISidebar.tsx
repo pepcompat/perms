@@ -1,4 +1,11 @@
-import { useEffect, useRef, useState } from 'react'
+import {
+  forwardRef,
+  useEffect,
+  useRef,
+  useState,
+  type ButtonHTMLAttributes,
+  type ReactNode
+} from 'react'
 import {
   Bot,
   Send,
@@ -8,16 +15,17 @@ import {
   X,
   AlertTriangle,
   Sparkles,
-  ChevronDown
+  ChevronDown,
+  RotateCcw
 } from 'lucide-react'
 import type { AiMode, AiProvider, AiStreamEvent } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
+import { MODEL_PRESETS } from '../lib/models'
 import Markdown from './Markdown'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
-import { Badge } from './ui/badge'
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -61,6 +69,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
   const { activeId } = useTabs()
   const [provider, setProvider] = useState<AiProvider>('anthropic')
   const [mode, setMode] = useState<AiMode>('approve')
+  const [model, setModel] = useState('')
   const [items, setItems] = useState<ChatItem[]>([])
   const [input, setInput] = useState('')
   const [running, setRunning] = useState(false)
@@ -75,8 +84,21 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
     if (settings) {
       setProvider(settings.ai.defaultProvider)
       setMode(settings.ai.defaultMode)
+      setModel(settings.ai.models[settings.ai.defaultProvider])
     }
   }, [settings])
+
+  // เปลี่ยน provider → ใช้โมเดล default ของ provider นั้น
+  const pickProvider = (p: AiProvider): void => {
+    setProvider(p)
+    if (settings) setModel(settings.ai.models[p])
+  }
+
+  // เลือกโมเดล + จำเป็น default ของ provider นี้
+  const pickModel = (m: string): void => {
+    setModel(m)
+    void window.api.settings.updateAi({ models: { [provider]: m } })
+  }
 
   // รับข้อความที่ "ส่งเข้า AI" จาก terminal (เติมในช่อง input + focus)
   useEffect(() => {
@@ -99,7 +121,13 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
     setItems((prev) => [...prev, { role: 'user', text: message }, { role: 'assistant', text: '' }])
     setRunning(true)
 
-    const requestId = await window.api.ai.chat({ sessionId: activeId, provider, mode, message })
+    const requestId = await window.api.ai.chat({
+      sessionId: activeId,
+      provider,
+      model: model || undefined,
+      mode,
+      message
+    })
     reqRef.current = requestId
     offRef.current = window.api.ai.onStream(requestId, handleEvent)
   }
@@ -155,56 +183,15 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
           <Bot className="size-4 text-primary" />
         </div>
         <span className="text-sm font-semibold tracking-tight">AI Agent</span>
-        <div className="ml-auto flex gap-1.5">
-          {/* Provider picker */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex h-7 items-center gap-1 rounded-md border border-input bg-background/40 px-2.5 text-xs font-medium transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">
-                {PROVIDER_OPTS.find((p) => p.id === provider)?.label}
-                <ChevronDown className="size-3.5 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[10rem]">
-              <DropdownMenuLabel>Provider</DropdownMenuLabel>
-              {PROVIDER_OPTS.map((p, i) => (
-                <DropdownMenuItem
-                  key={p.id}
-                  checked={provider === p.id}
-                  shortcut={String(i + 1)}
-                  onSelect={() => setProvider(p.id)}
-                >
-                  {p.label}
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Mode picker */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex h-7 items-center gap-1 rounded-md border border-input bg-background/40 px-2.5 text-xs font-medium transition-colors hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring">
-                {MODE_LABEL[mode]}
-                <ChevronDown className="size-3.5 opacity-60" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="min-w-[15rem]">
-              <DropdownMenuLabel>Mode</DropdownMenuLabel>
-              {MODE_OPTS.map((m, i) => (
-                <DropdownMenuItem
-                  key={m.id}
-                  checked={mode === m.id}
-                  shortcut={String(i + 1)}
-                  onSelect={() => setMode(m.id)}
-                >
-                  <span className="flex flex-col">
-                    <span>{m.label}</span>
-                    <span className="text-[11px] font-normal text-muted-foreground">{m.desc}</span>
-                  </span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        {items.length > 0 && (
+          <button
+            onClick={() => setItems([])}
+            title="ล้างแชท"
+            className="no-drag ml-auto flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+          >
+            <RotateCcw className="size-3.5" />
+          </button>
+        )}
       </div>
 
       {!configured && (
@@ -289,16 +276,11 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
         )}
       </div>
 
-      <div className="border-t border-border p-3">
-        {activeId ? (
-          <Badge variant="outline" className="mb-2">
-            <TerminalIcon className="size-2.5" /> session ใช้งานอยู่
-          </Badge>
-        ) : null}
-        <div className="flex items-end gap-2">
+      <div className="p-3">
+        <div className="rounded-2xl border border-border bg-card/60 shadow-sm transition-colors focus-within:border-ring/70">
           <Textarea
             ref={inputRef}
-            className="max-h-40 min-h-[52px] flex-1 resize-none rounded-xl"
+            className="max-h-44 min-h-[54px] w-full resize-none border-0 bg-transparent px-3.5 py-3 shadow-none focus-visible:ring-0"
             placeholder="พิมพ์คำถามถึง AI… (รองรับ Markdown)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -309,20 +291,137 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
               }
             }}
           />
-          {running ? (
-            <Button variant="destructive" size="icon" className="size-[52px] rounded-xl" onClick={cancel}>
-              <Square className="size-4" />
-            </Button>
-          ) : (
-            <Button size="icon" className="size-[52px] rounded-xl" onClick={send} disabled={!configured || !input.trim()}>
-              <Send className="size-4" />
-            </Button>
-          )}
+
+          {/* toolbar — สมมาตร: ซ้าย = mode, ขวา = provider/model/ส่ง */}
+          <div className="flex items-center gap-1 px-2 pb-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Chip>
+                  <span
+                    className={cn(
+                      'size-1.5 rounded-full',
+                      mode === 'agentic'
+                        ? 'bg-destructive'
+                        : mode === 'approve'
+                          ? 'bg-[hsl(var(--warning))]'
+                          : 'bg-muted-foreground'
+                    )}
+                  />
+                  {MODE_LABEL[mode]}
+                </Chip>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="min-w-[15rem]">
+                <DropdownMenuLabel>Mode</DropdownMenuLabel>
+                {MODE_OPTS.map((m, i) => (
+                  <DropdownMenuItem
+                    key={m.id}
+                    checked={mode === m.id}
+                    shortcut={String(i + 1)}
+                    onSelect={() => setMode(m.id)}
+                  >
+                    <span className="flex flex-col">
+                      <span>{m.label}</span>
+                      <span className="text-[11px] font-normal text-muted-foreground">{m.desc}</span>
+                    </span>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {activeId && (
+              <span title="session ใช้งานอยู่" className="flex items-center text-[hsl(var(--success))]">
+                <TerminalIcon className="size-3.5" />
+              </span>
+            )}
+
+            <div className="ml-auto flex items-center gap-1">
+              {/* Provider */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Chip>
+                    {PROVIDER_OPTS.find((p) => p.id === provider)?.label}
+                  </Chip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[9rem]">
+                  <DropdownMenuLabel>Provider</DropdownMenuLabel>
+                  {PROVIDER_OPTS.map((p, i) => (
+                    <DropdownMenuItem
+                      key={p.id}
+                      checked={provider === p.id}
+                      shortcut={String(i + 1)}
+                      onSelect={() => pickProvider(p.id)}
+                    >
+                      {p.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {/* Model */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Chip>
+                    <span className="max-w-[120px] truncate">{model || 'model'}</span>
+                  </Chip>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="max-h-72 min-w-[15rem] overflow-y-auto">
+                  <DropdownMenuLabel>โมเดล {PROVIDER_OPTS.find((p) => p.id === provider)?.label}</DropdownMenuLabel>
+                  {MODEL_PRESETS[provider].map((m) => (
+                    <DropdownMenuItem
+                      key={m}
+                      checked={model === m}
+                      onSelect={() => pickModel(m)}
+                      className="font-mono text-xs"
+                    >
+                      {m}
+                    </DropdownMenuItem>
+                  ))}
+                  <div className="my-1 h-px bg-border" />
+                  <div className="px-2 py-1 text-[11px] text-muted-foreground">
+                    พิมพ์โมเดลเองได้ที่ Settings
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+
+              {running ? (
+                <Button variant="destructive" size="icon-sm" className="size-8 rounded-lg" onClick={cancel}>
+                  <Square className="size-3.5" />
+                </Button>
+              ) : (
+                <Button
+                  size="icon-sm"
+                  className="size-8 rounded-lg"
+                  onClick={send}
+                  disabled={!configured || !input.trim()}
+                >
+                  <Send className="size-3.5" />
+                </Button>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
   )
 }
+
+const Chip = forwardRef<
+  HTMLButtonElement,
+  { children: ReactNode } & ButtonHTMLAttributes<HTMLButtonElement>
+>(({ children, className, ...props }, ref) => (
+  <button
+    ref={ref}
+    {...props}
+    className={cn(
+      'flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-accent hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+      className
+    )}
+  >
+    {children}
+    <ChevronDown className="size-3 shrink-0 opacity-60" />
+  </button>
+))
+Chip.displayName = 'Chip'
 
 function TypingDots(): JSX.Element {
   return (

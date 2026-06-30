@@ -3,6 +3,7 @@ import { KeyRound, Check, Trash2, ShieldCheck, Loader2, ChevronDown } from 'luci
 import type { AiProvider, AiMode } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { toast } from '../store/useToast'
+import { MODEL_PRESETS } from '../lib/models'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -23,26 +24,6 @@ const PROVIDERS: { id: AiProvider; label: string; placeholder: string }[] = [
   { id: 'anthropic', label: 'Anthropic', placeholder: 'sk-ant-…' },
   { id: 'google', label: 'Google', placeholder: 'AIza…' }
 ]
-
-// preset โมเดลให้เลือก (พิมพ์เองได้ถ้าไม่มีในลิสต์)
-const MODEL_PRESETS: Record<AiProvider, string[]> = {
-  openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'o3', 'o4-mini', 'gpt-4-turbo'],
-  anthropic: [
-    'claude-opus-4-8',
-    'claude-sonnet-4-6',
-    'claude-haiku-4-5-20251001',
-    'claude-fable-5',
-    'claude-3-7-sonnet-latest',
-    'claude-3-5-haiku-latest'
-  ],
-  google: [
-    'gemini-2.0-flash',
-    'gemini-2.0-flash-lite',
-    'gemini-2.0-pro',
-    'gemini-1.5-pro',
-    'gemini-1.5-flash'
-  ]
-}
 
 export default function Settings({
   open,

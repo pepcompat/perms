@@ -292,8 +292,8 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
             }}
           />
 
-          {/* toolbar — สมมาตร: ซ้าย = mode, ขวา = provider/model/ส่ง */}
-          <div className="flex items-center gap-1 px-2 pb-2">
+          {/* toolbar — สมมาตร: ซ้าย = mode, ขวา = provider/model/ส่ง (wrap เมื่อแคบ) */}
+          <div className="flex flex-wrap items-center gap-1 px-2 pb-2">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Chip>
@@ -334,7 +334,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
               </span>
             )}
 
-            <div className="ml-auto flex items-center gap-1">
+            <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1">
               {/* Provider */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -360,8 +360,8 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
               {/* Model */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Chip>
-                    <span className="max-w-[120px] truncate">{model || 'model'}</span>
+                  <Chip className="min-w-0">
+                    <span className="max-w-[88px] truncate">{model || 'model'}</span>
                   </Chip>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="max-h-72 min-w-[15rem] overflow-y-auto">
@@ -384,13 +384,13 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
               </DropdownMenu>
 
               {running ? (
-                <Button variant="destructive" size="icon-sm" className="size-8 rounded-lg" onClick={cancel}>
+                <Button variant="destructive" size="icon-sm" className="size-8 shrink-0 rounded-lg" onClick={cancel}>
                   <Square className="size-3.5" />
                 </Button>
               ) : (
                 <Button
                   size="icon-sm"
-                  className="size-8 rounded-lg"
+                  className="size-8 shrink-0 rounded-lg"
                   onClick={send}
                   disabled={!configured || !input.trim()}
                 >

@@ -7,6 +7,7 @@ import Settings from './components/Settings'
 import SessionHistory from './components/SessionHistory'
 import Runbooks from './components/Runbooks'
 import UpdateToast from './components/UpdateToast'
+import Toaster from './components/Toaster'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Resizer, useResizable } from './components/Resizer'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -72,6 +73,7 @@ export default function App(): JSX.Element {
         {showRunbooks && <Runbooks open onClose={() => setShowRunbooks(false)} />}
 
         <UpdateToast />
+        <Toaster />
       </div>
     </TooltipProvider>
   )

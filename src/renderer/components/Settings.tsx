@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { KeyRound, Check, Trash2, ShieldCheck, Loader2, ChevronDown } from 'lucide-react'
 import type { AiProvider, AiMode } from '@shared/types'
 import { useSettings } from '../store/useSettings'
+import { toast } from '../store/useToast'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -60,23 +61,37 @@ export default function Settings({
 
   if (!settings) return <></>
 
+  const labelOf = (p: AiProvider): string => PROVIDERS.find((x) => x.id === p)?.label ?? p
+
   const saveKey = async (p: AiProvider): Promise<void> => {
     const key = keys[p]?.trim()
     if (!key) return
     setBusy(p)
-    set(await window.api.settings.setAiKey(p, key))
-    setKeys((k) => ({ ...k, [p]: '' }))
-    setBusy(null)
+    try {
+      set(await window.api.settings.setAiKey(p, key))
+      setKeys((k) => ({ ...k, [p]: '' }))
+      toast(`บันทึก API key ของ ${labelOf(p)} แล้ว`)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ', 'error')
+    } finally {
+      setBusy(null)
+    }
   }
 
   const clearKey = async (p: AiProvider): Promise<void> => {
     setBusy(p)
     set(await window.api.settings.clearAiKey(p))
     setBusy(null)
+    toast(`ลบ API key ของ ${labelOf(p)} แล้ว`)
   }
 
   const updateModel = async (p: AiProvider, model: string): Promise<void> => {
     set(await window.api.settings.updateAi({ models: { [p]: model } }))
+  }
+
+  const selectModel = async (p: AiProvider, model: string): Promise<void> => {
+    await updateModel(p, model)
+    toast(`เลือกโมเดล ${model}`)
   }
 
   const updateDefault = async (patch: {
@@ -84,6 +99,7 @@ export default function Settings({
     defaultMode?: AiMode
   }): Promise<void> => {
     set(await window.api.settings.updateAi(patch))
+    toast('บันทึกการตั้งค่าแล้ว')
   }
 
   return (
@@ -159,7 +175,7 @@ export default function Settings({
                           <DropdownMenuItem
                             key={m}
                             checked={settings.ai.models[p.id] === m}
-                            onSelect={() => updateModel(p.id, m)}
+                            onSelect={() => selectModel(p.id, m)}
                             className="font-mono text-xs"
                           >
                             {m}

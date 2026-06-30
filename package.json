@@ -1,7 +1,7 @@
 {
   "name": "perms",
   "productName": "Perms",
-  "version": "1.0.8",
+  "version": "1.0.9",
   "description": "Perms — Electron SSH manager with built-in AI agent",
   "main": "./out/main/index.js",
   "author": {

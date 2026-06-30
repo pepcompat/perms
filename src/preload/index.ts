@@ -14,6 +14,8 @@ import type {
   AiMode,
   RunbookRecord,
   RunbookStep,
+  KnowledgeRecord,
+  KnowledgeInput,
   AppSettings,
   UpdateProgress
 } from '../shared/types'
@@ -95,6 +97,21 @@ const api = {
       steps: RunbookStep[]
     }): Promise<RunbookRecord> => ipcRenderer.invoke(IPC.runbooksSave, input),
     remove: (id: string): Promise<void> => ipcRenderer.invoke(IPC.runbooksDelete, id)
+  },
+
+  knowledge: {
+    list: (): Promise<KnowledgeRecord[]> => ipcRenderer.invoke(IPC.knowledgeList),
+    save: (input: KnowledgeInput): Promise<KnowledgeRecord> =>
+      ipcRenderer.invoke(IPC.knowledgeSave, input),
+    remove: (id: string): Promise<void> => ipcRenderer.invoke(IPC.knowledgeDelete, id),
+    search: (query: string): Promise<KnowledgeRecord[]> =>
+      ipcRenderer.invoke(IPC.knowledgeSearch, query)
+  },
+
+  onKnowledgeSaved: (cb: (title: string) => void): (() => void) => {
+    const listener = (_e: unknown, title: string): void => cb(title)
+    ipcRenderer.on(IPC.knowledgeSaved, listener)
+    return () => ipcRenderer.removeListener(IPC.knowledgeSaved, listener)
   },
 
   updates: {

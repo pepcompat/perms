@@ -95,6 +95,27 @@ export interface RunbookRecord {
   updatedAt: number
 }
 
+export interface KnowledgeRecord {
+  id: string
+  title: string
+  content: string
+  tags: string[]
+  serverId: string | null
+  source: 'ai' | 'user'
+  useCount: number
+  createdAt: number
+  updatedAt: number
+}
+
+export interface KnowledgeInput {
+  id?: string | null
+  title: string
+  content: string
+  tags?: string[]
+  serverId?: string | null
+  source?: 'ai' | 'user'
+}
+
 export interface AiSettings {
   defaultProvider: AiProvider
   defaultMode: AiMode

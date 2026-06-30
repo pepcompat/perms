@@ -40,6 +40,14 @@ export const IPC = {
   runbooksSave: 'runbooks:save',
   runbooksDelete: 'runbooks:delete',
 
+  // knowledge (คลังความรู้ AI)
+  knowledgeList: 'knowledge:list',
+  knowledgeSave: 'knowledge:save',
+  knowledgeDelete: 'knowledge:delete',
+  knowledgeSearch: 'knowledge:search',
+  /** event main→renderer: AI บันทึกความรู้ (ส่ง title) → โชว์ toast */
+  knowledgeSaved: 'knowledge:saved',
+
   // settings + secrets
   settingsGet: 'settings:get',
   settingsSetAiKey: 'settings:setAiKey',

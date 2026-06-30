@@ -1,7 +1,15 @@
 import { ipcMain } from 'electron'
 import { nanoid } from 'nanoid'
 import { IPC } from '@shared/ipc-channels'
-import type { ServerInput, OpenSessionInput, AiChatInput, AiProvider, AiMode, RunbookStep } from '@shared/types'
+import type {
+  ServerInput,
+  OpenSessionInput,
+  AiChatInput,
+  AiProvider,
+  AiMode,
+  RunbookStep,
+  KnowledgeInput
+} from '@shared/types'
 
 import {
   listServers,
@@ -17,6 +25,12 @@ import {
   recordCommand
 } from '../db/repos/sessions-repo'
 import { listRunbooks, saveRunbook, deleteRunbook } from '../db/repos/runbooks-repo'
+import {
+  listKnowledge,
+  saveKnowledge,
+  deleteKnowledge,
+  searchKnowledge
+} from '../db/repos/knowledge-repo'
 import {
   getAppSettings,
   setAiKey,
@@ -91,6 +105,12 @@ export function registerIpc(): void {
     ) => saveRunbook(input)
   )
   ipcMain.handle(IPC.runbooksDelete, (_e, id: string) => deleteRunbook(id))
+
+  // ---- knowledge ----
+  ipcMain.handle(IPC.knowledgeList, () => listKnowledge())
+  ipcMain.handle(IPC.knowledgeSave, (_e, input: KnowledgeInput) => saveKnowledge(input))
+  ipcMain.handle(IPC.knowledgeDelete, (_e, id: string) => deleteKnowledge(id))
+  ipcMain.handle(IPC.knowledgeSearch, (_e, query: string) => searchKnowledge(query))
 
   // ---- settings ----
   ipcMain.handle(IPC.settingsGet, () => getAppSettings())

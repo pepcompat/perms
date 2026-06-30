@@ -1,7 +1,10 @@
+import { BrowserWindow } from 'electron'
+import { IPC } from '@shared/ipc-channels'
 import type { ToolSchema } from './providers/types'
 import { execInSession } from '../terminal/session-manager'
 import { listServers } from '../db/repos/servers-repo'
 import { getSession, searchCommands } from '../db/repos/sessions-repo'
+import { saveKnowledge, searchKnowledge } from '../db/repos/knowledge-repo'
 
 export const TOOL_SCHEMAS: ToolSchema[] = [
   {
@@ -29,6 +32,30 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'search_command_history',
     description: 'Search previously run commands across all sessions by substring.',
+    parameters: {
+      type: 'object',
+      properties: { query: { type: 'string' } },
+      required: ['query']
+    }
+  },
+  {
+    name: 'save_knowledge',
+    description:
+      'Save a durable learning to the persistent knowledge base so it can help in future sessions. Use when the user teaches you something, corrects you, states a preference, or when you discover a reusable fix or a server-specific quirk. Keep it concise and self-contained. NEVER save secrets, passwords, API keys, or one-off trivia.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'Short title for the learning' },
+        content: { type: 'string', description: 'The knowledge (concise, self-contained)' },
+        tags: { type: 'array', items: { type: 'string' }, description: 'Optional tags' }
+      },
+      required: ['title', 'content']
+    }
+  },
+  {
+    name: 'search_knowledge',
+    description:
+      'Search the saved knowledge base for previously learned facts, fixes, or preferences relevant to the current task.',
     parameters: {
       type: 'object',
       properties: { query: { type: 'string' } },
@@ -80,6 +107,24 @@ export async function executeTool(
       return JSON.stringify(
         results.map((c) => ({ command: c.command, exitCode: c.exitCode, ranAt: c.ranAt }))
       )
+    }
+    case 'save_knowledge': {
+      const title = String(args.title ?? '').trim()
+      const content = String(args.content ?? '').trim()
+      if (!title || !content) return 'Error: title and content are required'
+      const tags = Array.isArray(args.tags) ? args.tags.map(String) : []
+      const serverId = ctx.sessionId ? (getSession(ctx.sessionId)?.serverId ?? null) : null
+      const rec = saveKnowledge({ title, content, tags, serverId, source: 'ai' })
+      // แจ้ง renderer ให้โชว์ toast
+      for (const win of BrowserWindow.getAllWindows()) {
+        win.webContents.send(IPC.knowledgeSaved, rec.title)
+      }
+      return `Saved to knowledge base: "${rec.title}"`
+    }
+    case 'search_knowledge': {
+      const serverId = ctx.sessionId ? (getSession(ctx.sessionId)?.serverId ?? null) : null
+      const results = searchKnowledge(String(args.query ?? ''), { serverId })
+      return JSON.stringify(results.map((k) => ({ title: k.title, content: k.content, tags: k.tags })))
     }
     default:
       return `Error: unknown tool ${name}`

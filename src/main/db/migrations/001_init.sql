@@ -74,6 +74,21 @@ CREATE TABLE IF NOT EXISTS settings (
   value TEXT NOT NULL
 );
 
+-- knowledge: คลังความรู้ของ AI (สิ่งที่สอน/เคสที่สำเร็จ) ดึงมาช่วยในอนาคต
+CREATE TABLE IF NOT EXISTS knowledge (
+  id          TEXT PRIMARY KEY,
+  title       TEXT NOT NULL,
+  content     TEXT NOT NULL,
+  tags        TEXT,                       -- JSON array
+  server_id   TEXT,                       -- ผูก server (null = ความรู้กลาง)
+  source      TEXT NOT NULL DEFAULT 'ai', -- ai | user
+  use_count   INTEGER NOT NULL DEFAULT 0,
+  created_at  INTEGER NOT NULL,
+  updated_at  INTEGER NOT NULL,
+  FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE SET NULL
+);
+
 CREATE INDEX IF NOT EXISTS idx_commands_session ON commands(session_id);
 CREATE INDEX IF NOT EXISTS idx_ai_history_session ON ai_history(session_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_server ON sessions(server_id);
+CREATE INDEX IF NOT EXISTS idx_knowledge_server ON knowledge(server_id);

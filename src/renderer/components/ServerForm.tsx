@@ -1,7 +1,8 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { CheckCircle2, XCircle, Loader2, Plug, ShieldCheck } from 'lucide-react'
 import type { ServerRecord, ServerInput, AuthType } from '@shared/types'
 import { useServers } from '../store/useServers'
+import { toast } from '../store/useToast'
 import {
   Dialog,
   DialogContent,
@@ -47,8 +48,14 @@ export default function ServerForm({
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [testing, setTesting] = useState(false)
+  // record ที่กำลังแก้อยู่ (id เดิมถ้า edit, หรือ id ที่เพิ่งสร้างจากการกดทดสอบ)
+  const serverIdRef = useRef<string | null>(editing?.id ?? null)
+  // true = สร้างใหม่ในรอบนี้และยังไม่กดบันทึก → ถ้าปิดโดยไม่บันทึกให้ลบทิ้ง
+  const draftRef = useRef(false)
 
   useEffect(() => {
+    serverIdRef.current = editing?.id ?? null
+    draftRef.current = false
     if (editing) {
       setForm({
         name: editing.name,
@@ -73,12 +80,26 @@ export default function ServerForm({
   const upd = <K extends keyof ServerInput>(k: K, v: ServerInput[K]): void =>
     setForm((f) => ({ ...f, [k]: v }))
 
+  // สร้างครั้งเดียว แล้วหลังจากนั้น update record เดิมเสมอ (กันซ้ำ)
+  const persist = async (): Promise<ServerRecord> => {
+    if (serverIdRef.current) {
+      const rec = await window.api.servers.update(serverIdRef.current, form)
+      await refresh()
+      return rec
+    }
+    const rec = await window.api.servers.create(form)
+    serverIdRef.current = rec.id
+    draftRef.current = true // เพิ่งสร้าง ยังไม่บันทึกจริง
+    await refresh()
+    return rec
+  }
+
   const save = async (): Promise<void> => {
     setBusy(true)
     try {
-      if (editing) await window.api.servers.update(editing.id, form)
-      else await window.api.servers.create(form)
-      await refresh()
+      await persist()
+      draftRef.current = false // commit แล้ว
+      toast(editing ? 'แก้ไข server แล้ว' : 'เพิ่ม server แล้ว')
       onClose()
     } finally {
       setBusy(false)
@@ -89,10 +110,7 @@ export default function ServerForm({
     setTesting(true)
     setTestResult(null)
     try {
-      const rec = editing
-        ? await window.api.servers.update(editing.id, form)
-        : await window.api.servers.create(form)
-      await refresh()
+      const rec = await persist()
       const res = await window.api.servers.test(rec.id)
       setTestResult({ ok: res.ok, msg: res.ok ? 'เชื่อมต่อสำเร็จ' : res.error || 'ล้มเหลว' })
     } catch (e) {
@@ -102,8 +120,17 @@ export default function ServerForm({
     }
   }
 
+  // ปิดฟอร์ม — ถ้าเป็น draft (สร้างจากการทดสอบ) ที่ยังไม่บันทึก ให้ลบทิ้ง
+  const handleClose = async (): Promise<void> => {
+    if (draftRef.current && serverIdRef.current) {
+      await window.api.servers.remove(serverIdRef.current)
+      await refresh()
+    }
+    onClose()
+  }
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+    <Dialog open={open} onOpenChange={(o) => !o && void handleClose()}>
       <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{editing ? 'แก้ไข Server' : 'เพิ่ม Server ใหม่'}</DialogTitle>
@@ -190,7 +217,7 @@ export default function ServerForm({
               <SelectContent>
                 <SelectItem value="none">— ไม่มี —</SelectItem>
                 {servers
-                  .filter((s) => s.id !== editing?.id)
+                  .filter((s) => s.id !== editing?.id && s.id !== serverIdRef.current)
                   .map((s) => (
                     <SelectItem key={s.id} value={s.id}>
                       {s.name}
@@ -252,7 +279,7 @@ export default function ServerForm({
             ทดสอบ
           </Button>
           <div className="flex gap-2">
-            <Button variant="ghost" onClick={onClose}>
+            <Button variant="ghost" onClick={handleClose}>
               ยกเลิก
             </Button>
             <Button onClick={save} disabled={busy || !form.host || !form.username}>

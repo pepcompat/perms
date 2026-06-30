@@ -1,7 +1,16 @@
 import { readFileSync } from 'fs'
+import { homedir } from 'os'
+import { join } from 'path'
 import { Client, type ConnectConfig, type ClientChannel } from 'ssh2'
 import { getServerRow } from '../db/repos/servers-repo'
 import { revealSecret } from '../secrets/safe-store'
+
+/** ขยาย ~ เป็น home directory (เช่น ~/.ssh/id_ed25519) */
+function expandHome(p: string): string {
+  if (p === '~') return homedir()
+  if (p.startsWith('~/')) return join(homedir(), p.slice(2))
+  return p
+}
 
 /** สร้าง ConnectConfig จาก server row (ถอด secret + เลือก auth method) */
 function buildConfig(serverId: string): ConnectConfig & { _host: string } {
@@ -27,7 +36,7 @@ function buildConfig(serverId: string): ConnectConfig & { _host: string } {
       // private key อาจมาจากไฟล์ หรือเก็บใน secrets
       let key: string | Buffer | undefined
       if (row.private_key_path) {
-        key = readFileSync(row.private_key_path)
+        key = readFileSync(expandHome(row.private_key_path))
       } else {
         const stored = revealSecret(row.secret_id)
         if (stored) key = stored

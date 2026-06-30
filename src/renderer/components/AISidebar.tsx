@@ -13,6 +13,8 @@ import {
 import type { AiMode, AiProvider, AiStreamEvent } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { useTabs } from '../store/useTabs'
+import { useAiDraft } from '../store/useAiDraft'
+import Markdown from './Markdown'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import { Badge } from './ui/badge'
@@ -66,6 +68,8 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
   const reqRef = useRef<string | null>(null)
   const offRef = useRef<(() => void) | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLTextAreaElement>(null)
+  const draftSeq = useAiDraft((s) => s.seq)
 
   useEffect(() => {
     if (settings) {
@@ -73,6 +77,14 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
       setMode(settings.ai.defaultMode)
     }
   }, [settings])
+
+  // รับข้อความที่ "ส่งเข้า AI" จาก terminal (เติมในช่อง input + focus)
+  useEffect(() => {
+    if (draftSeq === 0) return
+    const text = useAiDraft.getState().text
+    setInput((cur) => (cur ? cur + '\n' + text : text))
+    inputRef.current?.focus()
+  }, [draftSeq])
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight })
@@ -231,9 +243,15 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                   : 'rounded-bl-sm bg-card'
               )}
             >
-              <div className="whitespace-pre-wrap break-words">
-                {it.text || (running && i === items.length - 1 ? <TypingDots /> : '')}
-              </div>
+              {it.text ? (
+                <Markdown
+                  className={it.role === 'user' ? 'prose-invert [&_code]:bg-black/20' : ''}
+                >
+                  {it.text}
+                </Markdown>
+              ) : running && i === items.length - 1 ? (
+                <TypingDots />
+              ) : null}
               {it.tools?.map((t, j) => (
                 <div key={j} className="mt-2 overflow-hidden rounded-lg border border-border bg-background/60">
                   <div className="flex items-center gap-1.5 border-b border-border px-2.5 py-1.5 font-mono text-xs text-primary">
@@ -279,8 +297,9 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
         ) : null}
         <div className="flex items-end gap-2">
           <Textarea
-            className="h-[52px] flex-1 resize-none rounded-xl"
-            placeholder="พิมพ์คำถามถึง AI…"
+            ref={inputRef}
+            className="max-h-40 min-h-[52px] flex-1 resize-none rounded-xl"
+            placeholder="พิมพ์คำถามถึง AI… (รองรับ Markdown)"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => {

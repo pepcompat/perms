@@ -1,11 +1,25 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode, type MouseEvent as ReactMouseEvent } from 'react'
 import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import { SearchAddon } from '@xterm/addon-search'
 import { WebglAddon } from '@xterm/addon-webgl'
-import { Search, Copy, Eraser, AArrowUp, AArrowDown, X, ChevronUp, ChevronDown } from 'lucide-react'
+import {
+  Search,
+  Copy,
+  Eraser,
+  AArrowUp,
+  AArrowDown,
+  X,
+  ChevronUp,
+  ChevronDown,
+  Bot,
+  TextSelect,
+  ClipboardPaste
+} from 'lucide-react'
 import { cn } from '../lib/utils'
+import { useTabs } from '../store/useTabs'
+import { useAiDraft } from '../store/useAiDraft'
 
 // Catppuccin Mocha — palette ที่เข้ากับธีมม่วงของแอป ทำให้ output (ls, git, ฯลฯ) มีสีสวย
 const THEME = {
@@ -51,8 +65,11 @@ export default function TerminalView({
   const [searchOpen, setSearchOpen] = useState(false)
   const [query, setQuery] = useState('')
   const [fontSize, setFontSize] = useState(13)
+  const [menu, setMenu] = useState<{ x: number; y: number; sel: string } | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchOpenRef = useRef(false)
+  const removeTab = useTabs((s) => s.removeTab)
+  const sendToAi = useAiDraft((s) => s.send)
 
   useEffect(() => {
     searchOpenRef.current = searchOpen
@@ -135,6 +152,8 @@ export default function TerminalView({
     const offExit = window.api.terminal.onExit(sessionId, () => {
       if (!disposedRef.current)
         term.write('\r\n\x1b[38;2;108;112;134m── session closed ──\x1b[0m\r\n')
+      // ปิด tab อัตโนมัติเมื่อ session จบ (เช่นพิมพ์ exit)
+      window.setTimeout(() => removeTab(sessionId), 600)
     })
 
     window.api.terminal.resize(sessionId, term.cols, term.rows)
@@ -205,12 +224,89 @@ export default function TerminalView({
   const bumpFont = (d: number): void =>
     setFontSize((f) => Math.min(MAX_FONT, Math.max(MIN_FONT, f + d)))
 
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  const openMenu = (e: ReactMouseEvent): void => {
+    e.preventDefault()
+    const rect = containerRef.current?.getBoundingClientRect()
+    setMenu({
+      x: e.clientX - (rect?.left ?? 0),
+      y: e.clientY - (rect?.top ?? 0),
+      sel: termRef.current?.getSelection() ?? ''
+    })
+  }
+  const closeMenu = (): void => setMenu(null)
+
+  const pasteClip = async (): Promise<void> => {
+    const text = await navigator.clipboard.readText()
+    if (text) window.api.terminal.write(sessionId, text)
+  }
+
   return (
     <div
+      ref={containerRef}
       className="group relative h-full w-full bg-[#181825]"
       style={{ display: visible ? 'block' : 'none' }}
+      onContextMenu={openMenu}
     >
       <div ref={hostRef} className="h-full w-full px-3 py-2" />
+
+      {/* right-click context menu */}
+      {menu && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={closeMenu} onContextMenu={(e) => { e.preventDefault(); closeMenu() }} />
+          <div
+            className="absolute z-50 min-w-[200px] animate-fade-in overflow-hidden rounded-lg border border-border bg-popover p-1 text-sm shadow-xl"
+            style={{ left: menu.x, top: menu.y }}
+          >
+            <MenuItem
+              icon={<Bot className="size-3.5 text-primary" />}
+              label="ส่งที่เลือกให้ AI"
+              disabled={!menu.sel}
+              onClick={() => {
+                sendToAi('```\n' + menu.sel.trim() + '\n```')
+                closeMenu()
+              }}
+            />
+            <MenuItem
+              icon={<Copy className="size-3.5" />}
+              label="คัดลอกที่เลือก"
+              shortcut="⌘C"
+              disabled={!menu.sel}
+              onClick={() => {
+                void copySel()
+                closeMenu()
+              }}
+            />
+            <MenuItem
+              icon={<ClipboardPaste className="size-3.5" />}
+              label="วาง"
+              shortcut="⌘V"
+              onClick={() => {
+                void pasteClip()
+                closeMenu()
+              }}
+            />
+            <div className="my-1 h-px bg-border" />
+            <MenuItem
+              icon={<TextSelect className="size-3.5" />}
+              label="เลือกทั้งหมด"
+              onClick={() => {
+                termRef.current?.selectAll()
+                closeMenu()
+              }}
+            />
+            <MenuItem
+              icon={<Eraser className="size-3.5" />}
+              label="ล้างหน้าจอ"
+              onClick={() => {
+                clearTerm()
+                closeMenu()
+              }}
+            />
+          </div>
+        </>
+      )}
 
       {/* toolbar ลอยมุมขวาบน โผล่ตอน hover */}
       <div
@@ -286,6 +382,32 @@ function ToolBtn({
       className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
     >
       {children}
+    </button>
+  )
+}
+
+function MenuItem({
+  icon,
+  label,
+  shortcut,
+  disabled,
+  onClick
+}: {
+  icon: ReactNode
+  label: string
+  shortcut?: string
+  disabled?: boolean
+  onClick: () => void
+}): JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className="flex w-full items-center gap-2.5 rounded-md px-2.5 py-1.5 text-left transition-colors hover:bg-accent disabled:pointer-events-none disabled:opacity-40"
+    >
+      {icon}
+      <span className="flex-1">{label}</span>
+      {shortcut && <span className="text-xs text-muted-foreground">{shortcut}</span>}
     </button>
   )
 }

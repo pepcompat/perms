@@ -10,7 +10,8 @@ import {
   Settings as SettingsIcon,
   Loader2,
   ChevronRight,
-  Brain
+  Brain,
+  SquareStack
 } from 'lucide-react'
 import type { ServerRecord } from '@shared/types'
 import { useServers } from '../store/useServers'
@@ -49,6 +50,7 @@ export default function ServerList({
   })
 
   const isConnected = (id: string): boolean => tabs.some((t) => t.serverId === id)
+  const tabCount = (id: string): number => tabs.filter((t) => t.serverId === id).length
   const toggleGroup = (g: string): void =>
     setCollapsed((prev) => {
       const next = new Set(prev)
@@ -164,27 +166,38 @@ export default function ServerList({
                 {connecting === s.id ? (
                   <Loader2 className="size-3.5 animate-spin text-primary" />
                 ) : (
-                  <div className="flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setEditing(s)
-                        setFormOpen(true)
-                      }}
-                      className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                    >
-                      <Pencil className="size-3.5" />
-                    </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        void remove(s)
-                      }}
-                      className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                    >
-                      <Trash2 className="size-3.5" />
-                    </button>
-                  </div>
+                  <>
+                    {tabCount(s.id) >= 2 && (
+                      <span
+                        title={`เปิดอยู่ ${tabCount(s.id)} tab`}
+                        className="flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground group-hover:hidden"
+                      >
+                        <SquareStack className="size-2.5" />
+                        {tabCount(s.id)}
+                      </span>
+                    )}
+                    <div className="hidden gap-0.5 group-hover:flex">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          setEditing(s)
+                          setFormOpen(true)
+                        }}
+                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          void remove(s)
+                        }}
+                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                      >
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                  </>
                 )}
               </div>
             ))}

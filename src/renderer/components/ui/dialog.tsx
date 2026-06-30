@@ -35,6 +35,13 @@ const DialogContent = React.forwardRef<
         'fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-xl border border-border bg-card p-6 shadow-2xl data-[state=open]:animate-dialog-in',
         className
       )}
+      onInteractOutside={(e) => {
+        // ถ้ามี dropdown/select เปิดอยู่ (portal นอก dialog) คลิกนั้นแค่ปิด dropdown
+        // อย่าปิด dialog ตามไปด้วย — ยัง mount อยู่ตอน event นี้ยิง (unmount เป็น async)
+        if (document.querySelector('[data-radix-popper-content-wrapper]')) {
+          e.preventDefault()
+        }
+      }}
       {...props}
     >
       {children}

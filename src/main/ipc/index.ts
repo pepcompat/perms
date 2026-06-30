@@ -57,7 +57,11 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.sessionCommands, (_e, sessionId: string) => listCommands(sessionId))
   ipcMain.handle(IPC.sessionRecentCommands, () => recentCommands())
   ipcMain.on(IPC.sessionRecordCommand, (_e, sessionId: string, command: string) => {
-    if (command.trim()) recordCommand(sessionId, command.trim(), 'user')
+    try {
+      if (command.trim()) recordCommand(sessionId, command.trim(), 'user')
+    } catch {
+      /* session อาจปิดไปแล้ว — ไม่ต้องล้มแอป */
+    }
   })
 
   // ---- ai ----

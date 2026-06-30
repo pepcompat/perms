@@ -25,11 +25,11 @@ function toSession(row: SessionRow): SessionRecord {
 }
 
 export function createSession(
+  id: string,
   kind: SessionKind,
   serverId: string | null,
   title: string
 ): SessionRecord {
-  const id = nanoid()
   getDb()
     .prepare(
       `INSERT INTO sessions (id, server_id, kind, started_at, status, title)

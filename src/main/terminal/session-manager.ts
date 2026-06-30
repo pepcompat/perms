@@ -41,8 +41,9 @@ export async function openSession(input: OpenSessionInput): Promise<OpenSessionR
     sessions.delete(id)
   })
 
+  // สร้าง row ใน DB ด้วย id เดียวกับ terminal session (กัน FK พังตอน recordCommand)
+  createSession(id, term.kind, serverId, title)
   sessions.set(id, term)
-  createSession(term.kind, serverId, title)
   return { sessionId: id, kind: term.kind, title }
 }
 

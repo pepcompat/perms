@@ -5,6 +5,7 @@ import { execInSession, runInTerminal } from '../terminal/session-manager'
 import { listServers } from '../db/repos/servers-repo'
 import { getSession, searchCommands } from '../db/repos/sessions-repo'
 import { saveKnowledge, searchKnowledge } from '../db/repos/knowledge-repo'
+import { listRunbooks } from '../db/repos/runbooks-repo'
 
 export const TOOL_SCHEMAS: ToolSchema[] = [
   {
@@ -73,11 +74,27 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
       properties: { query: { type: 'string' } },
       required: ['query']
     }
+  },
+  {
+    name: 'list_runbooks',
+    description:
+      'List the saved runbooks (named, reusable command sequences) with their steps. Use to see if a saved procedure already exists for the task.',
+    parameters: { type: 'object', properties: {} }
+  },
+  {
+    name: 'run_runbook',
+    description:
+      "Run a saved runbook by name — types its commands into the user's interactive terminal in order. Use when a matching runbook exists for the task.",
+    parameters: {
+      type: 'object',
+      properties: { name: { type: 'string', description: 'The runbook name' } },
+      required: ['name']
+    }
   }
 ]
 
 /** ชื่อ tool ที่ "ต้องขออนุมัติ" ในโหมด approve และ "ห้ามรัน" ในโหมด suggest */
-export const MUTATING_TOOLS = new Set(['run_command', 'run_in_terminal'])
+export const MUTATING_TOOLS = new Set(['run_command', 'run_in_terminal', 'run_runbook'])
 
 export interface ToolContext {
   sessionId: string | null
@@ -146,6 +163,24 @@ export async function executeTool(
       const serverId = ctx.sessionId ? (getSession(ctx.sessionId)?.serverId ?? null) : null
       const results = searchKnowledge(String(args.query ?? ''), { serverId })
       return JSON.stringify(results.map((k) => ({ title: k.title, content: k.content, tags: k.tags })))
+    }
+    case 'list_runbooks': {
+      const rbs = listRunbooks().map((r) => ({
+        name: r.name,
+        description: r.description,
+        steps: r.steps.map((s) => s.command)
+      }))
+      return JSON.stringify(rbs)
+    }
+    case 'run_runbook': {
+      if (!ctx.sessionId) {
+        return 'Error: no active terminal session. Ask the user to open a session first.'
+      }
+      const name = String(args.name ?? '')
+      const rb = listRunbooks().find((r) => r.name.toLowerCase() === name.toLowerCase())
+      if (!rb) return `Error: runbook "${name}" not found. Use list_runbooks to see available runbooks.`
+      for (const step of rb.steps) runInTerminal(ctx.sessionId, step.command)
+      return `Ran runbook "${rb.name}" (${rb.steps.length} steps) in the terminal. Verify the result with a quick run_command if needed.`
     }
     default:
       return `Error: unknown tool ${name}`

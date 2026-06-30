@@ -10,7 +10,6 @@ import {
   Settings as SettingsIcon,
   Loader2,
   ChevronRight,
-  Brain,
   SquareStack
 } from 'lucide-react'
 import type { ServerRecord } from '@shared/types'
@@ -26,14 +25,12 @@ export default function ServerList({
   width,
   onOpenSettings,
   onOpenHistory,
-  onOpenRunbooks,
-  onOpenKnowledge
+  onOpenRunbooks
 }: {
   width: number
   onOpenSettings: () => void
   onOpenHistory: () => void
   onOpenRunbooks: () => void
-  onOpenKnowledge: () => void
 }): JSX.Element {
   const { servers, refresh } = useServers()
   const { addTab } = useTabs()
@@ -224,7 +221,6 @@ export default function ServerList({
       </div>
 
       <div className="flex flex-col gap-0.5 border-t border-border p-2">
-        <SideLink icon={<Brain className="size-4" />} label="คลังความรู้" onClick={onOpenKnowledge} />
         <SideLink icon={<History className="size-4" />} label="Session history" onClick={onOpenHistory} />
         <SideLink icon={<BookText className="size-4" />} label="Runbooks" onClick={onOpenRunbooks} />
         <SideLink icon={<SettingsIcon className="size-4" />} label="Settings" onClick={onOpenSettings} />

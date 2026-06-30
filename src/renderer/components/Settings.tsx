@@ -1,10 +1,12 @@
-import { useEffect, useState } from 'react'
-import { KeyRound, Check, Trash2, ShieldCheck, Loader2, ChevronDown } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { KeyRound, Check, Trash2, ShieldCheck, Loader2, ChevronDown, Brain } from 'lucide-react'
 import type { AiProvider, AiMode } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { toast } from '../store/useToast'
 import { MODEL_PRESETS } from '../lib/models'
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
+import { cn } from '../lib/utils'
+import KnowledgePanel from './KnowledgePanel'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
@@ -33,6 +35,7 @@ export default function Settings({
   onClose: () => void
 }): JSX.Element {
   const { settings, set, refresh } = useSettings()
+  const [tab, setTab] = useState<'ai' | 'knowledge'>('ai')
   const [keys, setKeys] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
 
@@ -85,12 +88,29 @@ export default function Settings({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="flex h-[82vh] max-w-2xl flex-col">
         <DialogHeader>
           <DialogTitle>Settings</DialogTitle>
-          <DialogDescription>API keys และค่าเริ่มต้นของ AI agent</DialogDescription>
         </DialogHeader>
 
+        {/* tabs */}
+        <div className="flex shrink-0 gap-1 rounded-lg bg-secondary/40 p-1">
+          <TabBtn active={tab === 'ai'} onClick={() => setTab('ai')} icon={<KeyRound className="size-3.5" />}>
+            AI
+          </TabBtn>
+          <TabBtn
+            active={tab === 'knowledge'}
+            onClick={() => setTab('knowledge')}
+            icon={<Brain className="size-3.5" />}
+          >
+            คลังความรู้
+          </TabBtn>
+        </div>
+
+        {tab === 'knowledge' && <KnowledgePanel />}
+
+        {tab === 'ai' && (
+          <div className="-mr-2 min-h-0 flex-1 space-y-4 overflow-y-auto pr-2">
         <div className="flex items-start gap-2 rounded-lg border border-border bg-background/40 px-3 py-2.5 text-xs text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[hsl(var(--success))]" />
           <span>
@@ -207,7 +227,34 @@ export default function Settings({
             </Select>
           </div>
         </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+function TabBtn({
+  active,
+  onClick,
+  icon,
+  children
+}: {
+  active: boolean
+  onClick: () => void
+  icon: ReactNode
+  children: ReactNode
+}): JSX.Element {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        'flex flex-1 items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors',
+        active ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+      )}
+    >
+      {icon}
+      {children}
+    </button>
   )
 }

@@ -6,7 +6,6 @@ import AISidebar from './components/AISidebar'
 import Settings from './components/Settings'
 import SessionHistory from './components/SessionHistory'
 import Runbooks from './components/Runbooks'
-import Knowledge from './components/Knowledge'
 import UpdateToast from './components/UpdateToast'
 import Toaster from './components/Toaster'
 import { TooltipProvider } from './components/ui/tooltip'
@@ -23,7 +22,6 @@ export default function App(): JSX.Element {
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showRunbooks, setShowRunbooks] = useState(false)
-  const [showKnowledge, setShowKnowledge] = useState(false)
 
   const sidebar = useResizable('ui.sidebarWidth', 256, 180, 460, 'left')
   const ai = useResizable('ui.aiWidth', 384, 280, 640, 'right')
@@ -45,7 +43,6 @@ export default function App(): JSX.Element {
           onOpenSettings={() => setShowSettings(true)}
           onOpenHistory={() => setShowHistory(true)}
           onOpenRunbooks={() => setShowRunbooks(true)}
-          onOpenKnowledge={() => setShowKnowledge(true)}
         />
 
         <Resizer onMouseDown={sidebar.startDrag} active={sidebar.dragging} />
@@ -80,7 +77,6 @@ export default function App(): JSX.Element {
         {showSettings && <Settings open onClose={() => setShowSettings(false)} />}
         {showHistory && <SessionHistory open onClose={() => setShowHistory(false)} />}
         {showRunbooks && <Runbooks open onClose={() => setShowRunbooks(false)} />}
-        {showKnowledge && <Knowledge open onClose={() => setShowKnowledge(false)} />}
 
         <UpdateToast />
         <Toaster />

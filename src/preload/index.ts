@@ -57,7 +57,10 @@ const api = {
   sessions: {
     list: (): Promise<SessionRecord[]> => ipcRenderer.invoke(IPC.sessionsList),
     commands: (sessionId: string): Promise<CommandRecord[]> =>
-      ipcRenderer.invoke(IPC.sessionCommands, sessionId)
+      ipcRenderer.invoke(IPC.sessionCommands, sessionId),
+    recentCommands: (): Promise<string[]> => ipcRenderer.invoke(IPC.sessionRecentCommands),
+    recordCommand: (sessionId: string, command: string): void =>
+      ipcRenderer.send(IPC.sessionRecordCommand, sessionId, command)
   },
 
   ai: {

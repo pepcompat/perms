@@ -66,10 +66,80 @@ export default function TerminalView({
   const [query, setQuery] = useState('')
   const [fontSize, setFontSize] = useState(13)
   const [menu, setMenu] = useState<{ x: number; y: number; sel: string } | null>(null)
+  const [sugg, setSugg] = useState<{ prefix: string; list: string[] } | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchOpenRef = useRef(false)
   const removeTab = useTabs((s) => s.removeTab)
   const sendToAi = useAiDraft((s) => s.send)
+
+  // --- autocomplete จากประวัติคำสั่ง ---
+  const historyRef = useRef<string[]>([])
+  const typedRef = useRef('') // บรรทัดที่ผู้ใช้พิมพ์อยู่ (best-effort)
+  const trackingRef = useRef(true) // false เมื่อ desync (มี control/escape) → หยุดแนะนำจน Enter
+  const suggRef = useRef<{ prefix: string; list: string[] } | null>(null)
+
+  const setSuggestion = (s: { prefix: string; list: string[] } | null): void => {
+    suggRef.current = s
+    setSugg(s)
+  }
+
+  const recomputeSugg = (): void => {
+    const line = typedRef.current
+    if (!trackingRef.current || line.length < 2) return setSuggestion(null)
+    const list: string[] = []
+    for (const h of historyRef.current) {
+      if (h.length > line.length && h.startsWith(line)) {
+        list.push(h)
+        if (list.length >= 3) break
+      }
+    }
+    setSuggestion(list.length ? { prefix: line, list } : null)
+  }
+
+  // ติดตามคีย์ที่ผู้ใช้พิมพ์เพื่อเดาคำสั่ง + บันทึกประวัติตอน Enter
+  const handleTyped = (d: string): void => {
+    // อยู่ใน full-screen app (vim/less/htop ใช้ alternate buffer) → ไม่แนะนำ
+    if (termRef.current?.buffer.active.type === 'alternate') {
+      typedRef.current = ''
+      if (suggRef.current) setSuggestion(null)
+      return
+    }
+    if (d === '\r' || d === '\n') {
+      const line = typedRef.current
+      if (trackingRef.current && line.trim()) {
+        window.api.sessions.recordCommand(sessionId, line.trim())
+        historyRef.current = [line.trim(), ...historyRef.current.filter((h) => h !== line.trim())].slice(0, 500)
+      }
+      typedRef.current = ''
+      trackingRef.current = true
+      return setSuggestion(null)
+    }
+    if (d === '\x7f' || d === '\b') {
+      typedRef.current = typedRef.current.slice(0, -1)
+      return recomputeSugg()
+    }
+    if (d === '\x03' || d === '\x15' || d === '\x17') {
+      // Ctrl-C / Ctrl-U / Ctrl-W → ล้างบรรทัด
+      typedRef.current = ''
+      trackingRef.current = true
+      return setSuggestion(null)
+    }
+    if (/^[\x20-\x7e]+$/.test(d)) {
+      typedRef.current += d
+      return recomputeSugg()
+    }
+    // escape sequence / arrows / Tab(native) → desync, หยุดแนะนำจนกว่าจะ Enter
+    trackingRef.current = false
+    setSuggestion(null)
+  }
+
+  const acceptSuggestion = (s: string): void => {
+    const completion = s.slice(typedRef.current.length)
+    if (completion) window.api.terminal.write(sessionId, completion)
+    typedRef.current = s
+    setSuggestion(null)
+    termRef.current?.focus()
+  }
 
   useEffect(() => {
     searchOpenRef.current = searchOpen
@@ -142,10 +212,27 @@ export default function TerminalView({
         if (e.type === 'keydown') setSearchOpen(false)
         return false
       }
+      // Tab → รับ suggestion จากประวัติ ถ้ามี (ไม่งั้นปล่อยให้ shell ทำ completion เอง)
+      if (e.key === 'Tab' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        const s = suggRef.current
+        if (s && trackingRef.current) {
+          if (e.type === 'keydown') acceptSuggestion(s.list[0])
+          return false
+        }
+        return true
+      }
       return true
     })
 
-    const dataDisp = term.onData((d) => window.api.terminal.write(sessionId, d))
+    // โหลดประวัติคำสั่งสำหรับ autocomplete
+    void window.api.sessions.recentCommands().then((h) => {
+      historyRef.current = h
+    })
+
+    const dataDisp = term.onData((d) => {
+      window.api.terminal.write(sessionId, d)
+      handleTyped(d)
+    })
     const offData = window.api.terminal.onData(sessionId, (d) => {
       if (!disposedRef.current) term.write(d)
     })
@@ -360,6 +447,28 @@ export default function TerminalView({
           <ToolBtn title="ปิด (Esc)" onClick={() => setSearchOpen(false)}>
             <X className="size-3.5" />
           </ToolBtn>
+        </div>
+      )}
+
+      {/* autocomplete suggestions จากประวัติคำสั่ง */}
+      {sugg && !searchOpen && (
+        <div className="absolute bottom-2 left-3 z-30 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1.5">
+          {sugg.list.map((s, i) => (
+            <button
+              key={s}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                acceptSuggestion(s)
+              }}
+              className="flex items-center gap-1.5 rounded-lg border border-border bg-card/95 px-2 py-1 font-mono text-xs shadow-lg backdrop-blur transition-colors hover:border-ring"
+            >
+              {i === 0 && (
+                <kbd className="rounded bg-secondary px-1 py-0.5 text-[10px] text-muted-foreground">Tab</kbd>
+              )}
+              <span className="text-muted-foreground">{sugg.prefix}</span>
+              <span className="text-foreground">{s.slice(sugg.prefix.length)}</span>
+            </button>
+          ))}
         </div>
       )}
     </div>

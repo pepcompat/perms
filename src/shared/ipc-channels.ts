@@ -22,6 +22,8 @@ export const IPC = {
   // sessions / history
   sessionsList: 'sessions:list',
   sessionCommands: 'sessions:commands',
+  sessionRecentCommands: 'sessions:recentCommands',
+  sessionRecordCommand: 'sessions:recordCommand',
 
   // ai
   aiChat: 'ai:chat',

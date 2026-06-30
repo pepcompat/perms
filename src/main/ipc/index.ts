@@ -10,7 +10,12 @@ import {
   updateServer,
   deleteServer
 } from '../db/repos/servers-repo'
-import { listSessions, listCommands } from '../db/repos/sessions-repo'
+import {
+  listSessions,
+  listCommands,
+  recentCommands,
+  recordCommand
+} from '../db/repos/sessions-repo'
 import { listRunbooks, saveRunbook, deleteRunbook } from '../db/repos/runbooks-repo'
 import {
   getAppSettings,
@@ -50,6 +55,10 @@ export function registerIpc(): void {
   // ---- sessions / history ----
   ipcMain.handle(IPC.sessionsList, () => listSessions())
   ipcMain.handle(IPC.sessionCommands, (_e, sessionId: string) => listCommands(sessionId))
+  ipcMain.handle(IPC.sessionRecentCommands, () => recentCommands())
+  ipcMain.on(IPC.sessionRecordCommand, (_e, sessionId: string, command: string) => {
+    if (command.trim()) recordCommand(sessionId, command.trim(), 'user')
+  })
 
   // ---- ai ----
   ipcMain.handle(IPC.aiChat, (_e, input: AiChatInput) => {

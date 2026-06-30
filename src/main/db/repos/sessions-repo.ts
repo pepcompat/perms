@@ -117,3 +117,14 @@ export function searchCommands(query: string, limit = 30): CommandRecord[] {
     .all(`%${query}%`, limit) as CommandRow[]
   return rows.map(toCommand)
 }
+
+/** คำสั่งล่าสุดแบบไม่ซ้ำ (สำหรับ autocomplete) */
+export function recentCommands(limit = 400): string[] {
+  const rows = getDb()
+    .prepare(
+      `SELECT command, MAX(ran_at) AS last FROM commands
+       WHERE command <> '' GROUP BY command ORDER BY last DESC LIMIT ?`
+    )
+    .all(limit) as { command: string }[]
+  return rows.map((r) => r.command)
+}

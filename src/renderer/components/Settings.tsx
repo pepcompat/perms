@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { KeyRound, Check, Trash2, ShieldAlert, Loader2, ChevronDown } from 'lucide-react'
+import { KeyRound, Check, Trash2, ShieldCheck, Loader2, ChevronDown } from 'lucide-react'
 import type { AiProvider, AiMode } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
@@ -94,12 +94,14 @@ export default function Settings({
           <DialogDescription>API keys และค่าเริ่มต้นของ AI agent</DialogDescription>
         </DialogHeader>
 
-        {!settings.encryptionAvailable && (
-          <div className="flex items-center gap-2 rounded-md bg-destructive/10 px-3 py-2 text-xs text-destructive">
-            <ShieldAlert className="size-4 shrink-0" />
-            ระบบเข้ารหัสของ OS (safeStorage) ไม่พร้อม — API key/รหัสผ่านอาจเก็บไม่ปลอดภัย
-          </div>
-        )}
+        <div className="flex items-start gap-2 rounded-lg border border-border bg-background/40 px-3 py-2.5 text-xs text-muted-foreground">
+          <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[hsl(var(--success))]" />
+          <span>
+            API key ถูก<span className="text-foreground">เข้ารหัสเก็บในเครื่องคุณ</span>ด้วย Keychain ของ
+            ระบบ (ไม่ส่งออกที่ไหน) — ครั้งแรก macOS อาจถามขออนุญาตเข้าถึง Keychain
+            กด <span className="font-medium text-foreground">“Always Allow”</span> ได้เลย ปลอดภัย
+          </span>
+        </div>
 
         <div className="flex items-center gap-2 text-sm font-medium">
           <KeyRound className="size-4 text-primary" /> AI Providers

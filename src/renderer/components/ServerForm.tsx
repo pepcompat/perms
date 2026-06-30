@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { CheckCircle2, XCircle, Loader2, Plug } from 'lucide-react'
+import { CheckCircle2, XCircle, Loader2, Plug, ShieldCheck } from 'lucide-react'
 import type { ServerRecord, ServerInput, AuthType } from '@shared/types'
 import { useServers } from '../store/useServers'
 import {
@@ -221,6 +221,16 @@ export default function ServerForm({
             <Textarea className="h-16" value={form.notes ?? ''} onChange={(e) => upd('notes', e.target.value)} />
           </Field>
         </div>
+
+        {form.authType !== 'agent' && (
+          <div className="flex items-start gap-2 rounded-lg border border-border bg-background/40 px-3 py-2 text-xs text-muted-foreground">
+            <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-[hsl(var(--success))]" />
+            <span>
+              รหัสผ่าน/คีย์ถูกเข้ารหัสเก็บในเครื่องด้วย Keychain — macOS อาจถามขออนุญาตครั้งแรก
+              กด “Always Allow” ได้เลย
+            </span>
+          </div>
+        )}
 
         {testResult && (
           <div

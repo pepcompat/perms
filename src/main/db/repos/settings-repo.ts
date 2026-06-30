@@ -1,10 +1,5 @@
 import { getDb } from '../index'
-import {
-  isEncryptionAvailable,
-  upsertSecret,
-  deleteSecret,
-  revealSecret
-} from '../../secrets/safe-store'
+import { upsertSecret, deleteSecret, revealSecret } from '../../secrets/safe-store'
 import type { AiProvider, AiMode, AppSettings, AiSettings } from '@shared/types'
 
 const DEFAULT_MODELS: Record<AiProvider, string> = {
@@ -62,7 +57,9 @@ export function getAppSettings(): AppSettings {
   return {
     ai: getAiSettings(),
     theme: getRaw('theme') ?? 'dark',
-    encryptionAvailable: isEncryptionAvailable()
+    // optimistic — ตรวจจริง (และเข้าถึง Keychain) เฉพาะตอนบันทึก/ใช้ secret จริง
+    // เพื่อไม่ให้ macOS เด้งขอ Keychain ตั้งแต่เปิดแอป
+    encryptionAvailable: true
   }
 }
 

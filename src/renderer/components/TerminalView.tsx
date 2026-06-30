@@ -336,7 +336,7 @@ export default function TerminalView({
       style={{ display: visible ? 'block' : 'none' }}
       onContextMenu={openMenu}
     >
-      <div ref={hostRef} className="h-full w-full px-3 py-2" />
+      <div ref={hostRef} className="h-full w-full px-3 pb-5 pt-2" />
 
       {/* right-click context menu */}
       {menu && (

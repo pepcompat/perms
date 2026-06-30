@@ -1,7 +1,7 @@
 import { BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type { ToolSchema } from './providers/types'
-import { execInSession } from '../terminal/session-manager'
+import { execInSession, runInTerminal } from '../terminal/session-manager'
 import { listServers } from '../db/repos/servers-repo'
 import { getSession, searchCommands } from '../db/repos/sessions-repo'
 import { saveKnowledge, searchKnowledge } from '../db/repos/knowledge-repo'
@@ -10,11 +10,23 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'run_command',
     description:
-      'Run a shell command in the currently active terminal session (SSH or local) and return its stdout/stderr and exit code. Use for inspecting and operating the server.',
+      'Run a NON-INTERACTIVE shell command and get its stdout/stderr + exit code back. Runs in a fresh non-TTY shell each time (state like cd/env does NOT persist). Use for quick inspection/diagnostics (ls, df, systemctl status, cat, grep). Do NOT use for interactive programs that prompt for input or need a TTY — use run_in_terminal for those.',
     parameters: {
       type: 'object',
       properties: {
         command: { type: 'string', description: 'The shell command to execute' }
+      },
+      required: ['command']
+    }
+  },
+  {
+    name: 'run_in_terminal',
+    description:
+      "Type a command into the user's REAL interactive terminal (with a TTY) so it runs live and the user can see it and respond to any prompts. Use for: interactive installers that ask y/n (e.g. apt install, bash install scripts), TUI apps (vim, htop, top, less), long-running/streaming processes, or command sequences that need persistent shell state (cd, export, source). NOTE: you do NOT get the output back — the user watches it. After it likely finishes, you can run a quick read-only run_command to verify the result.",
+    parameters: {
+      type: 'object',
+      properties: {
+        command: { type: 'string', description: 'The command to type into the terminal' }
       },
       required: ['command']
     }
@@ -65,7 +77,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
 ]
 
 /** ชื่อ tool ที่ "ต้องขออนุมัติ" ในโหมด approve และ "ห้ามรัน" ในโหมด suggest */
-export const MUTATING_TOOLS = new Set(['run_command'])
+export const MUTATING_TOOLS = new Set(['run_command', 'run_in_terminal'])
 
 export interface ToolContext {
   sessionId: string | null
@@ -86,6 +98,15 @@ export async function executeTool(
       if (!command) return 'Error: empty command'
       const res = await execInSession(ctx.sessionId, command, 'ai')
       return `exit_code=${res.exitCode}\n${res.output.slice(0, 6000)}`
+    }
+    case 'run_in_terminal': {
+      if (!ctx.sessionId) {
+        return 'Error: no active terminal session. Ask the user to open a session first.'
+      }
+      const command = String(args.command ?? '')
+      if (!command) return 'Error: empty command'
+      runInTerminal(ctx.sessionId, command)
+      return 'Command sent to the interactive terminal. The user can see it and respond to any prompts. Output is not captured here — verify later with a quick run_command if needed.'
     }
     case 'list_servers': {
       const servers = listServers().map((s) => ({

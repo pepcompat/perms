@@ -85,6 +85,18 @@ export async function execInSession(
   return result
 }
 
+/**
+ * ใช้โดย AI agent: พิมพ์คำสั่งลง terminal จริง (interactive) ที่ user เห็น
+ * เหมาะกับ installer/TUI/คำสั่งที่ถาม y/n หรือคำสั่งที่ต้องคงสถานะ shell
+ * (cd, source ...) — user ตอบโต้เองได้ แต่ AI จะไม่ได้ output กลับมาตรง ๆ
+ */
+export function runInTerminal(id: string, command: string): void {
+  const s = sessions.get(id)
+  if (!s) throw new Error('Session not found or not active')
+  s.write(command + '\n')
+  recordCommand(id, command, 'ai', null, null)
+}
+
 export function disposeAll(): void {
   for (const [, s] of sessions) s.dispose()
   sessions.clear()

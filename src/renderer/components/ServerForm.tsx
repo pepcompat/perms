@@ -1,8 +1,15 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { CheckCircle2, XCircle, Loader2, Plug, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, XCircle, Loader2, Plug, ShieldCheck, KeyRound, FolderOpen } from 'lucide-react'
 import type { ServerRecord, ServerInput, AuthType } from '@shared/types'
 import { useServers } from '../store/useServers'
 import { toast } from '../store/useToast'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuItem
+} from './ui/dropdown-menu'
 import {
   Dialog,
   DialogContent,
@@ -48,6 +55,7 @@ export default function ServerForm({
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
   const [busy, setBusy] = useState(false)
   const [testing, setTesting] = useState(false)
+  const [sshKeys, setSshKeys] = useState<string[]>([])
   // record ที่กำลังแก้อยู่ (id เดิมถ้า edit, หรือ id ที่เพิ่งสร้างจากการกดทดสอบ)
   const serverIdRef = useRef<string | null>(editing?.id ?? null)
   // true = สร้างใหม่ในรอบนี้และยังไม่กดบันทึก → ถ้าปิดโดยไม่บันทึกให้ลบทิ้ง
@@ -79,6 +87,18 @@ export default function ServerForm({
 
   const upd = <K extends keyof ServerInput>(k: K, v: ServerInput[K]): void =>
     setForm((f) => ({ ...f, [k]: v }))
+
+  // โหลด SSH keys ในเครื่องเมื่อเลือก auth แบบ key
+  useEffect(() => {
+    if (open && form.authType === 'key' && sshKeys.length === 0) {
+      void window.api.servers.listKeys().then(setSshKeys)
+    }
+  }, [open, form.authType, sshKeys.length])
+
+  const browseKey = async (): Promise<void> => {
+    const path = await window.api.servers.pickKey()
+    if (path) upd('privateKeyPath', path)
+  }
 
   // สร้างครั้งเดียว แล้วหลังจากนั้น update record เดิมเสมอ (กันซ้ำ)
   const persist = async (): Promise<ServerRecord> => {
@@ -180,11 +200,43 @@ export default function ServerForm({
           {form.authType === 'key' && (
             <>
               <Field className="col-span-2" label="Private key path">
-                <Input
-                  placeholder="~/.ssh/id_ed25519"
-                  value={form.privateKeyPath ?? ''}
-                  onChange={(e) => upd('privateKeyPath', e.target.value)}
-                />
+                <div className="flex gap-2">
+                  <Input
+                    className="flex-1"
+                    placeholder="~/.ssh/id_ed25519"
+                    value={form.privateKeyPath ?? ''}
+                    onChange={(e) => upd('privateKeyPath', e.target.value)}
+                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" title="เลือก key ในเครื่อง">
+                        <KeyRound className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="max-h-72 min-w-[17rem] overflow-y-auto">
+                      <DropdownMenuLabel>SSH keys ใน ~/.ssh</DropdownMenuLabel>
+                      {sshKeys.map((k) => (
+                        <DropdownMenuItem
+                          key={k}
+                          checked={form.privateKeyPath === k}
+                          onSelect={() => upd('privateKeyPath', k)}
+                          className="font-mono text-xs"
+                        >
+                          {k}
+                        </DropdownMenuItem>
+                      ))}
+                      {sshKeys.length === 0 && (
+                        <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                          ไม่พบ key ใน ~/.ssh
+                        </div>
+                      )}
+                      <div className="my-1 h-px bg-border" />
+                      <DropdownMenuItem onSelect={() => void browseKey()}>
+                        <FolderOpen className="size-3.5" /> เรียกดูไฟล์อื่น…
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </Field>
               <Field className="col-span-2" label="หรือวางเนื้อหา private key (เก็บแบบเข้ารหัส)">
                 <Textarea

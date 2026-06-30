@@ -8,6 +8,8 @@ export const IPC = {
   serversUpdate: 'servers:update',
   serversDelete: 'servers:delete',
   serversTest: 'servers:test',
+  sshListKeys: 'ssh:listKeys',
+  sshPickKey: 'ssh:pickKey',
 
   // terminal
   terminalOpen: 'terminal:open',

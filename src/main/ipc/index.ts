@@ -25,6 +25,7 @@ import {
 } from '../db/repos/settings-repo'
 import { listMessages } from '../db/repos/ai-repo'
 import { testConnection } from '../ssh/connect'
+import { listPrivateKeys, pickKeyFile } from '../ssh/keys'
 import {
   openSession,
   writeSession,
@@ -43,6 +44,8 @@ export function registerIpc(): void {
   )
   ipcMain.handle(IPC.serversDelete, (_e, id: string) => deleteServer(id))
   ipcMain.handle(IPC.serversTest, (_e, id: string) => testConnection(id))
+  ipcMain.handle(IPC.sshListKeys, () => listPrivateKeys())
+  ipcMain.handle(IPC.sshPickKey, () => pickKeyFile())
 
   // ---- terminal ----
   ipcMain.handle(IPC.terminalOpen, (_e, input: OpenSessionInput) => openSession(input))

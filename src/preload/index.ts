@@ -36,7 +36,9 @@ const api = {
       ipcRenderer.invoke(IPC.serversUpdate, id, input),
     remove: (id: string): Promise<void> => ipcRenderer.invoke(IPC.serversDelete, id),
     test: (id: string): Promise<{ ok: boolean; error?: string }> =>
-      ipcRenderer.invoke(IPC.serversTest, id)
+      ipcRenderer.invoke(IPC.serversTest, id),
+    listKeys: (): Promise<string[]> => ipcRenderer.invoke(IPC.sshListKeys),
+    pickKey: (): Promise<string | null> => ipcRenderer.invoke(IPC.sshPickKey)
   },
 
   terminal: {

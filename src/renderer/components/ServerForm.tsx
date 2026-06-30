@@ -1,5 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
-import { CheckCircle2, XCircle, Loader2, Plug, ShieldCheck, KeyRound, FolderOpen } from 'lucide-react'
+import {
+  CheckCircle2,
+  XCircle,
+  Loader2,
+  Plug,
+  ShieldCheck,
+  KeyRound,
+  FolderOpen,
+  ChevronDown
+} from 'lucide-react'
 import type { ServerRecord, ServerInput, AuthType } from '@shared/types'
 import { useServers } from '../store/useServers'
 import { toast } from '../store/useToast'
@@ -38,8 +47,6 @@ const EMPTY: ServerInput = {
   color: null,
   notes: ''
 }
-
-const COLORS = ['#9b7ef0', '#60a5fa', '#34d399', '#fbbf24', '#f87171', '#f472b6']
 
 export default function ServerForm({
   editing,
@@ -87,6 +94,10 @@ export default function ServerForm({
 
   const upd = <K extends keyof ServerInput>(k: K, v: ServerInput[K]): void =>
     setForm((f) => ({ ...f, [k]: v }))
+
+  const existingGroups = [
+    ...new Set(servers.map((s) => s.groupName).filter((g): g is string => !!g))
+  ].sort()
 
   // โหลด SSH keys ในเครื่องเมื่อเลือก auth แบบ key
   useEffect(() => {
@@ -256,7 +267,35 @@ export default function ServerForm({
           )}
 
           <Field label="Group">
-            <Input value={form.groupName ?? ''} onChange={(e) => upd('groupName', e.target.value)} placeholder="production" />
+            <div className="flex gap-2">
+              <Input
+                className="flex-1"
+                value={form.groupName ?? ''}
+                onChange={(e) => upd('groupName', e.target.value)}
+                placeholder="production"
+              />
+              {existingGroups.length > 0 && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon" title="เลือก group ที่มี">
+                      <ChevronDown className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="max-h-60 min-w-[12rem] overflow-y-auto">
+                    <DropdownMenuLabel>Group ที่มีอยู่</DropdownMenuLabel>
+                    {existingGroups.map((g) => (
+                      <DropdownMenuItem
+                        key={g}
+                        checked={form.groupName === g}
+                        onSelect={() => upd('groupName', g)}
+                      >
+                        {g}
+                      </DropdownMenuItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
+            </div>
           </Field>
           <Field label="Jump host / bastion">
             <Select
@@ -277,23 +316,6 @@ export default function ServerForm({
                   ))}
               </SelectContent>
             </Select>
-          </Field>
-
-          <Field className="col-span-2" label="สี (tag)">
-            <div className="flex gap-2">
-              {COLORS.map((c) => (
-                <button
-                  key={c}
-                  type="button"
-                  onClick={() => upd('color', form.color === c ? null : c)}
-                  className={cn(
-                    'size-6 rounded-full ring-offset-2 ring-offset-card transition-all',
-                    form.color === c ? 'ring-2 ring-ring' : 'hover:scale-110'
-                  )}
-                  style={{ background: c }}
-                />
-              ))}
-            </div>
           </Field>
 
           <Field className="col-span-2" label="Notes">

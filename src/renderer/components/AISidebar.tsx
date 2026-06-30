@@ -18,10 +18,11 @@ import {
   ChevronDown,
   RotateCcw
 } from 'lucide-react'
-import type { AiMode, AiProvider, AiStreamEvent } from '@shared/types'
+import type { AiMode, AiProvider } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
+import { useAiChats, EMPTY_THREAD } from '../store/useAiChats'
 import { MODEL_PRESETS } from '../lib/models'
 import Markdown from './Markdown'
 import { Button } from './ui/button'
@@ -34,17 +35,6 @@ import {
   DropdownMenuItem
 } from './ui/dropdown-menu'
 import { cn } from '../lib/utils'
-
-interface ChatItem {
-  role: 'user' | 'assistant'
-  text: string
-  tools?: { name: string; args: string; result?: string }[]
-}
-
-interface PendingApproval {
-  callId: string
-  command: string
-}
 
 const PROVIDER_OPTS: { id: AiProvider; label: string }[] = [
   { id: 'openai', label: 'OpenAI' },
@@ -67,18 +57,24 @@ const MODE_LABEL: Record<AiMode, string> = {
 export default function AISidebar({ width }: { width: number }): JSX.Element {
   const { settings } = useSettings()
   const { activeId } = useTabs()
+  const chatKey = activeId ?? '__none__' // แต่ละ tab/session มีบทสนทนาของตัวเอง
   const [provider, setProvider] = useState<AiProvider>('anthropic')
   const [mode, setMode] = useState<AiMode>('approve')
   const [model, setModel] = useState('')
-  const [items, setItems] = useState<ChatItem[]>([])
-  const [input, setInput] = useState('')
-  const [running, setRunning] = useState(false)
-  const [approval, setApproval] = useState<PendingApproval | null>(null)
-  const reqRef = useRef<string | null>(null)
-  const offRef = useRef<(() => void) | null>(null)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const draftSeq = useAiDraft((s) => s.seq)
+
+  // บทสนทนาของ tab ปัจจุบัน (per-session)
+  const thread = useAiChats((s) => s.threads[chatKey]) ?? EMPTY_THREAD
+  const send = useAiChats((s) => s.send)
+  const setInput = useAiChats((s) => s.setInput)
+  const appendInput = useAiChats((s) => s.appendInput)
+  const clearChat = useAiChats((s) => s.clear)
+  const approveAction = useAiChats((s) => s.approve)
+  const cancelAction = useAiChats((s) => s.cancel)
+
+  const { items, input, running, approval } = thread
 
   useEffect(() => {
     if (settings) {
@@ -88,24 +84,21 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
     }
   }, [settings])
 
-  // เปลี่ยน provider → ใช้โมเดล default ของ provider นั้น
   const pickProvider = (p: AiProvider): void => {
     setProvider(p)
     if (settings) setModel(settings.ai.models[p])
   }
-
-  // เลือกโมเดล + จำเป็น default ของ provider นี้
   const pickModel = (m: string): void => {
     setModel(m)
     void window.api.settings.updateAi({ models: { [provider]: m } })
   }
 
-  // รับข้อความที่ "ส่งเข้า AI" จาก terminal (เติมในช่อง input + focus)
+  // ข้อความที่ "ส่งเข้า AI" จาก terminal → เติมในช่อง input ของ tab ปัจจุบัน
   useEffect(() => {
     if (draftSeq === 0) return
-    const text = useAiDraft.getState().text
-    setInput((cur) => (cur ? cur + '\n' + text : text))
+    appendInput(chatKey, useAiDraft.getState().text)
     inputRef.current?.focus()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draftSeq])
 
   useEffect(() => {
@@ -114,70 +107,11 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
 
   const configured = settings?.ai.configured[provider]
 
-  const send = async (): Promise<void> => {
-    if (!input.trim() || running) return
-    const message = input.trim()
-    setInput('')
-    setItems((prev) => [...prev, { role: 'user', text: message }, { role: 'assistant', text: '' }])
-    setRunning(true)
-
-    // สร้าง requestId เอง + subscribe stream "ก่อน" เริ่มงาน — กัน event แรก (รวม error) หาย
-    const requestId = crypto.randomUUID()
-    reqRef.current = requestId
-    offRef.current = window.api.ai.onStream(requestId, handleEvent)
-    await window.api.ai.chat({
-      requestId,
-      sessionId: activeId,
-      provider,
-      model: model || undefined,
-      mode,
-      message
-    })
+  const doSend = (): void => {
+    void send(chatKey, activeId, { provider, model: model || undefined, mode })
   }
-
-  const handleEvent = (ev: AiStreamEvent): void => {
-    setItems((prev) => {
-      const next = [...prev]
-      const last = next[next.length - 1]
-      if (!last || last.role !== 'assistant') return prev
-      if (ev.type === 'text') last.text += ev.delta
-      else if (ev.type === 'tool_call') {
-        last.tools = last.tools ?? []
-        last.tools.push({ name: ev.call.name, args: JSON.stringify(ev.call.arguments) })
-      } else if (ev.type === 'tool_result') {
-        const t = last.tools?.[last.tools.length - 1]
-        if (t) t.result = ev.result.slice(0, 800)
-      }
-      return next
-    })
-
-    if (ev.type === 'approval_request') {
-      setApproval({ callId: ev.callId, command: ev.command })
-    } else if (ev.type === 'done' || ev.type === 'error') {
-      if (ev.type === 'error') {
-        setItems((prev) => {
-          const next = [...prev]
-          const last = next[next.length - 1]
-          if (last) last.text += `\n\n⚠️ ${ev.message}`
-          return next
-        })
-      }
-      setRunning(false)
-      offRef.current?.()
-    }
-  }
-
-  const respondApproval = (approved: boolean): void => {
-    if (approval) {
-      window.api.ai.approve(approval.callId, approved)
-      setApproval(null)
-    }
-  }
-
-  const cancel = (): void => {
-    if (reqRef.current) window.api.ai.cancel(reqRef.current)
-    setRunning(false)
-  }
+  const respondApproval = (approved: boolean): void => approveAction(chatKey, approved)
+  const cancel = (): void => cancelAction(chatKey)
 
   return (
     <div className="flex h-full shrink-0 flex-col border-l border-border bg-sidebar" style={{ width }}>
@@ -188,7 +122,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
         <span className="text-sm font-semibold tracking-tight">AI Agent</span>
         {items.length > 0 && (
           <button
-            onClick={() => setItems([])}
+            onClick={() => clearChat(chatKey)}
             title="ล้างแชท"
             className="no-drag ml-auto flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
@@ -286,11 +220,11 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
             className="max-h-44 min-h-[54px] w-full resize-none border-0 bg-transparent px-3.5 py-3 shadow-none focus-visible:ring-0"
             placeholder="พิมพ์คำถามถึง AI… (รองรับ Markdown)"
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => setInput(chatKey, e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault()
-                void send()
+                doSend()
               }
             }}
           />
@@ -394,7 +328,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                 <Button
                   size="icon-sm"
                   className="size-8 shrink-0 rounded-lg"
-                  onClick={send}
+                  onClick={doSend}
                   disabled={!configured || !input.trim()}
                 >
                   <Send className="size-3.5" />

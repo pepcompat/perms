@@ -8,7 +8,8 @@ import {
   History,
   BookText,
   Settings as SettingsIcon,
-  Loader2
+  Loader2,
+  ChevronRight
 } from 'lucide-react'
 import type { ServerRecord } from '@shared/types'
 import { useServers } from '../store/useServers'
@@ -32,9 +33,27 @@ export default function ServerList({
 }): JSX.Element {
   const { servers, refresh } = useServers()
   const { addTab } = useTabs()
+  const tabs = useTabs((s) => s.tabs)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<ServerRecord | null>(null)
   const [connecting, setConnecting] = useState<string | null>(null)
+  const [collapsed, setCollapsed] = useState<Set<string>>(() => {
+    try {
+      return new Set(JSON.parse(localStorage.getItem('ui.collapsedGroups') || '[]'))
+    } catch {
+      return new Set()
+    }
+  })
+
+  const isConnected = (id: string): boolean => tabs.some((t) => t.serverId === id)
+  const toggleGroup = (g: string): void =>
+    setCollapsed((prev) => {
+      const next = new Set(prev)
+      if (next.has(g)) next.delete(g)
+      else next.add(g)
+      localStorage.setItem('ui.collapsedGroups', JSON.stringify([...next]))
+      return next
+    })
 
   useEffect(() => {
     void refresh()
@@ -69,8 +88,6 @@ export default function ServerList({
     ;(acc[g] ||= []).push(s)
     return acc
   }, {})
-
-  const dot = (c: string | null): string => c || 'hsl(var(--primary))'
 
   return (
     <div className="flex h-full shrink-0 flex-col bg-sidebar" style={{ width }}>
@@ -108,19 +125,32 @@ export default function ServerList({
 
       <div className="flex-1 overflow-y-auto p-2">
         {Object.entries(groups).map(([group, list]) => (
-          <div key={group} className="mb-4">
-            <div className="mb-1.5 px-2 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70">
-              {group}
-            </div>
-            {list.map((s) => (
+          <div key={group} className="mb-3">
+            <button
+              onClick={() => toggleGroup(group)}
+              className="mb-1 flex w-full items-center gap-1 rounded px-1.5 py-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70 transition-colors hover:text-muted-foreground"
+            >
+              <ChevronRight
+                className={cn('size-3 transition-transform', !collapsed.has(group) && 'rotate-90')}
+              />
+              <span className="truncate">{group}</span>
+              <span className="ml-auto rounded-full bg-secondary px-1.5 text-[9px] text-muted-foreground">
+                {list.length}
+              </span>
+            </button>
+            {!collapsed.has(group) &&
+              list.map((s) => (
               <div
                 key={s.id}
                 onClick={() => connect(s)}
                 className="group mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent"
               >
                 <span
-                  className="size-2 shrink-0 rounded-full ring-2 ring-background"
-                  style={{ background: dot(s.color) }}
+                  className={cn(
+                    'size-2 shrink-0 rounded-full ring-2 ring-background',
+                    isConnected(s.id) ? 'bg-[hsl(var(--success))]' : 'bg-muted-foreground/40'
+                  )}
+                  title={isConnected(s.id) ? 'เชื่อมต่ออยู่' : 'ไม่ได้เชื่อมต่อ'}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium leading-tight">{s.name}</div>

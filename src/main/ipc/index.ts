@@ -66,7 +66,8 @@ export function registerIpc(): void {
 
   // ---- ai ----
   ipcMain.handle(IPC.aiChat, (_e, input: AiChatInput) => {
-    const requestId = nanoid()
+    // ใช้ requestId จาก renderer ถ้ามี (renderer subscribe ก่อนแล้ว → ไม่พลาด event แรก)
+    const requestId = input.requestId || nanoid()
     // ไม่ await — สตรีมผ่าน event channel แทน
     void runChat(requestId, input)
     return requestId

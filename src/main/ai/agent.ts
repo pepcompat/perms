@@ -31,7 +31,10 @@ function emit(requestId: string, event: AiStreamEvent): void {
 
 function makeProvider(provider: AiProvider): Provider {
   const apiKey = revealAiKey(provider)
-  if (!apiKey) throw new Error(`No API key configured for ${provider}. Add it in Settings.`)
+  if (!apiKey)
+    throw new Error(
+      `ใช้ API key ของ ${provider} ไม่ได้ — อาจยังไม่ได้ตั้ง หรือถอดรหัสไม่ได้ (Keychain เปลี่ยน) กรุณาใส่ API key ใหม่ใน Settings`
+    )
   switch (provider) {
     case 'openai':
       return new OpenAiProvider(apiKey)
@@ -200,6 +203,7 @@ export async function runChat(requestId: string, input: AiChatInput): Promise<vo
 
     emit(requestId, { type: 'done' })
   } catch (err) {
+    console.error('[ai] error:', err instanceof Error ? err.message : err)
     const message = err instanceof Error ? err.message : String(err)
     emit(requestId, { type: 'error', message })
   } finally {

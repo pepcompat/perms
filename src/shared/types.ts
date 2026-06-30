@@ -132,6 +132,8 @@ export interface AiChatInput {
   model?: string
   mode?: AiMode
   message: string
+  /** renderer สร้าง id เองเพื่อ subscribe stream ก่อนเริ่มงาน (กัน event หาย) */
+  requestId?: string
 }
 
 // ---- auto-update ----

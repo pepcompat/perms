@@ -44,7 +44,12 @@ export function revealSecret(id: string | null): string | null {
     | { ciphertext: Buffer }
     | undefined
   if (!row) return null
-  return safeStorage.decryptString(row.ciphertext)
+  try {
+    return safeStorage.decryptString(row.ciphertext)
+  } catch {
+    // ถอดรหัสไม่ได้ (Keychain key เปลี่ยน เช่นจาก build/ลายเซ็นต่างกัน) — คืน null แทน crash
+    return null
+  }
 }
 
 export function deleteSecret(id: string | null): void {

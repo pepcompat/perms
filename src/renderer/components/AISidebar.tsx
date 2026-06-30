@@ -121,15 +121,18 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
     setItems((prev) => [...prev, { role: 'user', text: message }, { role: 'assistant', text: '' }])
     setRunning(true)
 
-    const requestId = await window.api.ai.chat({
+    // สร้าง requestId เอง + subscribe stream "ก่อน" เริ่มงาน — กัน event แรก (รวม error) หาย
+    const requestId = crypto.randomUUID()
+    reqRef.current = requestId
+    offRef.current = window.api.ai.onStream(requestId, handleEvent)
+    await window.api.ai.chat({
+      requestId,
       sessionId: activeId,
       provider,
       model: model || undefined,
       mode,
       message
     })
-    reqRef.current = requestId
-    offRef.current = window.api.ai.onStream(requestId, handleEvent)
   }
 
   const handleEvent = (ev: AiStreamEvent): void => {

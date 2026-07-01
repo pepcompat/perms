@@ -9,6 +9,7 @@ import { TOOL_SCHEMAS, MUTATING_TOOLS, executeTool } from './tools'
 import { getAiSettings, revealAiKey } from '../db/repos/settings-repo'
 import { appendMessage, listMessages } from '../db/repos/ai-repo'
 import { getSession } from '../db/repos/sessions-repo'
+import { getServer } from '../db/repos/servers-repo'
 import { searchKnowledge, bumpUseCount } from '../db/repos/knowledge-repo'
 
 const MAX_STEPS = 12
@@ -150,11 +151,26 @@ export async function runChat(requestId: string, input: AiChatInput): Promise<vo
       toolCalls: null
     })
 
+    // บอก AI ว่าตอนนี้อยู่ session ไหน (ตั้งแต่ต้น จะได้ไม่ถาม local/ssh) + ย้ำ scope
+    const session = sessionId ? getSession(sessionId) : null
+    const serverId = session?.serverId ?? null
+    let sessionCtx: string
+    if (!session) {
+      sessionCtx =
+        'CURRENT SESSION: none is open. If the user wants commands run, tell them to open a server (SSH) or a local terminal first — do not ask which type otherwise.'
+    } else if (session.kind === 'local') {
+      sessionCtx =
+        "CURRENT SESSION: a LOCAL shell on the user's own machine. You already know this — NEVER ask whether it's local or SSH. run_command and run_in_terminal always run in THIS session only; never operate on other servers/sessions."
+    } else {
+      const srv = serverId ? getServer(serverId) : null
+      const where = srv ? `${srv.name} (${srv.username}@${srv.host}:${srv.port})` : session.title
+      sessionCtx = `CURRENT SESSION: an SSH connection to ${where}. Commands run on THIS server only. You already know where you are — NEVER ask local vs SSH, and never operate on other servers/sessions.`
+    }
+    let systemPrompt = `${SYSTEM_PROMPT}\n\n${sessionCtx}`
+
     // recall: ดึงความรู้ที่เกี่ยวข้อง → ต่อท้าย system prompt (ไม่แทรกใน messages
     // เพราะ provider บางเจ้าข้าม role system) ทำครั้งเดียวต่อ runChat ไม่ persist
-    const serverId = sessionId ? (getSession(sessionId)?.serverId ?? null) : null
     const recalled = searchKnowledge(input.message, { serverId, limit: 5 })
-    let systemPrompt = SYSTEM_PROMPT
     if (recalled.length) {
       bumpUseCount(recalled.map((k) => k.id))
       const block = recalled

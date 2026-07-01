@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Server as ServerIcon,
   Plus,
@@ -35,6 +35,8 @@ export default function ServerList({
   const { servers, refresh } = useServers()
   const { addTab } = useTabs()
   const tabs = useTabs((s) => s.tabs)
+  const setActive = useTabs((s) => s.setActive)
+  const lastActiveByServer = useTabs((s) => s.lastActiveByServer)
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<ServerRecord | null>(null)
   const [connecting, setConnecting] = useState<string | null>(null)
@@ -76,6 +78,35 @@ export default function ServerList({
   const openLocal = async (): Promise<void> => {
     const res = await window.api.terminal.open({ cols: 80, rows: 24 })
     addTab({ sessionId: res.sessionId, title: res.title, kind: res.kind, serverId: null })
+  }
+
+  // คลิกเดียว: ไปที่ tab ล่าสุดของ server นั้น (ถ้ายังไม่มี tab → connect ให้)
+  const focusOrConnect = (s: ServerRecord): void => {
+    const own = tabs.filter((t) => t.serverId === s.id)
+    if (own.length === 0) {
+      void connect(s)
+      return
+    }
+    const last = lastActiveByServer[s.id]
+    const target = own.some((t) => t.sessionId === last) ? last : own[own.length - 1].sessionId
+    setActive(target)
+  }
+
+  // แยกคลิกเดียว vs double click (double = connect tab ใหม่เสมอ)
+  const clickTimer = useRef<number | null>(null)
+  const onCardClick = (s: ServerRecord): void => {
+    if (clickTimer.current) return // เป็นคลิกที่ 2 ของ double — ปล่อยให้ onDoubleClick จัดการ
+    clickTimer.current = window.setTimeout(() => {
+      clickTimer.current = null
+      focusOrConnect(s)
+    }, 220)
+  }
+  const onCardDblClick = (s: ServerRecord): void => {
+    if (clickTimer.current) {
+      clearTimeout(clickTimer.current)
+      clickTimer.current = null
+    }
+    void connect(s)
   }
 
   const remove = async (s: ServerRecord): Promise<void> => {
@@ -144,7 +175,9 @@ export default function ServerList({
               list.map((s) => (
               <div
                 key={s.id}
-                onClick={() => connect(s)}
+                onClick={() => onCardClick(s)}
+                onDoubleClick={() => onCardDblClick(s)}
+                title="คลิก: ไป tab ล่าสุด · ดับเบิลคลิก: เปิด tab ใหม่"
                 className="group mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent"
               >
                 <span

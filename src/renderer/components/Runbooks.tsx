@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import { Play, Pencil, Trash2, BookText, Plus } from 'lucide-react'
+import { Play, Pencil, Trash2, BookText, Plus, Variable } from 'lucide-react'
 import type { RunbookRecord, RunbookStep } from '@shared/types'
+import { extractPlaceholdersAll, fillTemplate } from '@shared/template'
 import { useTabs } from '../store/useTabs'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
@@ -9,6 +10,20 @@ import { Textarea } from './ui/textarea'
 import { Label } from './ui/label'
 import { Badge } from './ui/badge'
 import { Separator } from './ui/separator'
+
+const paramStoreKey = (id: string): string => `runbook.params.${id}`
+
+function loadSavedParams(id: string, names: string[]): Record<string, string> {
+  let saved: Record<string, string> = {}
+  try {
+    saved = JSON.parse(localStorage.getItem(paramStoreKey(id)) || '{}')
+  } catch {
+    /* ค่าเสีย — เริ่มใหม่ */
+  }
+  const out: Record<string, string> = {}
+  for (const n of names) out[n] = typeof saved[n] === 'string' ? saved[n] : ''
+  return out
+}
 
 export default function Runbooks({
   open,
@@ -22,6 +37,11 @@ export default function Runbooks({
   const [editing, setEditing] = useState<RunbookRecord | null>(null)
   const [name, setName] = useState('')
   const [stepsText, setStepsText] = useState('')
+
+  // ฟอร์มกรอกค่าพารามิเตอร์ตอนจะรัน
+  const [paramRb, setParamRb] = useState<RunbookRecord | null>(null)
+  const [paramNames, setParamNames] = useState<string[]>([])
+  const [paramValues, setParamValues] = useState<Record<string, string>>({})
 
   const load = (): void => {
     void window.api.runbooks.list().then(setRunbooks)
@@ -52,81 +72,178 @@ export default function Runbooks({
     load()
   }
 
+  // ส่งคำสั่งเข้า terminal (แทนค่า placeholder ถ้ามี)
+  const execute = (rb: RunbookRecord, values: Record<string, string>): void => {
+    if (!activeId) return
+    for (const step of rb.steps) {
+      window.api.terminal.write(activeId, fillTemplate(step.command, values) + '\n')
+    }
+    onClose()
+  }
+
   const run = (rb: RunbookRecord): void => {
     if (!activeId) {
       alert('เปิด terminal session ก่อนถึงจะรัน runbook ได้')
       return
     }
-    for (const step of rb.steps) window.api.terminal.write(activeId, step.command + '\n')
-    onClose()
+    const names = extractPlaceholdersAll(rb.steps.map((s) => s.command))
+    if (names.length === 0) {
+      execute(rb, {})
+      return
+    }
+    // มีช่องให้กรอก → เปิดฟอร์ม (เติมค่าล่าสุดที่เคยกรอก)
+    setParamRb(rb)
+    setParamNames(names)
+    setParamValues(loadSavedParams(rb.id, names))
   }
 
+  const runWithParams = (): void => {
+    if (!paramRb) return
+    try {
+      localStorage.setItem(paramStoreKey(paramRb.id), JSON.stringify(paramValues))
+    } catch {
+      /* localStorage เต็ม — ข้ามการจำค่า */
+    }
+    const rb = paramRb
+    setParamRb(null)
+    execute(rb, paramValues)
+  }
+
+  const allFilled = paramNames.every((n) => (paramValues[n] ?? '').trim() !== '')
+
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="flex h-[72vh] max-w-2xl flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <BookText className="size-4 text-primary" /> Runbooks
-          </DialogTitle>
-          <DialogDescription>ชุดคำสั่งที่บันทึกไว้ใช้ซ้ำ</DialogDescription>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+        <DialogContent className="flex h-[72vh] max-w-2xl flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BookText className="size-4 text-primary" /> Runbooks
+            </DialogTitle>
+            <DialogDescription>ชุดคำสั่งที่บันทึกไว้ใช้ซ้ำ</DialogDescription>
+          </DialogHeader>
 
-        <div className="-mr-2 flex-1 space-y-2 overflow-y-auto pr-2">
-          {runbooks.map((rb) => (
-            <div
-              key={rb.id}
-              className="flex items-center justify-between rounded-xl border border-border bg-background/40 p-3"
-            >
-              <div className="min-w-0">
-                <div className="truncate text-sm font-medium">{rb.name}</div>
-                <Badge variant="outline" className="mt-1">
-                  {rb.steps.length} คำสั่ง
-                </Badge>
-              </div>
-              <div className="flex gap-1.5">
-                <Button size="sm" onClick={() => run(rb)}>
-                  <Play className="size-3.5" /> รัน
-                </Button>
-                <Button variant="outline" size="icon-sm" onClick={() => startEdit(rb)}>
-                  <Pencil className="size-3.5" />
-                </Button>
-                <Button variant="outline" size="icon-sm" onClick={() => remove(rb.id)}>
-                  <Trash2 className="size-3.5" />
-                </Button>
-              </div>
-            </div>
-          ))}
-          {runbooks.length === 0 && (
-            <div className="py-8 text-center text-xs text-muted-foreground">ยังไม่มี runbook</div>
-          )}
-        </div>
-
-        <Separator />
-
-        <div className="space-y-2.5">
-          <div className="text-sm font-medium">{editing ? 'แก้ไข runbook' : 'สร้างใหม่'}</div>
-          <Input placeholder="ชื่อ runbook" value={name} onChange={(e) => setName(e.target.value)} />
-          <div className="flex flex-col gap-1.5">
-            <Label>คำสั่ง (บรรทัดละ 1 คำสั่ง)</Label>
-            <Textarea
-              className="h-24 font-mono text-xs"
-              placeholder={'systemctl status nginx\ndf -h\nfree -m'}
-              value={stepsText}
-              onChange={(e) => setStepsText(e.target.value)}
-            />
-          </div>
-          <div className="flex justify-end gap-2">
-            {editing && (
-              <Button variant="ghost" onClick={() => startEdit(null)}>
-                ยกเลิก
-              </Button>
+          <div className="-mr-2 flex-1 space-y-2 overflow-y-auto pr-2">
+            {runbooks.map((rb) => {
+              const params = extractPlaceholdersAll(rb.steps.map((s) => s.command))
+              return (
+                <div
+                  key={rb.id}
+                  className="flex items-center justify-between rounded-xl border border-border bg-background/40 p-3"
+                >
+                  <div className="min-w-0">
+                    <div className="truncate text-sm font-medium">{rb.name}</div>
+                    <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                      <Badge variant="outline">{rb.steps.length} คำสั่ง</Badge>
+                      {params.length > 0 && (
+                        <Badge variant="secondary" className="gap-1">
+                          <Variable className="size-3" />
+                          {params.length} ช่องกรอก
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-1.5">
+                    <Button size="sm" onClick={() => run(rb)}>
+                      <Play className="size-3.5" /> รัน
+                    </Button>
+                    <Button variant="outline" size="icon-sm" onClick={() => startEdit(rb)}>
+                      <Pencil className="size-3.5" />
+                    </Button>
+                    <Button variant="outline" size="icon-sm" onClick={() => remove(rb.id)}>
+                      <Trash2 className="size-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+            {runbooks.length === 0 && (
+              <div className="py-8 text-center text-xs text-muted-foreground">ยังไม่มี runbook</div>
             )}
-            <Button onClick={save} disabled={!name && !stepsText}>
-              <Plus className="size-4" /> บันทึก
+          </div>
+
+          <Separator />
+
+          <div className="space-y-2.5">
+            <div className="text-sm font-medium">{editing ? 'แก้ไข runbook' : 'สร้างใหม่'}</div>
+            <Input
+              placeholder="ชื่อ runbook"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+            <div className="flex flex-col gap-1.5">
+              <Label>
+                คำสั่ง (บรรทัดละ 1 คำสั่ง · ใช้{' '}
+                <code className="rounded bg-muted px-1 font-mono text-[11px]">{'{{ชื่อ}}'}</code>{' '}
+                เพื่อสร้างช่องให้กรอกตอนรัน)
+              </Label>
+              <Textarea
+                className="h-24 font-mono text-xs"
+                placeholder={'./build_and_push.sh {{version}} {{service}}\ngit pull && pm2 reload all'}
+                value={stepsText}
+                onChange={(e) => setStepsText(e.target.value)}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              {editing && (
+                <Button variant="ghost" onClick={() => startEdit(null)}>
+                  ยกเลิก
+                </Button>
+              )}
+              <Button onClick={save} disabled={!name && !stepsText}>
+                <Plus className="size-4" /> บันทึก
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ฟอร์มกรอกค่าพารามิเตอร์ก่อนรัน */}
+      <Dialog open={!!paramRb} onOpenChange={(o) => !o && setParamRb(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Play className="size-4 text-primary" /> {paramRb?.name}
+            </DialogTitle>
+            <DialogDescription>กรอกค่าก่อนรัน</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3">
+            {paramNames.map((n, i) => (
+              <div key={n} className="flex flex-col gap-1.5">
+                <Label className="font-mono text-xs text-muted-foreground">{`{{${n}}}`}</Label>
+                <Input
+                  autoFocus={i === 0}
+                  value={paramValues[n] ?? ''}
+                  placeholder={n}
+                  onChange={(e) => setParamValues((v) => ({ ...v, [n]: e.target.value }))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && allFilled) runWithParams()
+                  }}
+                />
+              </div>
+            ))}
+
+            {/* พรีวิวคำสั่งที่จะรันจริง */}
+            <div className="space-y-0.5 rounded-lg border border-border bg-muted/40 p-2.5 font-mono text-[11px] leading-relaxed text-muted-foreground">
+              {paramRb?.steps.map((s, i) => (
+                <div key={i} className="whitespace-pre-wrap break-all">
+                  <span className="select-none text-primary/70">$ </span>
+                  {fillTemplate(s.command, paramValues)}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setParamRb(null)}>
+              ยกเลิก
+            </Button>
+            <Button onClick={runWithParams} disabled={!allFilled}>
+              <Play className="size-4" /> รัน
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   )
 }

@@ -6,6 +6,7 @@ import { listServers } from '../db/repos/servers-repo'
 import { getSession, searchCommands } from '../db/repos/sessions-repo'
 import { saveKnowledge, searchKnowledge } from '../db/repos/knowledge-repo'
 import { listRunbooks } from '../db/repos/runbooks-repo'
+import { extractPlaceholdersAll, fillTemplate } from '@shared/template'
 
 export const TOOL_SCHEMAS: ToolSchema[] = [
   {
@@ -84,10 +85,17 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'run_runbook',
     description:
-      "Run a saved runbook by name — types its commands into the user's interactive terminal in order. Use when a matching runbook exists for the task.",
+      "Run a saved runbook by name — types its commands into the user's interactive terminal in order. If the runbook has {{placeholders}}, provide their values via params_json. Call list_runbooks first to see each runbook's params.",
     parameters: {
       type: 'object',
-      properties: { name: { type: 'string', description: 'The runbook name' } },
+      properties: {
+        name: { type: 'string', description: 'The runbook name' },
+        params_json: {
+          type: 'string',
+          description:
+            'JSON object mapping placeholder names to values, e.g. {"version":"v1.0.0","service":"backend"}. Required if the runbook has {{placeholders}}.'
+        }
+      },
       required: ['name']
     }
   }
@@ -168,7 +176,8 @@ export async function executeTool(
       const rbs = listRunbooks().map((r) => ({
         name: r.name,
         description: r.description,
-        steps: r.steps.map((s) => s.command)
+        steps: r.steps.map((s) => s.command),
+        params: extractPlaceholdersAll(r.steps.map((s) => s.command))
       }))
       return JSON.stringify(rbs)
     }
@@ -179,7 +188,23 @@ export async function executeTool(
       const name = String(args.name ?? '')
       const rb = listRunbooks().find((r) => r.name.toLowerCase() === name.toLowerCase())
       if (!rb) return `Error: runbook "${name}" not found. Use list_runbooks to see available runbooks.`
-      for (const step of rb.steps) runInTerminal(ctx.sessionId, step.command)
+      let params: Record<string, string> = {}
+      if (args.params_json) {
+        try {
+          const parsed = JSON.parse(String(args.params_json))
+          if (parsed && typeof parsed === 'object') {
+            params = Object.fromEntries(Object.entries(parsed).map(([k, v]) => [k, String(v)]))
+          }
+        } catch {
+          return 'Error: params_json is not valid JSON'
+        }
+      }
+      const needed = extractPlaceholdersAll(rb.steps.map((s) => s.command))
+      const missing = needed.filter((n) => !params[n])
+      if (missing.length) {
+        return `Error: runbook "${rb.name}" needs values for {{${missing.join('}}, {{')}}}. Provide them in params_json.`
+      }
+      for (const step of rb.steps) runInTerminal(ctx.sessionId, fillTemplate(step.command, params))
       return `Ran runbook "${rb.name}" (${rb.steps.length} steps) in the terminal. Verify the result with a quick run_command if needed.`
     }
     default:

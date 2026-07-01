@@ -93,12 +93,12 @@ export default function ServerList({
 
   return (
     <div className="flex h-full shrink-0 flex-col bg-sidebar" style={{ width }}>
-      <div className="titlebar mac-inset flex h-titlebar shrink-0 items-center justify-between border-b border-border pl-3 pr-2">
-        <div className="flex items-center gap-2">
-          <img src={logoUrl} alt="Perms" className="size-6 rounded-md shadow-sm" />
-          <span className="text-sm font-semibold tracking-tight">Perms</span>
+      <div className="titlebar mac-inset flex h-titlebar shrink-0 items-center justify-between gap-1 border-b border-border pl-3 pr-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <img src={logoUrl} alt="Perms" className="size-6 shrink-0 rounded-md shadow-sm" />
+          <span className="truncate text-sm font-semibold tracking-tight">Perms</span>
         </div>
-        <div className="flex gap-0.5">
+        <div className="flex shrink-0 gap-0.5">
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="ghost" size="icon-sm" onClick={openLocal}>

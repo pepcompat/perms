@@ -175,7 +175,8 @@ export default function TerminalView({
     const search = new SearchAddon()
     term.loadAddon(fit)
     term.loadAddon(search)
-    term.loadAddon(new WebLinksAddon())
+    // คลิก URL ใน output → เปิดด้วย default browser (main จะกรองเฉพาะ http/https)
+    term.loadAddon(new WebLinksAddon((_e, uri) => window.api.openExternal(uri)))
     term.open(hostRef.current)
     fit.fit()
 

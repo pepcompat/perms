@@ -23,6 +23,8 @@ import type {
 const api = {
   platform: process.platform,
 
+  openExternal: (url: string): void => ipcRenderer.send(IPC.shellOpenExternal, url),
+
   onFullscreen: (cb: (isFullscreen: boolean) => void): (() => void) => {
     const listener = (_e: unknown, v: boolean): void => cb(v)
     ipcRenderer.on(IPC.windowFullscreen, listener)

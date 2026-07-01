@@ -59,41 +59,33 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
   const { settings } = useSettings()
   const { activeId } = useTabs()
   const chatKey = activeId ?? '__none__' // แต่ละ tab/session มีบทสนทนาของตัวเอง
-  const [provider, setProvider] = useState<AiProvider>('anthropic')
-  const [mode, setMode] = useState<AiMode>('approve')
-  const [model, setModel] = useState('')
-  const [webSearch, setWebSearch] = useState(true)
   const scrollRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLTextAreaElement>(null)
   const draftSeq = useAiDraft((s) => s.seq)
 
-  // บทสนทนาของ tab ปัจจุบัน (per-session)
+  // บทสนทนา + ค่าตั้งของ tab ปัจจุบัน (per-session)
   const thread = useAiChats((s) => s.threads[chatKey]) ?? EMPTY_THREAD
   const send = useAiChats((s) => s.send)
   const setInput = useAiChats((s) => s.setInput)
   const appendInput = useAiChats((s) => s.appendInput)
+  const setConfig = useAiChats((s) => s.setConfig)
   const clearChat = useAiChats((s) => s.clear)
   const approveAction = useAiChats((s) => s.approve)
   const cancelAction = useAiChats((s) => s.cancel)
 
   const { items, input, running, approval } = thread
 
-  useEffect(() => {
-    if (settings) {
-      setProvider(settings.ai.defaultProvider)
-      setMode(settings.ai.defaultMode)
-      setModel(settings.ai.models[settings.ai.defaultProvider])
-    }
-  }, [settings])
+  // ค่าตั้งของ session นี้ (ถ้ายังไม่เคยตั้ง ใช้ default จาก settings)
+  const provider: AiProvider = thread.provider ?? settings?.ai.defaultProvider ?? 'anthropic'
+  const mode: AiMode = thread.mode ?? settings?.ai.defaultMode ?? 'approve'
+  const model = thread.model ?? settings?.ai.models[provider] ?? ''
+  const webSearch = thread.webSearch ?? true
 
-  const pickProvider = (p: AiProvider): void => {
-    setProvider(p)
-    if (settings) setModel(settings.ai.models[p])
-  }
-  const pickModel = (m: string): void => {
-    setModel(m)
-    void window.api.settings.updateAi({ models: { [provider]: m } })
-  }
+  const setMode = (m: AiMode): void => setConfig(chatKey, { mode: m })
+  const pickProvider = (p: AiProvider): void =>
+    setConfig(chatKey, { provider: p, model: settings?.ai.models[p] })
+  const pickModel = (m: string): void => setConfig(chatKey, { model: m })
+  const toggleWeb = (): void => setConfig(chatKey, { webSearch: !webSearch })
 
   // ข้อความที่ "ส่งเข้า AI" จาก terminal → เติมในช่อง input ของ tab ปัจจุบัน
   useEffect(() => {
@@ -273,7 +265,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
 
             {/* Web search toggle */}
             <button
-              onClick={() => setWebSearch((v) => !v)}
+              onClick={toggleWeb}
               disabled={!webSupported || mode === 'agentic'}
               title={
                 mode === 'agentic'

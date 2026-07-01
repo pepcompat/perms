@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron'
+import { ipcMain, shell } from 'electron'
 import { nanoid } from 'nanoid'
 import { IPC } from '@shared/ipc-channels'
 import type {
@@ -58,6 +58,11 @@ export function registerIpc(): void {
   )
   ipcMain.handle(IPC.serversDelete, (_e, id: string) => deleteServer(id))
   ipcMain.handle(IPC.serversTest, (_e, id: string) => testConnection(id))
+  // เปิด URL ด้วย default browser (เฉพาะ http/https — กัน scheme อันตรายจาก output)
+  ipcMain.on(IPC.shellOpenExternal, (_e, url: string) => {
+    if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
+  })
+
   ipcMain.handle(IPC.sshListKeys, () => listPrivateKeys())
   ipcMain.handle(IPC.sshPickKey, () => pickKeyFile())
 

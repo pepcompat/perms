@@ -17,7 +17,14 @@ export interface ChatThread {
   running: boolean
   requestId: string | null
   approval: { callId: string; command: string } | null
+  // ค่าตั้งต่อ session (undefined = ใช้ค่า default จาก settings)
+  provider?: AiProvider
+  mode?: AiMode
+  model?: string
+  webSearch?: boolean
 }
+
+export type ChatConfig = Pick<ChatThread, 'provider' | 'mode' | 'model' | 'webSearch'>
 
 /** thread ว่างแบบ stable reference — ใช้เป็น default ตอนยังไม่มี thread (กัน re-render loop) */
 export const EMPTY_THREAD: ChatThread = {
@@ -39,6 +46,7 @@ interface State {
   threads: Record<string, ChatThread>
   setInput: (key: string, input: string) => void
   appendInput: (key: string, text: string) => void
+  setConfig: (key: string, patch: ChatConfig) => void
   clear: (key: string) => void
   send: (key: string, sessionId: string | null, opts: SendOpts) => Promise<void>
   approve: (key: string, approved: boolean) => void
@@ -103,10 +111,18 @@ export const useAiChats = create<State>((set, get) => {
     setInput: (key, input) => patch(key, (t) => ({ ...t, input })),
     appendInput: (key, text) =>
       patch(key, (t) => ({ ...t, input: t.input ? t.input + '\n' + text : text })),
+    setConfig: (key, cfg) => patch(key, (t) => ({ ...t, ...cfg })),
     clear: (key) => {
       offs.get(key)?.()
       offs.delete(key)
-      patch(key, () => ({ ...EMPTY_THREAD }))
+      // เก็บค่าตั้ง (provider/mode/model/webSearch) ไว้ ล้างแค่บทสนทนา
+      patch(key, (t) => ({
+        ...EMPTY_THREAD,
+        provider: t.provider,
+        mode: t.mode,
+        model: t.model,
+        webSearch: t.webSearch
+      }))
     },
     approve: (key, approved) => {
       const a = get().threads[key]?.approval

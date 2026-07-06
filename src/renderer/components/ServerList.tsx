@@ -150,8 +150,12 @@ export default function ServerList({
     dragGroup.current = null
     setDragOverGroup(null)
     if (!from || from === target) return
+    const fromIdx = orderedNames.indexOf(from)
+    const targetIdx = orderedNames.indexOf(target)
     const next = orderedNames.filter((n) => n !== from)
-    next.splice(next.indexOf(target), 0, from)
+    // ลากลง (from อยู่เหนือ target) → วางหลัง target · ลากขึ้น → วางหน้า target
+    const insertAt = next.indexOf(target) + (fromIdx < targetIdx ? 1 : 0)
+    next.splice(insertAt, 0, from)
     persistOrder(next)
   }
 
@@ -192,9 +196,32 @@ export default function ServerList({
       <div className="flex-1 overflow-y-auto p-2">
         {orderedNames.map((group) => {
           const list = groups[group]
+          // ลากลงมาวางกลุ่มนี้ → เส้นอยู่ล่าง · ลากขึ้น → เส้นอยู่บน
+          const movingDown =
+            dragOverGroup === group && dragGroup.current
+              ? orderedNames.indexOf(dragGroup.current) < orderedNames.indexOf(group)
+              : false
           return (
-          <div key={group} className="mb-3">
-            {dragOverGroup === group && (
+          <div
+            key={group}
+            className="mb-3"
+            onDragOver={(e) => {
+              if (!dragGroup.current || dragGroup.current === group) return
+              e.preventDefault()
+              setDragOverGroup(group)
+            }}
+            onDragLeave={(e) => {
+              // ล้างเฉพาะตอนออกจาก block จริง ๆ (ไม่ใช่แค่ย้ายไปทับ child)
+              if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                setDragOverGroup((g) => (g === group ? null : g))
+              }
+            }}
+            onDrop={(e) => {
+              e.preventDefault()
+              dropOnGroup(group)
+            }}
+          >
+            {dragOverGroup === group && !movingDown && (
               <div className="mx-1 mb-1 h-0.5 rounded-full bg-primary" />
             )}
             <button
@@ -202,15 +229,6 @@ export default function ServerList({
               onDragStart={(e) => {
                 dragGroup.current = group
                 e.dataTransfer.effectAllowed = 'move'
-              }}
-              onDragOver={(e) => {
-                e.preventDefault()
-                if (dragGroup.current && dragGroup.current !== group) setDragOverGroup(group)
-              }}
-              onDragLeave={() => setDragOverGroup((g) => (g === group ? null : g))}
-              onDrop={(e) => {
-                e.preventDefault()
-                dropOnGroup(group)
               }}
               onDragEnd={() => {
                 dragGroup.current = null
@@ -288,6 +306,9 @@ export default function ServerList({
                 )}
               </div>
             ))}
+            {dragOverGroup === group && movingDown && (
+              <div className="mx-1 mt-1 h-0.5 rounded-full bg-primary" />
+            )}
           </div>
           )
         })}

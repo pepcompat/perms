@@ -5,7 +5,7 @@ import type { Provider, ChatMessage, ToolCallRequest } from './providers/types'
 import { OpenAiProvider } from './providers/openai'
 import { AnthropicProvider } from './providers/anthropic'
 import { GoogleProvider } from './providers/google'
-import { TOOL_SCHEMAS, MUTATING_TOOLS, executeTool } from './tools'
+import { TOOL_SCHEMAS, MUTATING_TOOLS, executeTool, dangerousReasonForCall } from './tools'
 import { getAiSettings, revealAiKey } from '../db/repos/settings-repo'
 import { appendMessage, listMessages } from '../db/repos/ai-repo'
 import { getSession } from '../db/repos/sessions-repo'
@@ -100,7 +100,8 @@ function loadHistory(sessionId: string | null): ChatMessage[] {
 function requestApproval(
   requestId: string,
   call: ToolCallRequest,
-  sessionId: string | null
+  sessionId: string | null,
+  danger: string | null
 ): Promise<boolean> {
   return new Promise((resolve) => {
     pendingApprovals.set(call.id, resolve)
@@ -108,7 +109,8 @@ function requestApproval(
       type: 'approval_request',
       callId: call.id,
       command: String(call.arguments.command ?? JSON.stringify(call.arguments)),
-      sessionId
+      sessionId,
+      danger
     })
   })
 }
@@ -216,16 +218,20 @@ export async function runChat(requestId: string, input: AiChatInput): Promise<vo
 
         let toolResult: string
         const isMutating = MUTATING_TOOLS.has(call.name)
+        // คำสั่งอันตราย → บังคับขออนุมัติเสมอ แม้โหมด agentic (กัน prompt injection สั่งรันของทำลาย)
+        const danger = isMutating ? dangerousReasonForCall(call.name, call.arguments) : null
 
         if (isMutating && mode === 'suggest') {
           // โหมดแนะนำ: ไม่รันจริง บอกให้ user รันเอง
           toolResult = `[suggest mode] Command not executed. Proposed command: ${String(
             call.arguments.command ?? JSON.stringify(call.arguments)
           )}`
-        } else if (isMutating && mode === 'approve') {
-          const approved = await requestApproval(requestId, call, sessionId)
+        } else if (isMutating && (mode === 'approve' || danger)) {
+          const approved = await requestApproval(requestId, call, sessionId, danger)
           if (!approved) {
-            toolResult = '[rejected by user] Command was not executed.'
+            toolResult = danger
+              ? `[rejected by user] Dangerous command blocked (${danger}). Not executed.`
+              : '[rejected by user] Command was not executed.'
           } else {
             toolResult = await executeTool(call.name, call.arguments, { sessionId })
           }

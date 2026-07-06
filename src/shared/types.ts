@@ -172,6 +172,13 @@ export type AiStreamEvent =
   | { type: 'text'; delta: string }
   | { type: 'tool_call'; call: AiToolCall }
   | { type: 'tool_result'; callId: string; result: string }
-  | { type: 'approval_request'; callId: string; command: string; sessionId: string | null }
+  | {
+      type: 'approval_request'
+      callId: string
+      command: string
+      sessionId: string | null
+      /** ถ้าตั้ง = คำสั่งเข้าข่ายอันตราย (บังคับอนุมัติแม้ agentic) พร้อมเหตุผล */
+      danger?: string | null
+    }
   | { type: 'done' }
   | { type: 'error'; message: string }

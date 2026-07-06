@@ -192,10 +192,28 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
         ))}
 
         {approval && (
-          <div className="animate-slide-up rounded-xl border border-[hsl(var(--warning))]/40 bg-[hsl(var(--warning))]/5 p-3">
-            <div className="mb-2 flex items-center gap-1.5 text-xs font-medium text-[hsl(var(--warning))]">
-              <AlertTriangle className="size-3.5" /> AI ขออนุมัติรันคำสั่ง
+          <div
+            className={cn(
+              'animate-slide-up rounded-xl border p-3',
+              approval.danger
+                ? 'border-destructive/50 bg-destructive/10'
+                : 'border-[hsl(var(--warning))]/40 bg-[hsl(var(--warning))]/5'
+            )}
+          >
+            <div
+              className={cn(
+                'mb-2 flex items-center gap-1.5 text-xs font-medium',
+                approval.danger ? 'text-destructive' : 'text-[hsl(var(--warning))]'
+              )}
+            >
+              <AlertTriangle className="size-3.5" />
+              {approval.danger ? 'คำสั่งอันตราย — ต้องยืนยันก่อนรัน' : 'AI ขออนุมัติรันคำสั่ง'}
             </div>
+            {approval.danger && (
+              <div className="mb-2 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
+                ⚠️ {approval.danger} · ตรวจให้ดีก่อนอนุมัติ
+              </div>
+            )}
             <pre className="mb-3 overflow-x-auto rounded-lg bg-black/40 px-3 py-2 font-mono text-xs text-foreground">
               {approval.command}
             </pre>

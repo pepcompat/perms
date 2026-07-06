@@ -16,7 +16,7 @@ export interface ChatThread {
   input: string
   running: boolean
   requestId: string | null
-  approval: { callId: string; command: string } | null
+  approval: { callId: string; command: string; danger?: string | null } | null
   // ค่าตั้งต่อ session (undefined = ใช้ค่า default จาก settings)
   provider?: AiProvider
   mode?: AiMode
@@ -92,7 +92,10 @@ export const useAiChats = create<State>((set, get) => {
         })
       }))
     } else if (ev.type === 'approval_request') {
-      patch(key, (t) => ({ ...t, approval: { callId: ev.callId, command: ev.command } }))
+      patch(key, (t) => ({
+        ...t,
+        approval: { callId: ev.callId, command: ev.command, danger: ev.danger }
+      }))
     } else if (ev.type === 'done' || ev.type === 'error') {
       if (ev.type === 'error') {
         patch(key, (t) => ({

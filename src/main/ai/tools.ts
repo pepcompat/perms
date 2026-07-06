@@ -7,6 +7,7 @@ import { getSession, searchCommands } from '../db/repos/sessions-repo'
 import { saveKnowledge, searchKnowledge } from '../db/repos/knowledge-repo'
 import { listRunbooks } from '../db/repos/runbooks-repo'
 import { extractPlaceholdersAll, fillTemplate } from '@shared/template'
+import { matchDangerous } from '@shared/dangerous-commands'
 
 export const TOOL_SCHEMAS: ToolSchema[] = [
   {
@@ -103,6 +104,38 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
 
 /** ชื่อ tool ที่ "ต้องขออนุมัติ" ในโหมด approve และ "ห้ามรัน" ในโหมด suggest */
 export const MUTATING_TOOLS = new Set(['run_command', 'run_in_terminal', 'run_runbook'])
+
+/**
+ * คืนเหตุผลถ้า tool call นี้จะรันคำสั่งอันตราย (บังคับขออนุมัติแม้โหมด agentic) → null ถ้าปลอดภัย
+ * run_runbook: ตรวจทุก step หลังแทนค่า placeholder แล้ว
+ */
+export function dangerousReasonForCall(name: string, args: Record<string, unknown>): string | null {
+  if (name === 'run_command' || name === 'run_in_terminal') {
+    return matchDangerous(String(args.command ?? ''))
+  }
+  if (name === 'run_runbook') {
+    const rbName = String(args.name ?? '')
+    const rb = listRunbooks().find((r) => r.name.toLowerCase() === rbName.toLowerCase())
+    if (!rb) return null
+    let params: Record<string, string> = {}
+    if (args.params_json) {
+      try {
+        const p = JSON.parse(String(args.params_json))
+        if (p && typeof p === 'object') {
+          params = Object.fromEntries(Object.entries(p).map(([k, v]) => [k, String(v)]))
+        }
+      } catch {
+        /* params เสีย — ตรวจ step ดิบไปก่อน */
+      }
+    }
+    for (const step of rb.steps) {
+      const reason = matchDangerous(fillTemplate(step.command, params))
+      if (reason) return reason
+    }
+    return null
+  }
+  return null
+}
 
 export interface ToolContext {
   sessionId: string | null

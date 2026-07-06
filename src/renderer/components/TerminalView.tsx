@@ -15,11 +15,15 @@ import {
   ChevronDown,
   Bot,
   TextSelect,
-  ClipboardPaste
+  ClipboardPaste,
+  Sparkles,
+  FolderSymlink
 } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { redactSecrets } from '@shared/redact'
 import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
+import SftpBrowser from './SftpBrowser'
 
 // Catppuccin Mocha — palette ที่เข้ากับธีมม่วงของแอป ทำให้ output (ls, git, ฯลฯ) มีสีสวย
 const THEME = {
@@ -78,6 +82,9 @@ export default function TerminalView({
   const searchOpenRef = useRef(false)
   const removeTab = useTabs((s) => s.removeTab)
   const sendToAi = useAiDraft((s) => s.send)
+  const tabKind = useTabs((s) => s.tabs.find((t) => t.sessionId === sessionId)?.kind)
+  const tabTitle = useTabs((s) => s.tabs.find((t) => t.sessionId === sessionId)?.title ?? '')
+  const [sftpOpen, setSftpOpen] = useState(false)
 
   // --- autocomplete จากประวัติคำสั่ง ---
   const historyRef = useRef<string[]>([])
@@ -388,6 +395,38 @@ export default function TerminalView({
     if (text) window.api.terminal.write(sessionId, text)
   }
 
+  // อ่าน output ล่าสุดจาก buffer (ท้าย ~N บรรทัด) สำหรับส่งให้ AI ดู
+  const recentOutput = (lines = 40): string => {
+    const term = termRef.current
+    if (!term) return ''
+    const buf = term.buffer.active
+    const end = buf.baseY + buf.cursorY
+    const start = Math.max(0, end - lines)
+    const rows: string[] = []
+    for (let i = start; i <= end; i++) {
+      rows.push(buf.getLine(i)?.translateToString(true) ?? '')
+    }
+    return rows.join('\n').replace(/\n{3,}/g, '\n\n').trim()
+  }
+
+  // ถาม AI ว่าทำไมพัง/ช่วยแก้ — ใช้ selection ถ้ามี ไม่งั้นเอาคำสั่งล่าสุด + output ล่าสุด
+  // (redact ความลับก่อนส่งเสมอ)
+  const askAiHelp = (selection?: string): void => {
+    const sel = selection?.trim()
+    let body: string
+    if (sel) {
+      body = sel
+    } else {
+      const lastCmd = historyRef.current[0]
+      body = (lastCmd ? `$ ${lastCmd}\n` : '') + recentOutput(40)
+    }
+    body = redactSecrets(body).slice(0, 4000).trim()
+    if (!body) return
+    sendToAi(
+      `ช่วยดูให้หน่อยว่าเกิดอะไรขึ้นใน terminal นี้ ถ้ามี error บอกสาเหตุและวิธีแก้:\n\n\`\`\`\n${body}\n\`\`\``
+    )
+  }
+
   return (
     <div
       ref={containerRef}
@@ -406,11 +445,19 @@ export default function TerminalView({
             style={{ left: menu.x, top: menu.y }}
           >
             <MenuItem
+              icon={<Sparkles className="size-3.5 text-primary" />}
+              label="ถาม AI: ทำไมพัง / ช่วยแก้"
+              onClick={() => {
+                askAiHelp(menu.sel)
+                closeMenu()
+              }}
+            />
+            <MenuItem
               icon={<Bot className="size-3.5 text-primary" />}
               label="ส่งที่เลือกให้ AI"
               disabled={!menu.sel}
               onClick={() => {
-                sendToAi('```\n' + menu.sel.trim() + '\n```')
+                sendToAi('```\n' + redactSecrets(menu.sel.trim()) + '\n```')
                 closeMenu()
               }}
             />
@@ -463,6 +510,17 @@ export default function TerminalView({
             : 'pointer-events-none opacity-0 group-hover:pointer-events-auto group-hover:opacity-100'
         )}
       >
+        {tabKind === 'ssh' && (
+          <>
+            <ToolBtn title="ไฟล์ (SFTP)" onClick={() => setSftpOpen(true)}>
+              <FolderSymlink className="size-3.5" />
+            </ToolBtn>
+            <div className="mx-0.5 h-4 w-px bg-border" />
+          </>
+        )}
+        <ToolBtn title="ถาม AI: ทำไมพัง / ช่วยแก้" onClick={() => askAiHelp(termRef.current?.getSelection())}>
+          <Sparkles className="size-3.5 text-primary" />
+        </ToolBtn>
         <ToolBtn title="ค้นหา (⌘F)" onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchInputRef.current?.focus()) }}>
           <Search className="size-3.5" />
         </ToolBtn>
@@ -545,6 +603,15 @@ export default function TerminalView({
             ⇥ Tab
           </span>
         </div>
+      )}
+
+      {tabKind === 'ssh' && sftpOpen && (
+        <SftpBrowser
+          sessionId={sessionId}
+          title={tabTitle}
+          open={sftpOpen}
+          onClose={() => setSftpOpen(false)}
+        />
       )}
     </div>
   )

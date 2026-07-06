@@ -1,4 +1,4 @@
-import type { Client, ClientChannel } from 'ssh2'
+import type { Client, ClientChannel, SFTPWrapper } from 'ssh2'
 import { connectSsh } from '../ssh/connect'
 import type { TermSession, ExecResult } from './types'
 
@@ -6,6 +6,7 @@ export class SshSession implements TermSession {
   readonly kind = 'ssh' as const
   private client!: Client
   private shell!: ClientChannel
+  private sftpChan: SFTPWrapper | null = null
   private dataCbs: ((data: string) => void)[] = []
   private exitCbs: ((code: number | null) => void)[] = []
 
@@ -51,6 +52,19 @@ export class SshSession implements TermSession {
 
   onExit(cb: (code: number | null) => void): void {
     this.exitCbs.push(cb)
+  }
+
+  /** เปิด (และ cache) sftp channel บน connection เดิม — ไม่ต้อง auth ใหม่ */
+  getSftp(): Promise<SFTPWrapper> {
+    if (this.sftpChan) return Promise.resolve(this.sftpChan)
+    return new Promise<SFTPWrapper>((resolve, reject) => {
+      this.client.sftp((err, sftp) => {
+        if (err) return reject(err)
+        this.sftpChan = sftp
+        sftp.on('close', () => (this.sftpChan = null))
+        resolve(sftp)
+      })
+    })
   }
 
   exec(command: string): Promise<ExecResult> {

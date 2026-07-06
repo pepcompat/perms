@@ -1,5 +1,6 @@
-import { ipcMain, shell, app } from 'electron'
+import { ipcMain, shell, app, dialog, BrowserWindow } from 'electron'
 import { nanoid } from 'nanoid'
+import { basename } from 'path'
 import { IPC } from '@shared/ipc-channels'
 import type {
   ServerInput,
@@ -8,7 +9,8 @@ import type {
   AiProvider,
   AiMode,
   RunbookStep,
-  KnowledgeInput
+  KnowledgeInput,
+  SftpProgress
 } from '@shared/types'
 
 import {
@@ -46,6 +48,16 @@ import {
   resizeSession,
   closeSession
 } from '../terminal/session-manager'
+import {
+  sftpHome,
+  sftpList,
+  sftpMkdir,
+  sftpDelete,
+  sftpRename,
+  sftpDownload,
+  sftpUpload,
+  remoteJoin
+} from '../terminal/sftp'
 import { runChat, resolveApproval, cancelRequest } from '../ai/agent'
 
 export function registerIpc(): void {
@@ -66,6 +78,70 @@ export function registerIpc(): void {
 
   ipcMain.handle(IPC.sshListKeys, () => listPrivateKeys())
   ipcMain.handle(IPC.sshPickKey, () => pickKeyFile())
+
+  // ---- sftp ----
+  const emitSftp = (p: SftpProgress): void => {
+    for (const win of BrowserWindow.getAllWindows()) win.webContents.send(IPC.sftpProgress, p)
+  }
+  const activeWindow = (): BrowserWindow | undefined =>
+    BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows()[0]
+
+  ipcMain.handle(IPC.sftpHome, (_e, sessionId: string) => sftpHome(sessionId))
+  ipcMain.handle(IPC.sftpList, (_e, sessionId: string, path: string) => sftpList(sessionId, path))
+  ipcMain.handle(IPC.sftpMkdir, (_e, sessionId: string, path: string) => sftpMkdir(sessionId, path))
+  ipcMain.handle(IPC.sftpDelete, (_e, sessionId: string, path: string, isDir: boolean) =>
+    sftpDelete(sessionId, path, isDir)
+  )
+  ipcMain.handle(IPC.sftpRename, (_e, sessionId: string, from: string, to: string) =>
+    sftpRename(sessionId, from, to)
+  )
+
+  ipcMain.handle(
+    IPC.sftpDownload,
+    async (_e, sessionId: string, remotePath: string, name: string) => {
+      const win = activeWindow()
+      if (!win) return { ok: false, error: 'no window' }
+      const res = await dialog.showSaveDialog(win, { defaultPath: name })
+      if (res.canceled || !res.filePath) return { canceled: true }
+      const transferId = nanoid()
+      try {
+        await sftpDownload(sessionId, remotePath, res.filePath, (transferred, total) =>
+          emitSftp({ transferId, name, direction: 'down', transferred, total })
+        )
+        emitSftp({ transferId, name, direction: 'down', transferred: 1, total: 1, done: true })
+        return { ok: true, savedTo: res.filePath }
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err)
+        emitSftp({ transferId, name, direction: 'down', transferred: 0, total: 1, done: true, error })
+        return { ok: false, error }
+      }
+    }
+  )
+
+  ipcMain.handle(IPC.sftpUpload, async (_e, sessionId: string, remoteDir: string) => {
+    const win = activeWindow()
+    if (!win) return { ok: false, error: 'no window' }
+    const res = await dialog.showOpenDialog(win, {
+      properties: ['openFile', 'multiSelections']
+    })
+    if (res.canceled || res.filePaths.length === 0) return { canceled: true }
+    let count = 0
+    for (const local of res.filePaths) {
+      const name = basename(local)
+      const transferId = nanoid()
+      try {
+        await sftpUpload(sessionId, local, remoteJoin(remoteDir, name), (transferred, total) =>
+          emitSftp({ transferId, name, direction: 'up', transferred, total })
+        )
+        emitSftp({ transferId, name, direction: 'up', transferred: 1, total: 1, done: true })
+        count++
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err)
+        emitSftp({ transferId, name, direction: 'up', transferred: 0, total: 1, done: true, error })
+      }
+    }
+    return { ok: true, count }
+  })
 
   // ---- terminal ----
   ipcMain.handle(IPC.terminalOpen, (_e, input: OpenSessionInput) => openSession(input))

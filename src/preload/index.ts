@@ -17,7 +17,9 @@ import type {
   KnowledgeRecord,
   KnowledgeInput,
   AppSettings,
-  UpdateProgress
+  UpdateProgress,
+  SftpEntry,
+  SftpProgress
 } from '../shared/types'
 
 const api = {
@@ -65,6 +67,34 @@ const api = {
       const listener = (_e: unknown, code: number | null): void => cb(code)
       ipcRenderer.on(ch, listener)
       return () => ipcRenderer.removeListener(ch, listener)
+    }
+  },
+
+  sftp: {
+    home: (sessionId: string): Promise<string> => ipcRenderer.invoke(IPC.sftpHome, sessionId),
+    list: (sessionId: string, path: string): Promise<{ path: string; entries: SftpEntry[] }> =>
+      ipcRenderer.invoke(IPC.sftpList, sessionId, path),
+    mkdir: (sessionId: string, path: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.sftpMkdir, sessionId, path),
+    remove: (sessionId: string, path: string, isDir: boolean): Promise<void> =>
+      ipcRenderer.invoke(IPC.sftpDelete, sessionId, path, isDir),
+    rename: (sessionId: string, from: string, to: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.sftpRename, sessionId, from, to),
+    download: (
+      sessionId: string,
+      remotePath: string,
+      name: string
+    ): Promise<{ ok?: boolean; canceled?: boolean; savedTo?: string; error?: string }> =>
+      ipcRenderer.invoke(IPC.sftpDownload, sessionId, remotePath, name),
+    upload: (
+      sessionId: string,
+      remoteDir: string
+    ): Promise<{ ok?: boolean; canceled?: boolean; count?: number; error?: string }> =>
+      ipcRenderer.invoke(IPC.sftpUpload, sessionId, remoteDir),
+    onProgress: (cb: (p: SftpProgress) => void): (() => void) => {
+      const listener = (_e: unknown, p: SftpProgress): void => cb(p)
+      ipcRenderer.on(IPC.sftpProgress, listener)
+      return () => ipcRenderer.removeListener(IPC.sftpProgress, listener)
     }
   },
 

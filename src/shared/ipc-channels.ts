@@ -11,6 +11,17 @@ export const IPC = {
   sshListKeys: 'ssh:listKeys',
   sshPickKey: 'ssh:pickKey',
 
+  // sftp (รับส่งไฟล์บน session SSH)
+  sftpHome: 'sftp:home',
+  sftpList: 'sftp:list',
+  sftpMkdir: 'sftp:mkdir',
+  sftpDelete: 'sftp:delete',
+  sftpRename: 'sftp:rename',
+  sftpDownload: 'sftp:download',
+  sftpUpload: 'sftp:upload',
+  /** event main→renderer: ความคืบหน้าการถ่ายโอน */
+  sftpProgress: 'sftp:progress',
+
   // terminal
   terminalOpen: 'terminal:open',
   terminalWrite: 'terminal:write',

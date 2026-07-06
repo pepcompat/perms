@@ -6,6 +6,7 @@ import { OpenAiProvider } from './providers/openai'
 import { AnthropicProvider } from './providers/anthropic'
 import { GoogleProvider } from './providers/google'
 import { TOOL_SCHEMAS, MUTATING_TOOLS, executeTool, dangerousReasonForCall } from './tools'
+import { redactSecrets } from '@shared/redact'
 import { getAiSettings, revealAiKey } from '../db/repos/settings-repo'
 import { appendMessage, listMessages } from '../db/repos/ai-repo'
 import { getSession } from '../db/repos/sessions-repo'
@@ -239,6 +240,9 @@ export async function runChat(requestId: string, input: AiChatInput): Promise<vo
           // agentic หรือ tool ที่ไม่ mutating (read-only)
           toolResult = await executeTool(call.name, call.arguments, { sessionId })
         }
+
+        // กรองความลับออกก่อน "ส่งให้ LLM / โชว์ / persist" — output อาจมี key/password หลุด
+        toolResult = redactSecrets(toolResult)
 
         emit(requestId, { type: 'tool_result', callId: call.id, result: toolResult })
         messages.push({ role: 'tool', toolCallId: call.id, name: call.name, content: toolResult })

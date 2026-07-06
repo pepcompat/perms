@@ -167,6 +167,26 @@ export interface UpdateProgress {
   total: number
 }
 
+/** รายการไฟล์/โฟลเดอร์จาก SFTP */
+export interface SftpEntry {
+  name: string
+  type: 'dir' | 'file' | 'link'
+  size: number
+  /** epoch ms */
+  mtime: number
+}
+
+/** progress การถ่ายโอนไฟล์ SFTP (main→renderer) */
+export interface SftpProgress {
+  transferId: string
+  name: string
+  direction: 'up' | 'down'
+  transferred: number
+  total: number
+  done?: boolean
+  error?: string
+}
+
 /** event ที่ stream กลับมาระหว่าง AI ทำงาน */
 export type AiStreamEvent =
   | { type: 'text'; delta: string }

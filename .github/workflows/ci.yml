@@ -1,0 +1,44 @@
+name: CI
+
+# เช็คทุก push เข้า main และทุก PR — จับ regression ก่อนถึงตอน tag release
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      # Python 3.11 ยังมี distutils ที่ node-gyp ต้องใช้ build native modules
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Ensure setuptools (distutils shim)
+        run: python -m pip install --upgrade setuptools
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Type check
+        run: pnpm run typecheck
+
+      - name: Test
+        run: pnpm run test
+
+      - name: Build (bundle main/preload/renderer)
+        run: pnpm exec electron-vite build

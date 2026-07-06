@@ -20,6 +20,8 @@
     "release": "electron-vite build && electron-builder --publish always",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "rebuild": "electron-rebuild -f -o better-sqlite3,node-pty",
     "postinstall": "electron-rebuild -f -o better-sqlite3,node-pty"
   },
@@ -86,6 +88,7 @@
     "tailwindcss": "^3.4.17",
     "typescript": "^5.7.3",
     "vite": "^6.0.11",
+    "vitest": "^4.1.10",
     "zustand": "^5.0.3"
   }
 }

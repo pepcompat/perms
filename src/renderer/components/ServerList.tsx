@@ -246,14 +246,15 @@ export default function ServerList({
                 {list.length}
               </span>
             </button>
-            {!collapsed.has(group) &&
-              list.map((s) => (
+            {!collapsed.has(group) && (
+              <div className="ml-2.5 border-l border-border/50 pl-1.5">
+                {list.map((s) => (
               <div
                 key={s.id}
                 onClick={() => onCardClick(s)}
                 onDoubleClick={() => onCardDblClick(s)}
                 title="คลิก: ไป tab ล่าสุด · ดับเบิลคลิก: เปิด tab ใหม่"
-                className="group mb-px flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
+                className="group mb-px flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent"
               >
                 <span
                   className={cn(
@@ -305,7 +306,9 @@ export default function ServerList({
                   </>
                 )}
               </div>
-            ))}
+                ))}
+              </div>
+            )}
             {dragOverGroup === group && movingDown && (
               <div className="mx-1 mt-1 h-0.5 rounded-full bg-primary" />
             )}

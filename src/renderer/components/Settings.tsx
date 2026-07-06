@@ -171,11 +171,6 @@ export default function Settings({
                   ตรวจสอบอัปเดต
                 </Button>
               </div>
-              <Separator className="my-3" />
-              <p className="text-xs text-muted-foreground">
-                แอปจะตรวจสอบอัปเดตอัตโนมัติ<span className="text-foreground">ทุก 30 นาที</span>{' '}
-                และตอนเปิดแอป — เมื่อพบเวอร์ชันใหม่จะดาวน์โหลดให้เอง แล้วเด้งแจ้งให้รีสตาร์ท
-              </p>
             </div>
           </div>
         )}

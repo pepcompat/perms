@@ -10,7 +10,8 @@ import {
   Settings as SettingsIcon,
   Loader2,
   ChevronRight,
-  SquareStack
+  SquareStack,
+  GripVertical
 } from 'lucide-react'
 import type { ServerRecord } from '@shared/types'
 import { useServers } from '../store/useServers'
@@ -47,6 +48,21 @@ export default function ServerList({
       return new Set()
     }
   })
+  // ลำดับ group ที่ผู้ใช้จัดเอง (persist ใน localStorage)
+  const [groupOrder, setGroupOrder] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('ui.groupOrder') || '[]')
+    } catch {
+      return []
+    }
+  })
+  const dragGroup = useRef<string | null>(null)
+  const [dragOverGroup, setDragOverGroup] = useState<string | null>(null)
+
+  const persistOrder = (order: string[]): void => {
+    setGroupOrder(order)
+    localStorage.setItem('ui.groupOrder', JSON.stringify(order))
+  }
 
   const isConnected = (id: string): boolean => tabs.some((t) => t.serverId === id)
   const tabCount = (id: string): number => tabs.filter((t) => t.serverId === id).length
@@ -122,6 +138,23 @@ export default function ServerList({
     return acc
   }, {})
 
+  // เรียง group ตามลำดับที่ผู้ใช้จัด แล้วต่อท้ายด้วย group ใหม่ที่ยังไม่เคยจัด
+  const groupNames = Object.keys(groups)
+  const orderedNames = [
+    ...groupOrder.filter((n) => groupNames.includes(n)),
+    ...groupNames.filter((n) => !groupOrder.includes(n))
+  ]
+
+  const dropOnGroup = (target: string): void => {
+    const from = dragGroup.current
+    dragGroup.current = null
+    setDragOverGroup(null)
+    if (!from || from === target) return
+    const next = orderedNames.filter((n) => n !== from)
+    next.splice(next.indexOf(target), 0, from)
+    persistOrder(next)
+  }
+
   return (
     <div className="flex h-full shrink-0 flex-col bg-sidebar" style={{ width }}>
       <div className="titlebar mac-inset flex h-titlebar shrink-0 items-center justify-between gap-1 border-b border-border pl-3 pr-2">
@@ -157,12 +190,36 @@ export default function ServerList({
       </div>
 
       <div className="flex-1 overflow-y-auto p-2">
-        {Object.entries(groups).map(([group, list]) => (
+        {orderedNames.map((group) => {
+          const list = groups[group]
+          return (
           <div key={group} className="mb-3">
+            {dragOverGroup === group && (
+              <div className="mx-1 mb-1 h-0.5 rounded-full bg-primary" />
+            )}
             <button
+              draggable
+              onDragStart={(e) => {
+                dragGroup.current = group
+                e.dataTransfer.effectAllowed = 'move'
+              }}
+              onDragOver={(e) => {
+                e.preventDefault()
+                if (dragGroup.current && dragGroup.current !== group) setDragOverGroup(group)
+              }}
+              onDragLeave={() => setDragOverGroup((g) => (g === group ? null : g))}
+              onDrop={(e) => {
+                e.preventDefault()
+                dropOnGroup(group)
+              }}
+              onDragEnd={() => {
+                dragGroup.current = null
+                setDragOverGroup(null)
+              }}
               onClick={() => toggleGroup(group)}
-              className="mb-1 flex w-full items-center gap-1 rounded px-1.5 py-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70 transition-colors hover:text-muted-foreground"
+              className="group/hdr mb-1 flex w-full cursor-grab items-center gap-1 rounded px-1.5 py-1 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/70 transition-colors hover:text-muted-foreground active:cursor-grabbing"
             >
+              <GripVertical className="-ml-1 size-3 shrink-0 opacity-0 transition-opacity group-hover/hdr:opacity-50" />
               <ChevronRight
                 className={cn('size-3 transition-transform', !collapsed.has(group) && 'rotate-90')}
               />
@@ -232,7 +289,8 @@ export default function ServerList({
               </div>
             ))}
           </div>
-        ))}
+          )
+        })}
         {servers.length === 0 && (
           <div className="mt-8 flex flex-col items-center gap-2 px-4 text-center">
             <div className="flex size-12 items-center justify-center rounded-full bg-accent">

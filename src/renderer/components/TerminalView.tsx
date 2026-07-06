@@ -66,7 +66,14 @@ export default function TerminalView({
   const [query, setQuery] = useState('')
   const [fontSize, setFontSize] = useState(13)
   const [menu, setMenu] = useState<{ x: number; y: number; sel: string } | null>(null)
-  const [sugg, setSugg] = useState<{ prefix: string; list: string[] } | null>(null)
+  // ghost text อินไลน์ตรงเคอร์เซอร์ (คำแนะนำจากประวัติ)
+  const [ghost, setGhost] = useState<{
+    text: string
+    left: number
+    top: number
+    cw: number
+    ch: number
+  } | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchOpenRef = useRef(false)
   const removeTab = useTabs((s) => s.removeTab)
@@ -78,9 +85,41 @@ export default function TerminalView({
   const trackingRef = useRef(true) // false เมื่อ desync (มี control/escape) → หยุดแนะนำจน Enter
   const suggRef = useRef<{ prefix: string; list: string[] } | null>(null)
 
+  // ขนาด cell จริงของ xterm (ใช้วาง ghost ให้ตรงกริดตัวอักษร)
+  const PAD_L = 12 // ตรงกับ px-3 ของ host
+  const PAD_T = 8 // ตรงกับ pt-2 ของ host
+  const cellDims = (): { w: number; h: number } => {
+    const core = (
+      termRef.current as unknown as {
+        _core?: { _renderService?: { dimensions?: { css?: { cell?: { width: number; height: number } } } } }
+      }
+    )?._core
+    const cell = core?._renderService?.dimensions?.css?.cell
+    if (cell?.width && cell?.height) return { w: cell.width, h: cell.height }
+    const fs = termRef.current?.options.fontSize ?? fontSize
+    return { w: fs * 0.6, h: fs * 0.9 }
+  }
+
+  // วาง ghost ที่ตำแหน่งเคอร์เซอร์ปัจจุบัน (เรียกตอน suggestion เปลี่ยน + ตอนเคอร์เซอร์ขยับ = หลัง echo)
+  const updateGhostPos = (): void => {
+    const term = termRef.current
+    const s = suggRef.current
+    if (!term || !s || term.buffer.active.type === 'alternate') return setGhost(null)
+    const buf = term.buffer.active
+    const { w, h } = cellDims()
+    setGhost({
+      text: s.list[0].slice(s.prefix.length),
+      left: PAD_L + buf.cursorX * w,
+      top: PAD_T + buf.cursorY * h,
+      cw: w,
+      ch: h
+    })
+  }
+
   const setSuggestion = (s: { prefix: string; list: string[] } | null): void => {
     suggRef.current = s
-    setSugg(s)
+    if (s) updateGhostPos()
+    else setGhost(null)
   }
 
   const recomputeSugg = (): void => {
@@ -217,7 +256,12 @@ export default function TerminalView({
       if (e.key === 'Tab' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
         const s = suggRef.current
         if (s && trackingRef.current) {
-          if (e.type === 'keydown') acceptSuggestion(s.list[0])
+          if (e.type === 'keydown') {
+            // สำคัญ: xterm ไม่ preventDefault ให้ตอน handler คืน false → browser จะเลื่อน
+            // focus ไปปุ่มถัดไป (ปุ่มค้นหา) ต้องกันเอง
+            e.preventDefault()
+            acceptSuggestion(s.list[0])
+          }
           return false
         }
         return true
@@ -234,6 +278,10 @@ export default function TerminalView({
       window.api.terminal.write(sessionId, d)
       handleTyped(d)
     })
+    // เคอร์เซอร์ขยับ (หลัง shell echo คำที่พิมพ์) → ขยับ ghost ให้ตรง
+    const cursorDisp = term.onCursorMove(() => {
+      if (suggRef.current) updateGhostPos()
+    })
     const offData = window.api.terminal.onData(sessionId, (d) => {
       if (!disposedRef.current) term.write(d)
     })
@@ -247,6 +295,11 @@ export default function TerminalView({
     window.api.terminal.resize(sessionId, term.cols, term.rows)
     void document.fonts.ready.then(refit)
 
+    // โฟกัสเข้า console ทันทีที่เปิด session ใหม่ — พิมพ์ได้เลยไม่ต้องคลิกก่อน
+    requestAnimationFrame(() => {
+      if (!disposedRef.current) term.focus()
+    })
+
     const ro = new ResizeObserver(() => refit())
     ro.observe(hostRef.current)
 
@@ -254,6 +307,7 @@ export default function TerminalView({
       disposedRef.current = true
       try {
         dataDisp.dispose()
+        cursorDisp.dispose()
       } catch {
         /* noop */
       }
@@ -277,7 +331,11 @@ export default function TerminalView({
   }, [sessionId])
 
   useEffect(() => {
-    if (visible) requestAnimationFrame(refit)
+    if (visible)
+      requestAnimationFrame(() => {
+        refit()
+        termRef.current?.focus() // สลับมา tab นี้ → โฟกัส console เลย
+      })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, sessionId])
 
@@ -453,25 +511,39 @@ export default function TerminalView({
         </div>
       )}
 
-      {/* autocomplete suggestions จากประวัติคำสั่ง */}
-      {sugg && !searchOpen && (
-        <div className="absolute bottom-2 left-3 z-30 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-1.5">
-          {sugg.list.map((s, i) => (
-            <button
-              key={s}
-              onMouseDown={(e) => {
-                e.preventDefault()
-                acceptSuggestion(s)
+      {/* ghost text อินไลน์ตรงเคอร์เซอร์ (แนะนำจากประวัติ · กด Tab เพื่อรับ) */}
+      {ghost && ghost.text && !searchOpen && (
+        <div
+          className="pointer-events-none absolute z-30 select-none"
+          style={{
+            left: ghost.left,
+            top: ghost.top,
+            fontFamily:
+              "'JetBrains Mono', 'Anuphan', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
+            fontSize,
+            color: '#6c7086'
+          }}
+        >
+          {/* วางแต่ละตัวอักษรในกล่องกว้างเท่า cell → ตรงกริด xterm เป๊ะ */}
+          {[...ghost.text].map((ch, i) => (
+            <span
+              key={i}
+              style={{
+                display: 'inline-block',
+                width: ghost.cw,
+                height: ghost.ch,
+                lineHeight: `${ghost.ch}px`
               }}
-              className="flex items-center gap-1.5 rounded-lg border border-border bg-card/95 px-2 py-1 font-mono text-xs shadow-lg backdrop-blur transition-colors hover:border-ring"
             >
-              {i === 0 && (
-                <kbd className="rounded bg-secondary px-1 py-0.5 text-[10px] text-muted-foreground">Tab</kbd>
-              )}
-              <span className="text-muted-foreground">{sugg.prefix}</span>
-              <span className="text-foreground">{s.slice(sugg.prefix.length)}</span>
-            </button>
+              {ch}
+            </span>
           ))}
+          <span
+            className="ml-1.5 rounded bg-secondary/60 px-1 text-[9px] text-muted-foreground"
+            style={{ verticalAlign: 'middle' }}
+          >
+            ⇥ Tab
+          </span>
         </div>
       )}
     </div>

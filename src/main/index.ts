@@ -7,8 +7,10 @@ import { registerIpc } from './ipc'
 import { disposeAll } from './terminal/session-manager'
 import { initAutoUpdate } from './updater'
 
-// โลโก้แอป (dev: อยู่ที่ public/, prod: ใช้ icon ของ bundle อยู่แล้ว)
-const LOGO_PATH = join(__dirname, '../../public/images/perms-logo.png')
+// icon แอปสำหรับ dock/หน้าต่างตอน dev — ใช้ build/icon.png ที่มี padding แบบ macOS แล้ว
+// (ห้ามใช้ public/images/perms-logo.png ที่เต็มขอบ ไม่งั้น dock icon จะดูใหญ่กว่า app อื่น)
+// prod ใช้ .icns ของ bundle ที่ electron-builder สร้างจากไฟล์เดียวกัน
+const ICON_PATH = join(__dirname, '../../build/icon.png')
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -18,7 +20,7 @@ function createWindow(): void {
     minHeight: 600,
     show: false,
     backgroundColor: '#0c0c10',
-    icon: existsSync(LOGO_PATH) ? LOGO_PATH : undefined,
+    icon: existsSync(ICON_PATH) ? ICON_PATH : undefined,
     titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'default',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
@@ -53,8 +55,8 @@ function createWindow(): void {
 
 app.whenReady().then(() => {
   // dock icon บน macOS ตอน dev (prod ใช้ icns ของ bundle)
-  if (process.platform === 'darwin' && app.dock && existsSync(LOGO_PATH)) {
-    app.dock.setIcon(nativeImage.createFromPath(LOGO_PATH))
+  if (process.platform === 'darwin' && app.dock && existsSync(ICON_PATH)) {
+    app.dock.setIcon(nativeImage.createFromPath(ICON_PATH))
   }
   getDb() // เปิด DB + รัน migration
   registerIpc()

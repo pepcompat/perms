@@ -7,7 +7,9 @@ import Settings from './components/Settings'
 import SessionHistory from './components/SessionHistory'
 import Runbooks from './components/Runbooks'
 import UpdateToast from './components/UpdateToast'
+import WhatsNew from './components/WhatsNew'
 import Toaster from './components/Toaster'
+import { whatsNewFor, type ChangelogEntry } from './lib/changelog'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Resizer, useResizable } from './components/Resizer'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -22,6 +24,8 @@ export default function App(): JSX.Element {
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [showRunbooks, setShowRunbooks] = useState(false)
+  const [appVersion, setAppVersion] = useState('')
+  const [whatsNew, setWhatsNew] = useState<ChangelogEntry[]>([])
 
   const sidebar = useResizable('ui.sidebarWidth', 256, 180, 460, 'left')
   const ai = useResizable('ui.aiWidth', 384, 280, 640, 'right')
@@ -33,6 +37,17 @@ export default function App(): JSX.Element {
   // AI บันทึกความรู้ → toast
   useEffect(() => {
     return window.api.onKnowledgeSaved((title) => toast(`💡 บันทึกความรู้: ${title}`))
+  }, [])
+
+  // หลังอัปเดตเวอร์ชัน → เด้ง modal "มีอะไรใหม่" ครั้งแรก แล้วจำว่าเห็นแล้ว
+  useEffect(() => {
+    void window.api.appVersion().then((v) => {
+      setAppVersion(v)
+      const key = 'app.lastSeenVersion'
+      const entries = whatsNewFor(localStorage.getItem(key), v)
+      if (entries.length) setWhatsNew(entries)
+      localStorage.setItem(key, v)
+    })
   }, [])
 
   return (
@@ -77,6 +92,10 @@ export default function App(): JSX.Element {
         {showSettings && <Settings open onClose={() => setShowSettings(false)} />}
         {showHistory && <SessionHistory open onClose={() => setShowHistory(false)} />}
         {showRunbooks && <Runbooks open onClose={() => setShowRunbooks(false)} />}
+
+        {whatsNew.length > 0 && (
+          <WhatsNew version={appVersion} entries={whatsNew} onClose={() => setWhatsNew([])} />
+        )}
 
         <UpdateToast />
         <Toaster />

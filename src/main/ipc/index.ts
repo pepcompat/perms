@@ -1,4 +1,4 @@
-import { ipcMain, shell } from 'electron'
+import { ipcMain, shell, app } from 'electron'
 import { nanoid } from 'nanoid'
 import { IPC } from '@shared/ipc-channels'
 import type {
@@ -62,6 +62,7 @@ export function registerIpc(): void {
   ipcMain.on(IPC.shellOpenExternal, (_e, url: string) => {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
   })
+  ipcMain.handle(IPC.appVersion, () => app.getVersion())
 
   ipcMain.handle(IPC.sshListKeys, () => listPrivateKeys())
   ipcMain.handle(IPC.sshPickKey, () => pickKeyFile())

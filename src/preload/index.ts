@@ -25,6 +25,8 @@ const api = {
 
   openExternal: (url: string): void => ipcRenderer.send(IPC.shellOpenExternal, url),
 
+  appVersion: (): Promise<string> => ipcRenderer.invoke(IPC.appVersion),
+
   onFullscreen: (cb: (isFullscreen: boolean) => void): (() => void) => {
     const listener = (_e: unknown, v: boolean): void => cb(v)
     ipcRenderer.on(IPC.windowFullscreen, listener)
@@ -117,8 +119,13 @@ const api = {
   },
 
   updates: {
-    check: (): Promise<{ ok: boolean; version?: string; reason?: string }> =>
-      ipcRenderer.invoke(IPC.updateCheck),
+    check: (): Promise<{
+      ok: boolean
+      version?: string
+      currentVersion?: string
+      updateAvailable?: boolean
+      reason?: string
+    }> => ipcRenderer.invoke(IPC.updateCheck),
     restart: (): void => ipcRenderer.send(IPC.updateRestart),
     onAvailable: (cb: (version: string) => void): (() => void) => {
       const listener = (_e: unknown, v: string): void => cb(v)

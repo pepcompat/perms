@@ -1,10 +1,20 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { KeyRound, Check, Trash2, ShieldCheck, Loader2, ChevronDown, Brain } from 'lucide-react'
+import {
+  KeyRound,
+  Check,
+  Trash2,
+  ShieldCheck,
+  Loader2,
+  ChevronDown,
+  Brain,
+  RefreshCw
+} from 'lucide-react'
 import type { AiProvider, AiMode } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { toast } from '../store/useToast'
 import { MODEL_PRESETS } from '../lib/models'
 import { cn } from '../lib/utils'
+import { logoUrl } from '../lib/logo'
 import KnowledgePanel from './KnowledgePanel'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
@@ -35,13 +45,37 @@ export default function Settings({
   onClose: () => void
 }): JSX.Element {
   const { settings, set, refresh } = useSettings()
-  const [tab, setTab] = useState<'ai' | 'knowledge'>('ai')
+  const [tab, setTab] = useState<'ai' | 'knowledge' | 'update'>('ai')
   const [keys, setKeys] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
+  const [appVersion, setAppVersion] = useState('')
+  const [checking, setChecking] = useState(false)
 
   useEffect(() => {
     void refresh()
+    void window.api.appVersion().then(setAppVersion)
   }, [refresh])
+
+  const checkUpdate = async (): Promise<void> => {
+    setChecking(true)
+    try {
+      const r = await window.api.updates.check()
+      if (!r.ok) {
+        toast(
+          r.reason === 'dev'
+            ? 'โหมด dev ยังไม่มีระบบอัปเดต (เฉพาะตัวติดตั้งจริง)'
+            : `ตรวจสอบไม่สำเร็จ: ${r.reason ?? 'unknown'}`,
+          'error'
+        )
+      } else if (r.updateAvailable) {
+        toast(`พบเวอร์ชันใหม่ ${r.version} — กำลังดาวน์โหลด…`)
+      } else {
+        toast(`เป็นเวอร์ชันล่าสุดแล้ว (${r.currentVersion ?? appVersion}) ✓`)
+      }
+    } finally {
+      setChecking(false)
+    }
+  }
 
   if (!settings) return <></>
 
@@ -105,9 +139,46 @@ export default function Settings({
           >
             คลังความรู้
           </TabBtn>
+          <TabBtn
+            active={tab === 'update'}
+            onClick={() => setTab('update')}
+            icon={<RefreshCw className="size-3.5" />}
+          >
+            อัปเดต
+          </TabBtn>
         </div>
 
         {tab === 'knowledge' && <KnowledgePanel />}
+
+        {tab === 'update' && (
+          <div className="-mr-2 min-h-0 flex-1 space-y-4 overflow-y-auto pr-2">
+            <div className="rounded-xl border border-border bg-background/40 p-4">
+              <div className="flex items-center gap-3">
+                <img src={logoUrl} alt="Perms" className="size-11 rounded-xl shadow-sm" />
+                <div className="min-w-0">
+                  <div className="text-sm font-semibold">Perms</div>
+                  <div className="text-xs text-muted-foreground">
+                    เวอร์ชันปัจจุบัน{' '}
+                    <span className="font-mono text-foreground">{appVersion || '—'}</span>
+                  </div>
+                </div>
+                <Button className="ml-auto" onClick={checkUpdate} disabled={checking}>
+                  {checking ? (
+                    <Loader2 className="size-4 animate-spin" />
+                  ) : (
+                    <RefreshCw className="size-4" />
+                  )}
+                  ตรวจสอบอัปเดต
+                </Button>
+              </div>
+              <Separator className="my-3" />
+              <p className="text-xs text-muted-foreground">
+                แอปจะตรวจสอบอัปเดตอัตโนมัติ<span className="text-foreground">ทุก 30 นาที</span>{' '}
+                และตอนเปิดแอป — เมื่อพบเวอร์ชันใหม่จะดาวน์โหลดให้เอง แล้วเด้งแจ้งให้รีสตาร์ท
+              </p>
+            </div>
+          </div>
+        )}
 
         {tab === 'ai' && (
           <div className="-mr-2 min-h-0 flex-1 space-y-4 overflow-y-auto pr-2">

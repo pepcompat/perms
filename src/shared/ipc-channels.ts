@@ -54,11 +54,13 @@ export const IPC = {
   settingsClearAiKey: 'settings:clearAiKey',
   settingsUpdateAi: 'settings:updateAi',
 
-  // window / shell
+  // window / shell / app
   /** event main→renderer: ส่ง boolean ว่าอยู่ fullscreen ไหม */
   windowFullscreen: 'window:fullscreen',
   /** เปิด URL ด้วย default browser (คลิกลิงก์ใน terminal) */
   shellOpenExternal: 'shell:openExternal',
+  /** เวอร์ชันของแอปตอนนี้ */
+  appVersion: 'app:version',
 
   // auto-update
   updateCheck: 'update:check',

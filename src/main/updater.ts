@@ -45,21 +45,32 @@ export function initAutoUpdate(): void {
     setImmediate(() => autoUpdater.quitAndInstall())
   })
 
-  // ให้ renderer สั่งเช็คเองได้ (เช่นปุ่ม "Check for updates")
+  // ให้ renderer สั่งเช็คเองได้ (ปุ่ม "ตรวจสอบอัปเดต") — คืนว่ามีเวอร์ชันใหม่ไหม
   ipcMain.handle(IPC.updateCheck, async () => {
-    if (!app.isPackaged) return { ok: false, reason: 'dev' }
+    if (!app.isPackaged) return { ok: false, reason: 'dev', currentVersion: app.getVersion() }
     try {
       const r = await autoUpdater.checkForUpdates()
-      return { ok: true, version: r?.updateInfo.version }
+      const latest = r?.updateInfo.version
+      const current = app.getVersion()
+      return {
+        ok: true,
+        version: latest,
+        currentVersion: current,
+        updateAvailable: !!latest && latest !== current
+      }
     } catch (e) {
       return { ok: false, reason: e instanceof Error ? e.message : String(e) }
     }
   })
 
-  // เช็คตอนเปิดแอป (เฉพาะ build จริง — dev ไม่มี updater)
+  // เช็คตอนเปิดแอป + ทุก 30 นาที (เฉพาะ build จริง — dev ไม่มี updater)
   if (app.isPackaged) {
-    autoUpdater.checkForUpdates().catch(() => {
-      /* ออฟไลน์/ยังไม่มี release ก็เงียบไว้ */
-    })
+    const check = (): void => {
+      autoUpdater.checkForUpdates().catch(() => {
+        /* ออฟไลน์/ยังไม่มี release ก็เงียบไว้ */
+      })
+    }
+    check()
+    setInterval(check, 30 * 60 * 1000)
   }
 }

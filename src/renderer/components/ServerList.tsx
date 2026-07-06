@@ -253,18 +253,18 @@ export default function ServerList({
                 onClick={() => onCardClick(s)}
                 onDoubleClick={() => onCardDblClick(s)}
                 title="คลิก: ไป tab ล่าสุด · ดับเบิลคลิก: เปิด tab ใหม่"
-                className="group mb-0.5 flex cursor-pointer items-center gap-2.5 rounded-lg px-2 py-2 transition-colors hover:bg-accent"
+                className="group mb-px flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 transition-colors hover:bg-accent"
               >
                 <span
                   className={cn(
-                    'size-2 shrink-0 rounded-full ring-2 ring-background',
+                    'size-1.5 shrink-0 rounded-full ring-2 ring-background',
                     isConnected(s.id) ? 'bg-[hsl(var(--success))]' : 'bg-muted-foreground/40'
                   )}
                   title={isConnected(s.id) ? 'เชื่อมต่ออยู่' : 'ไม่ได้เชื่อมต่อ'}
                 />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium leading-tight">{s.name}</div>
-                  <div className="truncate text-xs text-muted-foreground">
+                  <div className="truncate text-[13px] font-medium leading-tight">{s.name}</div>
+                  <div className="truncate text-[11px] leading-tight text-muted-foreground">
                     {s.username}@{s.host}
                   </div>
                 </div>

@@ -24,14 +24,18 @@ import ServerForm from './ServerForm'
 
 export default function ServerList({
   width,
+  version,
   onOpenSettings,
   onOpenHistory,
-  onOpenRunbooks
+  onOpenRunbooks,
+  onOpenChangelog
 }: {
   width: number
+  version?: string
   onOpenSettings: () => void
   onOpenHistory: () => void
   onOpenRunbooks: () => void
+  onOpenChangelog: () => void
 }): JSX.Element {
   const { servers, refresh } = useServers()
   const { addTab } = useTabs()
@@ -339,6 +343,15 @@ export default function ServerList({
         <SideLink icon={<History className="size-4" />} label="Session history" onClick={onOpenHistory} />
         <SideLink icon={<BookText className="size-4" />} label="Runbooks" onClick={onOpenRunbooks} />
         <SideLink icon={<SettingsIcon className="size-4" />} label="Settings" onClick={onOpenSettings} />
+        {version && (
+          <button
+            onClick={onOpenChangelog}
+            title="ดูว่ามีอะไรใหม่ (changelog)"
+            className="ml-1 mt-0.5 self-start rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+          >
+            v{version}
+          </button>
+        )}
       </div>
 
       {formOpen && <ServerForm editing={editing} open={formOpen} onClose={() => setFormOpen(false)} />}

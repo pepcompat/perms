@@ -9,7 +9,7 @@ import Runbooks from './components/Runbooks'
 import UpdateToast from './components/UpdateToast'
 import WhatsNew from './components/WhatsNew'
 import Toaster from './components/Toaster'
-import { whatsNewFor, type ChangelogEntry } from './lib/changelog'
+import { whatsNewFor, CHANGELOG, type ChangelogEntry } from './lib/changelog'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Resizer, useResizable } from './components/Resizer'
 import { ErrorBoundary } from './components/ErrorBoundary'
@@ -26,6 +26,7 @@ export default function App(): JSX.Element {
   const [showRunbooks, setShowRunbooks] = useState(false)
   const [appVersion, setAppVersion] = useState('')
   const [whatsNew, setWhatsNew] = useState<ChangelogEntry[]>([])
+  const [changelogOpen, setChangelogOpen] = useState(false)
 
   const sidebar = useResizable('ui.sidebarWidth', 256, 180, 460, 'left')
   const ai = useResizable('ui.aiWidth', 384, 280, 640, 'right')
@@ -55,9 +56,11 @@ export default function App(): JSX.Element {
       <div className="flex h-full w-full bg-background text-foreground">
         <ServerList
           width={sidebar.width}
+          version={appVersion}
           onOpenSettings={() => setShowSettings(true)}
           onOpenHistory={() => setShowHistory(true)}
           onOpenRunbooks={() => setShowRunbooks(true)}
+          onOpenChangelog={() => setChangelogOpen(true)}
         />
 
         <Resizer onMouseDown={sidebar.startDrag} active={sidebar.dragging} />
@@ -95,6 +98,14 @@ export default function App(): JSX.Element {
 
         {whatsNew.length > 0 && (
           <WhatsNew version={appVersion} entries={whatsNew} onClose={() => setWhatsNew([])} />
+        )}
+        {changelogOpen && (
+          <WhatsNew
+            version={appVersion}
+            entries={CHANGELOG}
+            manual
+            onClose={() => setChangelogOpen(false)}
+          />
         )}
 
         <UpdateToast />

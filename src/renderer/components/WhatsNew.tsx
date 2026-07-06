@@ -7,11 +7,14 @@ import { logoUrl } from '../lib/logo'
 export default function WhatsNew({
   version,
   entries,
-  onClose
+  onClose,
+  manual = false
 }: {
   version: string
   entries: ChangelogEntry[]
   onClose: () => void
+  /** true = ผู้ใช้กดเปิดเอง (ดู changelog) · false = เด้งอัตโนมัติหลังอัปเดต */
+  manual?: boolean
 }): JSX.Element {
   const multi = entries.length > 1
   return (
@@ -27,7 +30,17 @@ export default function WhatsNew({
             </div>
           </DialogTitle>
           <DialogDescription>
-            อัปเดตเป็น Perms <span className="font-mono text-foreground">v{version}</span> แล้ว — สรุปสิ่งที่เพิ่ม/ปรับ
+            {manual ? (
+              <>
+                บันทึกการเปลี่ยนแปลง · กำลังใช้{' '}
+                <span className="font-mono text-foreground">v{version}</span>
+              </>
+            ) : (
+              <>
+                อัปเดตเป็น Perms <span className="font-mono text-foreground">v{version}</span> แล้ว —
+                สรุปสิ่งที่เพิ่ม/ปรับ
+              </>
+            )}
           </DialogDescription>
         </DialogHeader>
 

@@ -100,3 +100,6 @@ DB tables: `servers`, `secrets`, `sessions`, `commands`, `ai_history`, `runbooks
 ## License
 
 เผยแพร่ภายใต้สัญญาอนุญาต **[MIT](LICENSE)** © pepcompat
+
+ใช้ open-source dependencies แบบ permissive (MIT / BSD / Apache-2.0 / ISC / OFL) — ดูรายการ license
+ทั้งหมดใน **[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md)** (สร้างใหม่ได้ด้วย `pnpm licenses`)

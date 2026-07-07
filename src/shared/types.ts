@@ -176,6 +176,16 @@ export interface SftpEntry {
   mtime: number
 }
 
+/** เนื้อหาไฟล์ที่อ่านมาแก้ (SFTP) */
+export interface SftpFileContent {
+  content: string
+  /** สิทธิ์ไฟล์เดิม (เก็บไว้เขียนกลับให้เหมือนเดิม) */
+  mode: number
+  /** epoch ms — ใช้ตรวจว่าไฟล์ถูกแก้บนเซิร์ฟเวอร์ระหว่างเปิดอยู่ไหม */
+  mtime: number
+  size: number
+}
+
 /** progress การถ่ายโอนไฟล์ SFTP (main→renderer) */
 export interface SftpProgress {
   transferId: string

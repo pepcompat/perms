@@ -11,12 +11,14 @@ import {
   FolderPlus,
   Home,
   Loader2,
-  FolderSymlink
+  FolderSymlink,
+  Pencil
 } from 'lucide-react'
 import type { SftpEntry, SftpProgress } from '@shared/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
+import FileEditor from './FileEditor'
 
 function humanSize(n: number): string {
   if (n < 1024) return `${n} B`
@@ -57,6 +59,7 @@ export default function SftpBrowser({
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const [transfers, setTransfers] = useState<Record<string, SftpProgress>>({})
+  const [editing, setEditing] = useState<{ path: string; name: string } | null>(null)
 
   const load = async (path: string): Promise<void> => {
     setLoading(true)
@@ -101,6 +104,7 @@ export default function SftpBrowser({
 
   const enter = (e: SftpEntry): void => {
     if (e.type === 'dir') void load(joinRemote(cwd, e.name))
+    else setEditing({ path: joinRemote(cwd, e.name), name: e.name })
   }
   const upload = async (): Promise<void> => {
     setBusy(true)
@@ -204,7 +208,16 @@ export default function SftpBrowser({
                 <span className="w-20 shrink-0 text-right text-xs text-muted-foreground">
                   {e.type === 'file' ? humanSize(e.size) : ''}
                 </span>
-                <div className="flex w-14 shrink-0 justify-end gap-0.5 opacity-0 group-hover:opacity-100">
+                <div className="flex w-20 shrink-0 justify-end gap-0.5 opacity-0 group-hover:opacity-100">
+                  {e.type !== 'dir' && (
+                    <button
+                      title="แก้ไข"
+                      onClick={() => setEditing({ path: joinRemote(cwd, e.name), name: e.name })}
+                      className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    >
+                      <Pencil className="size-3.5" />
+                    </button>
+                  )}
                   {e.type !== 'dir' && (
                     <button
                       title="ดาวน์โหลด"
@@ -255,6 +268,18 @@ export default function SftpBrowser({
               )
             })}
           </div>
+        )}
+
+        {editing && (
+          <FileEditor
+            sessionId={sessionId}
+            path={editing.path}
+            name={editing.name}
+            onClose={(changed) => {
+              setEditing(null)
+              if (changed) void load(cwd)
+            }}
+          />
         )}
       </DialogContent>
     </Dialog>

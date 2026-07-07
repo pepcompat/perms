@@ -56,6 +56,8 @@ import {
   sftpRename,
   sftpDownload,
   sftpUpload,
+  sftpReadFile,
+  sftpWriteFile,
   remoteJoin
 } from '../terminal/sftp'
 import { runChat, resolveApproval, cancelRequest } from '../ai/agent'
@@ -94,6 +96,14 @@ export function registerIpc(): void {
   )
   ipcMain.handle(IPC.sftpRename, (_e, sessionId: string, from: string, to: string) =>
     sftpRename(sessionId, from, to)
+  )
+  ipcMain.handle(IPC.sftpRead, (_e, sessionId: string, path: string) =>
+    sftpReadFile(sessionId, path)
+  )
+  ipcMain.handle(
+    IPC.sftpWrite,
+    (_e, sessionId: string, path: string, content: string, mode: number, expectedMtime: number | null) =>
+      sftpWriteFile(sessionId, path, content, mode, expectedMtime)
   )
 
   ipcMain.handle(

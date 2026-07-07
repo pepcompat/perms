@@ -19,7 +19,8 @@ import type {
   AppSettings,
   UpdateProgress,
   SftpEntry,
-  SftpProgress
+  SftpProgress,
+  SftpFileContent
 } from '../shared/types'
 
 const api = {
@@ -91,6 +92,16 @@ const api = {
       remoteDir: string
     ): Promise<{ ok?: boolean; canceled?: boolean; count?: number; error?: string }> =>
       ipcRenderer.invoke(IPC.sftpUpload, sessionId, remoteDir),
+    read: (sessionId: string, path: string): Promise<SftpFileContent> =>
+      ipcRenderer.invoke(IPC.sftpRead, sessionId, path),
+    write: (
+      sessionId: string,
+      path: string,
+      content: string,
+      mode: number,
+      expectedMtime: number | null
+    ): Promise<{ mtime: number }> =>
+      ipcRenderer.invoke(IPC.sftpWrite, sessionId, path, content, mode, expectedMtime),
     onProgress: (cb: (p: SftpProgress) => void): (() => void) => {
       const listener = (_e: unknown, p: SftpProgress): void => cb(p)
       ipcRenderer.on(IPC.sftpProgress, listener)

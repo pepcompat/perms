@@ -19,6 +19,8 @@ export const IPC = {
   sftpRename: 'sftp:rename',
   sftpDownload: 'sftp:download',
   sftpUpload: 'sftp:upload',
+  sftpRead: 'sftp:read',
+  sftpWrite: 'sftp:write',
   /** event main→renderer: ความคืบหน้าการถ่ายโอน */
   sftpProgress: 'sftp:progress',
 

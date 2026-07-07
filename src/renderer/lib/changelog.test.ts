@@ -11,6 +11,9 @@ describe('whatsNewFor', () => {
   it('ยังไม่เคยเห็น version ใด (null) → โชว์เฉพาะ current', () => {
     expect(whatsNewFor(null, '1.3.0').map((e) => e.version)).toEqual(['1.3.0'])
   })
+  it('อัป 1.3.0 → 1.4.0 → โชว์เฉพาะ 1.4.0', () => {
+    expect(whatsNewFor('1.3.0', '1.4.0').map((e) => e.version)).toEqual(['1.4.0'])
+  })
   it('อัปจากเวอร์ชันก่อนหน้า → โชว์เฉพาะที่ใหม่กว่า', () => {
     expect(whatsNewFor('1.2.0', '1.3.0').map((e) => e.version)).toEqual(['1.3.0', '1.2.1'])
   })

@@ -7,6 +7,25 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.4.0',
+    title: 'แก้ไขไฟล์บนเซิร์ฟเวอร์ได้ในตัว',
+    items: [
+      {
+        icon: '📝',
+        text: 'แก้ไฟล์บนเซิร์ฟเวอร์ (เช่น .env) ได้เลย — เปิดจาก SFTP (ดับเบิลคลิกไฟล์ หรือปุ่มดินสอ) แล้วบันทึกด้วย ⌘S'
+      },
+      {
+        icon: '🎨',
+        text: 'Editor มี syntax highlight ตามชนิดไฟล์ (.env / .json / .yml / .sh / Dockerfile / nginx / …) และ ⌘Z ย้อน · ⇧⌘Z ทำซ้ำ'
+      },
+      {
+        icon: '🔒',
+        text: 'บันทึกแบบปลอดภัย: atomic write (เน็ตหลุดไฟล์ไม่พัง) · คงสิทธิ์ไฟล์เดิม · เตือนถ้าไฟล์ถูกแก้ซ้อนบนเซิร์ฟเวอร์ · กันไฟล์ไบนารี/ใหญ่เกิน · ไม่ส่งเนื้อหาไป AI'
+      },
+      { icon: '📜', text: 'กดเลขเวอร์ชันใต้ Settings เพื่อดู changelog ครบทุกเวอร์ชันในที่เดียว' }
+    ]
+  },
+  {
     version: '1.3.0',
     title: 'รับส่งไฟล์ SFTP + ผู้ช่วย AI ฉลาดและปลอดภัยขึ้น',
     items: [

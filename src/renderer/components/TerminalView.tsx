@@ -572,17 +572,20 @@ export default function TerminalView({
       {/* ghost text อินไลน์ตรงเคอร์เซอร์ (แนะนำจากประวัติ · กด Tab เพื่อรับ) */}
       {ghost && ghost.text && !searchOpen && (
         <div
-          className="pointer-events-none absolute z-30 select-none"
+          className="pointer-events-none absolute z-30 select-none whitespace-pre"
           style={{
             left: ghost.left,
             top: ghost.top,
+            height: ghost.ch,
+            // ล็อก line-height = ความสูง cell จริง (ไม่งั้น default ~1.2× จะดันตัวอักษรหลุดแถว)
+            lineHeight: `${ghost.ch}px`,
             fontFamily:
               "'JetBrains Mono', 'Anuphan', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace",
             fontSize,
             color: '#6c7086'
           }}
         >
-          {/* วางแต่ละตัวอักษรในกล่องกว้างเท่า cell → ตรงกริด xterm เป๊ะ */}
+          {/* วางแต่ละตัวอักษรในกล่องกว้างเท่า cell + ชิดบน → ตรงกริด xterm */}
           {[...ghost.text].map((ch, i) => (
             <span
               key={i}
@@ -590,7 +593,8 @@ export default function TerminalView({
                 display: 'inline-block',
                 width: ghost.cw,
                 height: ghost.ch,
-                lineHeight: `${ghost.ch}px`
+                lineHeight: `${ghost.ch}px`,
+                verticalAlign: 'top'
               }}
             >
               {ch}
@@ -598,7 +602,7 @@ export default function TerminalView({
           ))}
           <span
             className="ml-1.5 rounded bg-secondary/60 px-1 text-[9px] text-muted-foreground"
-            style={{ verticalAlign: 'middle' }}
+            style={{ verticalAlign: 'top', lineHeight: `${ghost.ch}px` }}
           >
             ⇥ Tab
           </span>

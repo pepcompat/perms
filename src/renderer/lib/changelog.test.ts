@@ -12,9 +12,14 @@ describe('whatsNewFor', () => {
     expect(whatsNewFor(null, '1.3.0').map((e) => e.version)).toEqual(['1.3.0'])
   })
   it('อัปจากเวอร์ชันก่อนหน้า → โชว์เฉพาะที่ใหม่กว่า', () => {
-    expect(whatsNewFor('1.2.0', '1.3.0').map((e) => e.version)).toEqual(['1.3.0'])
+    expect(whatsNewFor('1.2.0', '1.3.0').map((e) => e.version)).toEqual(['1.3.0', '1.2.1'])
   })
   it('อัปข้ามหลายเวอร์ชัน → โชว์ทุกอันระหว่างนั้น (ใหม่→เก่า)', () => {
-    expect(whatsNewFor('1.1.0', '1.3.0').map((e) => e.version)).toEqual(['1.3.0', '1.2.0'])
+    expect(whatsNewFor('1.1.0', '1.3.0').map((e) => e.version)).toEqual([
+      '1.3.0',
+      '1.2.1',
+      '1.2.0',
+      '1.1.1'
+    ])
   })
 })

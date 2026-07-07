@@ -25,7 +25,8 @@ export default function WhatsNew({
             <img src={logoUrl} alt="Perms" className="size-9 rounded-lg shadow-sm" />
             <div className="flex flex-col">
               <span className="flex items-center gap-1.5">
-                <Sparkles className="size-4 text-primary" /> มีอะไรใหม่
+                <Sparkles className="size-4 text-primary" />
+                {manual ? 'บันทึกการเปลี่ยนแปลง' : 'มีอะไรใหม่'}
               </span>
             </div>
           </DialogTitle>

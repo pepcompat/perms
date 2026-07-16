@@ -24,6 +24,11 @@ export const IPC = {
   /** event main→renderer: ความคืบหน้าการถ่ายโอน */
   sftpProgress: 'sftp:progress',
 
+  // docker (จัดการ container บนเซิร์ฟเวอร์ SSH)
+  dockerList: 'docker:list',
+  dockerAction: 'docker:action',
+  dockerLogs: 'docker:logs',
+
   // terminal
   terminalOpen: 'terminal:open',
   terminalWrite: 'terminal:write',

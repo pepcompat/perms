@@ -60,6 +60,7 @@ import {
   sftpWriteFile,
   remoteJoin
 } from '../terminal/sftp'
+import { dockerList, dockerAction, dockerLogs } from '../docker'
 import { runChat, resolveApproval, cancelRequest } from '../ai/agent'
 
 export function registerIpc(): void {
@@ -105,6 +106,13 @@ export function registerIpc(): void {
     (_e, sessionId: string, path: string, content: string, mode: number, expectedMtime: number | null) =>
       sftpWriteFile(sessionId, path, content, mode, expectedMtime)
   )
+
+  // ---- docker ----
+  ipcMain.handle(IPC.dockerList, (_e, sessionId: string) => dockerList(sessionId))
+  ipcMain.handle(IPC.dockerAction, (_e, sessionId: string, action: string, id: string) =>
+    dockerAction(sessionId, action, id)
+  )
+  ipcMain.handle(IPC.dockerLogs, (_e, sessionId: string, id: string) => dockerLogs(sessionId, id))
 
   ipcMain.handle(
     IPC.sftpDownload,

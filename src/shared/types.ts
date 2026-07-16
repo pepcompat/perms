@@ -176,6 +176,18 @@ export interface SftpEntry {
   mtime: number
 }
 
+/** Docker container บนเซิร์ฟเวอร์ (จาก `docker ps -a`) */
+export interface DockerContainer {
+  id: string
+  name: string
+  image: string
+  status: string
+  /** running | exited | created | paused | restarting | dead */
+  state: string
+  ports: string
+  created: string
+}
+
 /** เนื้อหาไฟล์ที่อ่านมาแก้ (SFTP) */
 export interface SftpFileContent {
   content: string

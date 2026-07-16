@@ -97,6 +97,16 @@ export function runInTerminal(id: string, command: string): void {
   recordCommand(id, command, 'ai', null, null)
 }
 
+/** รันคำสั่งเบื้องหลัง (ไม่ echo ลง terminal, ไม่บันทึกประวัติ) — ใช้ query สถานะ เช่น docker */
+export async function execSilent(
+  id: string,
+  command: string
+): Promise<{ output: string; exitCode: number | null }> {
+  const s = sessions.get(id)
+  if (!s) throw new Error('Session not found or not active')
+  return s.exec(command)
+}
+
 export function disposeAll(): void {
   for (const [, s] of sessions) s.dispose()
   sessions.clear()

@@ -17,13 +17,15 @@ import {
   TextSelect,
   ClipboardPaste,
   Sparkles,
-  FolderSymlink
+  FolderSymlink,
+  Container
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { redactSecrets } from '@shared/redact'
 import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import SftpBrowser from './SftpBrowser'
+import DockerPanel from './DockerPanel'
 
 // Catppuccin Mocha — palette ที่เข้ากับธีมม่วงของแอป ทำให้ output (ls, git, ฯลฯ) มีสีสวย
 const THEME = {
@@ -85,6 +87,8 @@ export default function TerminalView({
   const tabKind = useTabs((s) => s.tabs.find((t) => t.sessionId === sessionId)?.kind)
   const tabTitle = useTabs((s) => s.tabs.find((t) => t.sessionId === sessionId)?.title ?? '')
   const [sftpOpen, setSftpOpen] = useState(false)
+  const [dockerOpen, setDockerOpen] = useState(false)
+  const [dockerAvailable, setDockerAvailable] = useState(false)
 
   // --- autocomplete จากประวัติคำสั่ง ---
   const historyRef = useRef<string[]>([])
@@ -346,6 +350,23 @@ export default function TerminalView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, sessionId])
 
+  // SSH: หลังต่อแล้ว เช็คว่ามี docker container ไหม → ถ้ามี โชว์ปุ่ม Docker
+  useEffect(() => {
+    if (tabKind !== 'ssh') return
+    let cancelled = false
+    window.api.docker
+      .list(sessionId)
+      .then((r) => {
+        if (!cancelled) setDockerAvailable(r.available && r.containers.length > 0)
+      })
+      .catch(() => {
+        /* ไม่มี docker / ไม่มีสิทธิ์ — ไม่โชว์ปุ่ม */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [tabKind, sessionId])
+
   // ปรับขนาดฟอนต์
   useEffect(() => {
     if (termRef.current) {
@@ -512,6 +533,11 @@ export default function TerminalView({
       >
         {tabKind === 'ssh' && (
           <>
+            {dockerAvailable && (
+              <ToolBtn title="จัดการ Docker containers" onClick={() => setDockerOpen(true)}>
+                <Container className="size-3.5 text-primary" />
+              </ToolBtn>
+            )}
             <ToolBtn title="ไฟล์ (SFTP)" onClick={() => setSftpOpen(true)}>
               <FolderSymlink className="size-3.5" />
             </ToolBtn>
@@ -615,6 +641,15 @@ export default function TerminalView({
           title={tabTitle}
           open={sftpOpen}
           onClose={() => setSftpOpen(false)}
+        />
+      )}
+
+      {tabKind === 'ssh' && dockerOpen && (
+        <DockerPanel
+          sessionId={sessionId}
+          title={tabTitle}
+          open={dockerOpen}
+          onClose={() => setDockerOpen(false)}
         />
       )}
     </div>

@@ -20,7 +20,8 @@ import type {
   UpdateProgress,
   SftpEntry,
   SftpProgress,
-  SftpFileContent
+  SftpFileContent,
+  DockerContainer
 } from '../shared/types'
 
 const api = {
@@ -107,6 +108,21 @@ const api = {
       ipcRenderer.on(IPC.sftpProgress, listener)
       return () => ipcRenderer.removeListener(IPC.sftpProgress, listener)
     }
+  },
+
+  docker: {
+    list: (
+      sessionId: string
+    ): Promise<{ available: boolean; containers: DockerContainer[] }> =>
+      ipcRenderer.invoke(IPC.dockerList, sessionId),
+    action: (
+      sessionId: string,
+      action: string,
+      id: string
+    ): Promise<{ ok: boolean; output: string }> =>
+      ipcRenderer.invoke(IPC.dockerAction, sessionId, action, id),
+    logs: (sessionId: string, id: string): Promise<string> =>
+      ipcRenderer.invoke(IPC.dockerLogs, sessionId, id)
   },
 
   sessions: {

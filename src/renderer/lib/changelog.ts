@@ -7,6 +7,25 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.5.0',
+    title: 'จัดการ Docker container บนเซิร์ฟเวอร์',
+    items: [
+      {
+        icon: '🐳',
+        text: 'พอต่อ SSH แล้วมี container จะมีปุ่ม Docker บน toolbar — กดเปิดหน้าจัดการ container ทั้งหมด'
+      },
+      {
+        icon: '🎛️',
+        text: 'สั่ง เริ่ม / หยุด / รีสตาร์ท / ดู logs / ลบ container ได้ (ปุ่มมีสีตามการกระทำ)'
+      },
+      { icon: '💻', text: 'เปิด terminal เข้า container ได้เลย (docker exec) — เปิดเป็น tab ใหม่' },
+      {
+        icon: '📦',
+        text: 'จัดกลุ่มตาม compose stack + สั่ง เริ่ม/หยุด/รีสตาร์ท ทั้งชุดทีเดียว'
+      }
+    ]
+  },
+  {
     version: '1.4.0',
     title: 'แก้ไขไฟล์บนเซิร์ฟเวอร์ได้ในตัว',
     items: [

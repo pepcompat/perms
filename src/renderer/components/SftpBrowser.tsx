@@ -18,29 +18,8 @@ import type { SftpEntry, SftpProgress } from '@shared/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
+import { humanSize, joinRemote, parentPath } from '../lib/format'
 import FileEditor from './FileEditor'
-
-function humanSize(n: number): string {
-  if (n < 1024) return `${n} B`
-  const u = ['KB', 'MB', 'GB', 'TB']
-  let v = n
-  let i = -1
-  do {
-    v /= 1024
-    i++
-  } while (v >= 1024 && i < u.length - 1)
-  return `${v.toFixed(1)} ${u[i]}`
-}
-
-function joinRemote(dir: string, name: string): string {
-  return dir.endsWith('/') ? dir + name : `${dir}/${name}`
-}
-
-function parentPath(p: string): string {
-  const parts = p.split('/').filter(Boolean)
-  parts.pop()
-  return '/' + parts.join('/')
-}
 
 export default function SftpBrowser({
   sessionId,

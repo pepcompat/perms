@@ -17,8 +17,7 @@ import {
   TextSelect,
   ClipboardPaste,
   Sparkles,
-  FolderSymlink,
-  Container
+  FolderSymlink
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { redactSecrets } from '@shared/redact'
@@ -26,6 +25,7 @@ import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import SftpBrowser from './SftpBrowser'
 import DockerPanel from './DockerPanel'
+import DockerIcon from './DockerIcon'
 
 // Catppuccin Mocha — palette ที่เข้ากับธีมม่วงของแอป ทำให้ output (ls, git, ฯลฯ) มีสีสวย
 const THEME = {
@@ -83,9 +83,11 @@ export default function TerminalView({
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchOpenRef = useRef(false)
   const removeTab = useTabs((s) => s.removeTab)
+  const addTab = useTabs((s) => s.addTab)
   const sendToAi = useAiDraft((s) => s.send)
   const tabKind = useTabs((s) => s.tabs.find((t) => t.sessionId === sessionId)?.kind)
   const tabTitle = useTabs((s) => s.tabs.find((t) => t.sessionId === sessionId)?.title ?? '')
+  const tabServerId = useTabs((s) => s.tabs.find((t) => t.sessionId === sessionId)?.serverId)
   const [sftpOpen, setSftpOpen] = useState(false)
   const [dockerOpen, setDockerOpen] = useState(false)
   const [dockerAvailable, setDockerAvailable] = useState(false)
@@ -448,6 +450,24 @@ export default function TerminalView({
     )
   }
 
+  // เปิด terminal เข้า container: เปิด tab ใหม่ (server เดิม) แล้วรัน docker exec
+  const openExec = async (c: { id: string; name: string }): Promise<void> => {
+    if (!tabServerId) return
+    try {
+      const res = await window.api.terminal.open({ serverId: tabServerId, cols: 80, rows: 24 })
+      addTab({ sessionId: res.sessionId, title: c.name || res.title, kind: res.kind, serverId: tabServerId })
+      setDockerOpen(false)
+      window.setTimeout(() => {
+        window.api.terminal.write(
+          res.sessionId,
+          `docker exec -it ${c.id} sh -c 'command -v bash >/dev/null 2>&1 && exec bash || exec sh'\n`
+        )
+      }, 600)
+    } catch (e) {
+      alert(`เปิด terminal ไม่สำเร็จ: ${e instanceof Error ? e.message : String(e)}`)
+    }
+  }
+
   return (
     <div
       ref={containerRef}
@@ -535,7 +555,7 @@ export default function TerminalView({
           <>
             {dockerAvailable && (
               <ToolBtn title="จัดการ Docker containers" onClick={() => setDockerOpen(true)}>
-                <Container className="size-3.5 text-primary" />
+                <DockerIcon className="size-3.5 text-[#2496ED]" />
               </ToolBtn>
             )}
             <ToolBtn title="ไฟล์ (SFTP)" onClick={() => setSftpOpen(true)}>
@@ -650,6 +670,7 @@ export default function TerminalView({
           title={tabTitle}
           open={dockerOpen}
           onClose={() => setDockerOpen(false)}
+          onOpenExec={openExec}
         />
       )}
     </div>

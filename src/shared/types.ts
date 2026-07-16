@@ -186,6 +186,10 @@ export interface DockerContainer {
   state: string
   ports: string
   created: string
+  /** compose project (label com.docker.compose.project) — ว่าง = ไม่ได้อยู่ใน compose */
+  project: string
+  /** compose service (label com.docker.compose.service) */
+  service: string
 }
 
 /** เนื้อหาไฟล์ที่อ่านมาแก้ (SFTP) */

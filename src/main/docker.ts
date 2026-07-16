@@ -26,6 +26,9 @@ export async function dockerList(
     try {
       const j = JSON.parse(t) as Record<string, string>
       const status = j.Status || ''
+      const labels = j.Labels || ''
+      const proj = /(?:^|,)com\.docker\.compose\.project=([^,]+)/.exec(labels)
+      const svc = /(?:^|,)com\.docker\.compose\.service=([^,]+)/.exec(labels)
       containers.push({
         id: j.ID || '',
         name: j.Names || '',
@@ -33,7 +36,9 @@ export async function dockerList(
         status,
         state: (j.State || (/^up/i.test(status) ? 'running' : 'exited')).toLowerCase(),
         ports: j.Ports || '',
-        created: j.CreatedAt || j.RunningFor || ''
+        created: j.CreatedAt || j.RunningFor || '',
+        project: proj ? proj[1] : '',
+        service: svc ? svc[1] : ''
       })
     } catch {
       /* ข้าม line ที่ parse ไม่ได้ */

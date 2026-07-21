@@ -43,6 +43,7 @@ export const IPC = {
   sessionsList: 'sessions:list',
   sessionCommands: 'sessions:commands',
   sessionRecentCommands: 'sessions:recentCommands',
+  sessionCommandStats: 'sessions:commandStats',
   sessionRecordCommand: 'sessions:recordCommand',
 
   // ai

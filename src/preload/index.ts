@@ -130,6 +130,10 @@ const api = {
     commands: (sessionId: string): Promise<CommandRecord[]> =>
       ipcRenderer.invoke(IPC.sessionCommands, sessionId),
     recentCommands: (): Promise<string[]> => ipcRenderer.invoke(IPC.sessionRecentCommands),
+    commandStats: (
+      serverId: string | null
+    ): Promise<{ command: string; count: number; lastRan: number; sameServer: number }[]> =>
+      ipcRenderer.invoke(IPC.sessionCommandStats, serverId),
     recordCommand: (sessionId: string, command: string): void =>
       ipcRenderer.send(IPC.sessionRecordCommand, sessionId, command)
   },

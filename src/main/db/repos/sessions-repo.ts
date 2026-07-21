@@ -128,3 +128,27 @@ export function recentCommands(limit = 400): string[] {
     .all(limit) as { command: string }[]
   return rows.map((r) => r.command)
 }
+
+/**
+ * สถิติคำสั่งสำหรับจัดอันดับ autocomplete — ความถี่ + ครั้งล่าสุด
+ * + flag ว่าเคยรันบน server เดียวกับ session ปัจจุบันไหม (serverId=null = local)
+ */
+export function commandStats(
+  serverId: string | null,
+  limit = 600
+): { command: string; count: number; lastRan: number; sameServer: number }[] {
+  return getDb()
+    .prepare(
+      `SELECT c.command AS command,
+              COUNT(*) AS count,
+              MAX(c.ran_at) AS lastRan,
+              MAX(CASE WHEN COALESCE(s.server_id,'') = COALESCE(?,'') THEN 1 ELSE 0 END) AS sameServer
+       FROM commands c
+       JOIN sessions s ON s.id = c.session_id
+       WHERE c.command <> ''
+       GROUP BY c.command
+       ORDER BY lastRan DESC
+       LIMIT ?`
+    )
+    .all(serverId, limit) as { command: string; count: number; lastRan: number; sameServer: number }[]
+}

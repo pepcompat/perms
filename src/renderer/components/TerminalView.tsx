@@ -21,6 +21,7 @@ import {
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { redactSecrets } from '@shared/redact'
+import { rankSuggestions, type CommandStat } from '@shared/suggest'
 import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import SftpBrowser from './SftpBrowser'
@@ -92,8 +93,9 @@ export default function TerminalView({
   const [dockerOpen, setDockerOpen] = useState(false)
   const [dockerAvailable, setDockerAvailable] = useState(false)
 
-  // --- autocomplete จากประวัติคำสั่ง ---
-  const historyRef = useRef<string[]>([])
+  // --- autocomplete จากประวัติคำสั่ง (จัดอันดับด้วย frecency + server เดียวกัน) ---
+  const statsRef = useRef<CommandStat[]>([])
+  const lastCmdRef = useRef('') // คำสั่งล่าสุดที่พิมพ์ (ใช้ตอนถาม AI)
   const typedRef = useRef('') // บรรทัดที่ผู้ใช้พิมพ์อยู่ (best-effort)
   const trackingRef = useRef(true) // false เมื่อ desync (มี control/escape) → หยุดแนะนำจน Enter
   const suggRef = useRef<{ prefix: string; list: string[] } | null>(null)
@@ -138,13 +140,7 @@ export default function TerminalView({
   const recomputeSugg = (): void => {
     const line = typedRef.current
     if (!trackingRef.current || line.length < 2) return setSuggestion(null)
-    const list: string[] = []
-    for (const h of historyRef.current) {
-      if (h.length > line.length && h.startsWith(line)) {
-        list.push(h)
-        if (list.length >= 3) break
-      }
-    }
+    const list = rankSuggestions(line, statsRef.current, Date.now(), 3)
     setSuggestion(list.length ? { prefix: line, list } : null)
   }
 
@@ -159,8 +155,17 @@ export default function TerminalView({
     if (d === '\r' || d === '\n') {
       const line = typedRef.current
       if (trackingRef.current && line.trim()) {
-        window.api.sessions.recordCommand(sessionId, line.trim())
-        historyRef.current = [line.trim(), ...historyRef.current.filter((h) => h !== line.trim())].slice(0, 500)
+        const cmd = line.trim()
+        window.api.sessions.recordCommand(sessionId, cmd)
+        lastCmdRef.current = cmd
+        // อัปเดตสถิติในเครื่องทันที (ไม่ต้องรอโหลดใหม่) → แนะนำคำสั่งที่เพิ่งใช้ได้เลย
+        const i = statsRef.current.findIndex((s) => s.command === cmd)
+        if (i >= 0) {
+          const prev = statsRef.current[i]
+          statsRef.current[i] = { ...prev, count: prev.count + 1, lastRan: Date.now(), sameServer: 1 }
+        } else {
+          statsRef.current.unshift({ command: cmd, count: 1, lastRan: Date.now(), sameServer: 1 })
+        }
       }
       typedRef.current = ''
       trackingRef.current = true
@@ -282,9 +287,9 @@ export default function TerminalView({
       return true
     })
 
-    // โหลดประวัติคำสั่งสำหรับ autocomplete
-    void window.api.sessions.recentCommands().then((h) => {
-      historyRef.current = h
+    // โหลดสถิติคำสั่งสำหรับ autocomplete (ความถี่ + ล่าสุด + เคยใช้บน server นี้ไหม)
+    void window.api.sessions.commandStats(tabServerId ?? null).then((s) => {
+      statsRef.current = s
     })
 
     const dataDisp = term.onData((d) => {
@@ -440,7 +445,7 @@ export default function TerminalView({
     if (sel) {
       body = sel
     } else {
-      const lastCmd = historyRef.current[0]
+      const lastCmd = lastCmdRef.current
       body = (lastCmd ? `$ ${lastCmd}\n` : '') + recentOutput(40)
     }
     body = redactSecrets(body).slice(0, 4000).trim()

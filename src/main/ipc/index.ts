@@ -24,6 +24,7 @@ import {
   listSessions,
   listCommands,
   recentCommands,
+  commandStats,
   recordCommand
 } from '../db/repos/sessions-repo'
 import { listRunbooks, saveRunbook, deleteRunbook } from '../db/repos/runbooks-repo'
@@ -173,6 +174,7 @@ export function registerIpc(): void {
   ipcMain.handle(IPC.sessionsList, () => listSessions())
   ipcMain.handle(IPC.sessionCommands, (_e, sessionId: string) => listCommands(sessionId))
   ipcMain.handle(IPC.sessionRecentCommands, () => recentCommands())
+  ipcMain.handle(IPC.sessionCommandStats, (_e, serverId: string | null) => commandStats(serverId))
   ipcMain.on(IPC.sessionRecordCommand, (_e, sessionId: string, command: string) => {
     try {
       if (command.trim()) recordCommand(sessionId, command.trim(), 'user')

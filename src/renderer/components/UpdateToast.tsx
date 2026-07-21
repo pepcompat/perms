@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react'
 import { Download, RefreshCw, X } from 'lucide-react'
 import type { UpdateProgress } from '@shared/types'
 import { Button } from './ui/button'
+import { useT } from '../lib/i18n'
 
 type Phase = 'idle' | 'downloading' | 'ready'
 
 export default function UpdateToast(): JSX.Element | null {
+  const t = useT()
   const [phase, setPhase] = useState<Phase>('idle')
   const [version, setVersion] = useState('')
   const [percent, setPercent] = useState(0)
@@ -56,7 +58,7 @@ export default function UpdateToast(): JSX.Element | null {
             <div className="flex size-7 items-center justify-center rounded-full bg-primary/15">
               <RefreshCw className="size-4 text-primary" />
             </div>
-            <span className="text-sm font-semibold">อัปเดตพร้อมติดตั้ง</span>
+            <span className="text-sm font-semibold">{t("อัปเดตพร้อมติดตั้ง")}</span>
             <button
               onClick={() => setDismissed(true)}
               className="ml-auto rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
@@ -69,10 +71,10 @@ export default function UpdateToast(): JSX.Element | null {
           </p>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setDismissed(true)}>
-              ภายหลัง
+              {t("ภายหลัง")}
             </Button>
             <Button size="sm" onClick={() => window.api.updates.restart()}>
-              <RefreshCw className="size-3.5" /> รีสตาร์ทเลย
+              <RefreshCw className="size-3.5" /> {t("รีสตาร์ทเลย")}
             </Button>
           </div>
         </div>

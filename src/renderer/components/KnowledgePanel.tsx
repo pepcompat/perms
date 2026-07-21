@@ -9,9 +9,11 @@ import { Badge } from './ui/badge'
 import { Separator } from './ui/separator'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { toast } from '../store/useToast'
+import { useT } from '../lib/i18n'
 
 /** เนื้อหาคลังความรู้ AI — ฝังในแท็บ Settings */
 export default function KnowledgePanel(): JSX.Element {
+  const t = useT()
   const { servers } = useServers()
   const [items, setItems] = useState<KnowledgeRecord[]>([])
   const [query, setQuery] = useState('')
@@ -68,7 +70,7 @@ export default function KnowledgePanel(): JSX.Element {
   }
 
   const remove = async (id: string): Promise<void> => {
-    if (confirm('ลบความรู้นี้?')) {
+    if (confirm(t("ลบความรู้นี้?"))) {
       await window.api.knowledge.remove(id)
       load()
     }
@@ -80,7 +82,7 @@ export default function KnowledgePanel(): JSX.Element {
         <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
         <Input
           className="pl-8"
-          placeholder="ค้นหาความรู้…"
+          placeholder={t("ค้นหาความรู้…")}
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
@@ -115,7 +117,7 @@ export default function KnowledgePanel(): JSX.Element {
                 </Badge>
               ))}
               {k.useCount > 0 && (
-                <span className="text-[10px] text-muted-foreground">ใช้ {k.useCount} ครั้ง</span>
+                <span className="text-[10px] text-muted-foreground">{t('ใช้')} {k.useCount} {t('ครั้ง')}</span>
               )}
             </div>
           </div>
@@ -123,8 +125,8 @@ export default function KnowledgePanel(): JSX.Element {
         {filtered.length === 0 && (
           <div className="py-8 text-center text-xs text-muted-foreground">
             {items.length === 0
-              ? 'ยังไม่มีความรู้ — AI จะบันทึกเองเมื่อเรียนรู้ หรือเพิ่มเองด้านล่าง'
-              : 'ไม่พบที่ค้นหา'}
+              ? t('ยังไม่มีความรู้ — AI จะบันทึกเองเมื่อเรียนรู้ หรือเพิ่มเองด้านล่าง')
+              : t('ไม่พบที่ค้นหา')}
           </div>
         )}
       </div>
@@ -132,18 +134,18 @@ export default function KnowledgePanel(): JSX.Element {
       <Separator />
 
       <div className="shrink-0 space-y-2.5">
-        <div className="text-sm font-medium">{editing ? 'แก้ไขความรู้' : 'เพิ่มความรู้'}</div>
-        <Input placeholder="หัวข้อ" value={title} onChange={(e) => setTitle(e.target.value)} />
+        <div className="text-sm font-medium">{editing ? t("แก้ไขความรู้") : t("เพิ่มความรู้")}</div>
+        <Input placeholder={t("หัวข้อ")} value={title} onChange={(e) => setTitle(e.target.value)} />
         <Textarea
           className="h-20"
-          placeholder="รายละเอียดความรู้ (วิธีแก้, quirk, preference…)"
+          placeholder={t("รายละเอียดความรู้ (วิธีแก้, quirk, preference…)")}
           value={content}
           onChange={(e) => setContent(e.target.value)}
         />
         <div className="flex gap-2">
           <Input
             className="flex-1"
-            placeholder="tags คั่นด้วย , (เช่น nginx, deploy)"
+            placeholder={t("tags คั่นด้วย , (เช่น nginx, deploy)")}
             value={tagsText}
             onChange={(e) => setTagsText(e.target.value)}
           />
@@ -152,7 +154,7 @@ export default function KnowledgePanel(): JSX.Element {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="none">ความรู้กลาง</SelectItem>
+              <SelectItem value="none">{t("ความรู้กลาง")}</SelectItem>
               {servers.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.name}
@@ -164,11 +166,11 @@ export default function KnowledgePanel(): JSX.Element {
         <div className="flex justify-end gap-2">
           {editing && (
             <Button variant="ghost" onClick={() => startEdit(null)}>
-              ยกเลิก
+              {t("ยกเลิก")}
             </Button>
           )}
           <Button onClick={save} disabled={!title.trim() || !content.trim()}>
-            <Plus className="size-4" /> บันทึก
+            <Plus className="size-4" /> {t("บันทึก")}
           </Button>
         </div>
       </div>

@@ -17,6 +17,7 @@ import { Button } from './ui/button'
 import { Badge } from './ui/badge'
 import { cn } from '../lib/utils'
 import DockerIcon from './DockerIcon'
+import { useT } from '../lib/i18n'
 
 const TONE: Record<string, string> = {
   primary: 'text-primary hover:bg-primary/10',
@@ -46,6 +47,7 @@ export default function DockerPanel({
   onClose: () => void
   onOpenExec: (c: { id: string; name: string }) => void
 }): JSX.Element {
+  const t = useT()
   const [containers, setContainers] = useState<DockerContainer[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -59,7 +61,7 @@ export default function DockerPanel({
     try {
       const r = await window.api.docker.list(sessionId)
       if (!r.available) {
-        setError('ใช้งาน docker บนเซิร์ฟเวอร์นี้ไม่ได้ (อาจไม่มี docker หรือผู้ใช้ไม่มีสิทธิ์)')
+        setError(t('ใช้งาน docker บนเซิร์ฟเวอร์นี้ไม่ได้ (อาจไม่มี docker หรือผู้ใช้ไม่มีสิทธิ์)'))
         setContainers([])
       } else {
         setContainers(r.containers)
@@ -77,7 +79,7 @@ export default function DockerPanel({
   }, [open, sessionId])
 
   const act = async (action: string, c: DockerContainer): Promise<void> => {
-    if (action === 'remove' && !confirm(`ลบ container "${c.name}"? (docker rm -f — ลบถาวร)`)) return
+    if (action === 'remove' && !confirm(`${t('ลบ container')} "${c.name}"? (docker rm -f)`)) return
     setBusyId(c.id)
     try {
       const r = await window.api.docker.action(sessionId, action, c.id)
@@ -106,9 +108,9 @@ export default function DockerPanel({
     setLogs({ name: c.name, text: '', loading: true })
     try {
       const text = await window.api.docker.logs(sessionId, c.id)
-      setLogs({ name: c.name, text: text.trim() || '(ไม่มี log)', loading: false })
+      setLogs({ name: c.name, text: text.trim() || t('(ไม่มี log)'), loading: false })
     } catch (e) {
-      setLogs({ name: c.name, text: `ดึง log ไม่ได้: ${e instanceof Error ? e.message : e}`, loading: false })
+      setLogs({ name: c.name, text: `${t('ดึง log ไม่ได้')}: ${e instanceof Error ? e.message : e}`, loading: false })
     }
   }
 
@@ -141,26 +143,26 @@ export default function DockerPanel({
       <div className="flex shrink-0 items-center gap-0.5">
         {busyId === c.id && <Loader2 className="mr-0.5 size-3.5 animate-spin text-primary" />}
         {c.state === 'running' && (
-          <IconBtn tone="primary" title="เปิด terminal ใน container" onClick={() => onOpenExec({ id: c.id, name: c.name })}>
+          <IconBtn tone="primary" title={t("เปิด terminal ใน container")} onClick={() => onOpenExec({ id: c.id, name: c.name })}>
             <SquareTerminal className="size-3.5" />
           </IconBtn>
         )}
         {c.state === 'running' ? (
-          <IconBtn tone="amber" title="หยุด" onClick={() => act('stop', c)} disabled={busyId === c.id}>
+          <IconBtn tone="amber" title={t("หยุด")} onClick={() => act('stop', c)} disabled={busyId === c.id}>
             <Square className="size-3.5" />
           </IconBtn>
         ) : (
-          <IconBtn tone="green" title="เริ่ม" onClick={() => act('start', c)} disabled={busyId === c.id}>
+          <IconBtn tone="green" title={t("เริ่ม")} onClick={() => act('start', c)} disabled={busyId === c.id}>
             <Play className="size-3.5" />
           </IconBtn>
         )}
-        <IconBtn tone="sky" title="รีสตาร์ท" onClick={() => act('restart', c)} disabled={busyId === c.id}>
+        <IconBtn tone="sky" title={t("รีสตาร์ท")} onClick={() => act('restart', c)} disabled={busyId === c.id}>
           <RotateCw className="size-3.5" />
         </IconBtn>
-        <IconBtn tone="muted" title="ดู logs" onClick={() => showLogs(c)} disabled={busyId === c.id}>
+        <IconBtn tone="muted" title={t("ดู logs")} onClick={() => showLogs(c)} disabled={busyId === c.id}>
           <ScrollText className="size-3.5" />
         </IconBtn>
-        <IconBtn tone="red" title="ลบ" onClick={() => act('remove', c)} disabled={busyId === c.id}>
+        <IconBtn tone="red" title={t("ลบ")} onClick={() => act('remove', c)} disabled={busyId === c.id}>
           <Trash2 className="size-3.5" />
         </IconBtn>
       </div>
@@ -178,7 +180,7 @@ export default function DockerPanel({
                 variant="outline"
                 size="icon-sm"
                 className="ml-auto"
-                title="รีเฟรช"
+                title={t("รีเฟรช")}
                 onClick={() => void load()}
               >
                 <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
@@ -193,10 +195,10 @@ export default function DockerPanel({
         {logs ? (
           <div className="flex min-h-0 flex-1 flex-col gap-2">
             <Button variant="ghost" size="sm" className="self-start" onClick={() => setLogs(null)}>
-              <ArrowLeft className="size-3.5" /> กลับไปรายการ
+              <ArrowLeft className="size-3.5" /> {t("กลับไปรายการ")}
             </Button>
             <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-foreground">
-              {logs.loading ? 'กำลังโหลด log…' : logs.text}
+              {logs.loading ? t('กำลังโหลด log…') : logs.text}
             </pre>
           </div>
         ) : (
@@ -218,13 +220,13 @@ export default function DockerPanel({
                   </Badge>
                   <div className="ml-auto flex shrink-0 items-center gap-0.5">
                     {groupBusy === project && <Loader2 className="mr-0.5 size-3 animate-spin text-primary" />}
-                    <IconBtn tone="green" title="เริ่มทั้งชุด" onClick={() => actGroup('start', project, list)} disabled={groupBusy === project}>
+                    <IconBtn tone="green" title={t("เริ่มทั้งชุด")} onClick={() => actGroup('start', project, list)} disabled={groupBusy === project}>
                       <Play className="size-3" />
                     </IconBtn>
-                    <IconBtn tone="amber" title="หยุดทั้งชุด" onClick={() => actGroup('stop', project, list)} disabled={groupBusy === project}>
+                    <IconBtn tone="amber" title={t("หยุดทั้งชุด")} onClick={() => actGroup('stop', project, list)} disabled={groupBusy === project}>
                       <Square className="size-3" />
                     </IconBtn>
-                    <IconBtn tone="sky" title="รีสตาร์ททั้งชุด" onClick={() => actGroup('restart', project, list)} disabled={groupBusy === project}>
+                    <IconBtn tone="sky" title={t("รีสตาร์ททั้งชุด")} onClick={() => actGroup('restart', project, list)} disabled={groupBusy === project}>
                       <RotateCw className="size-3" />
                     </IconBtn>
                   </div>
@@ -238,7 +240,7 @@ export default function DockerPanel({
               <div className="space-y-1.5">
                 {composeGroups.size > 0 && (
                   <div className="px-0.5 text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
-                    แยกเดี่ยว
+                    {t("แยกเดี่ยว")}
                   </div>
                 )}
                 {standalone.map(row)}
@@ -246,7 +248,7 @@ export default function DockerPanel({
             )}
 
             {!error && !loading && containers.length === 0 && (
-              <div className="py-8 text-center text-xs text-muted-foreground">ไม่มี container</div>
+              <div className="py-8 text-center text-xs text-muted-foreground">{t("ไม่มี container")}</div>
             )}
           </div>
         )}

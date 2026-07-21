@@ -32,6 +32,7 @@ import { Textarea } from './ui/textarea'
 import { Label } from './ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { cn } from '../lib/utils'
+import { useT } from '../lib/i18n'
 
 const EMPTY: ServerInput = {
   name: '',
@@ -57,6 +58,7 @@ export default function ServerForm({
   open: boolean
   onClose: () => void
 }): JSX.Element {
+  const t = useT()
   const { servers, refresh } = useServers()
   const [form, setForm] = useState<ServerInput>(EMPTY)
   const [testResult, setTestResult] = useState<{ ok: boolean; msg: string } | null>(null)
@@ -164,12 +166,12 @@ export default function ServerForm({
     <Dialog open={open} onOpenChange={(o) => !o && void handleClose()}>
       <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>{editing ? 'แก้ไข Server' : 'เพิ่ม Server ใหม่'}</DialogTitle>
-          <DialogDescription>รายละเอียดการเชื่อมต่อ SSH</DialogDescription>
+          <DialogTitle>{editing ? t("แก้ไข Server") : t("เพิ่ม Server ใหม่")}</DialogTitle>
+          <DialogDescription>{t("รายละเอียดการเชื่อมต่อ SSH")}</DialogDescription>
         </DialogHeader>
 
         <div className="grid grid-cols-2 gap-3">
-          <Field className="col-span-2" label="ชื่อ (display)">
+          <Field className="col-span-2" label={t("ชื่อ (display)")}>
             <Input value={form.name} onChange={(e) => upd('name', e.target.value)} placeholder="prod-web-01" />
           </Field>
           <Field className="col-span-1" label="Host / IP">
@@ -199,7 +201,7 @@ export default function ServerForm({
           </Field>
 
           {form.authType === 'password' && (
-            <Field className="col-span-2" label={`Password${editing ? ' (เว้นว่างถ้าไม่เปลี่ยน)' : ''}`}>
+            <Field className="col-span-2" label={`Password${editing ? ` ${t('(เว้นว่างถ้าไม่เปลี่ยน)')}` : ''}`}>
               <Input
                 type="password"
                 value={form.secret ?? ''}
@@ -220,12 +222,12 @@ export default function ServerForm({
                   />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" title="เลือก key ในเครื่อง">
+                      <Button variant="outline" size="icon" title={t("เลือก key ในเครื่อง")}>
                         <KeyRound className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="max-h-72 min-w-[17rem] overflow-y-auto">
-                      <DropdownMenuLabel>SSH keys ใน ~/.ssh</DropdownMenuLabel>
+                      <DropdownMenuLabel>{t("SSH keys ใน ~/.ssh")}</DropdownMenuLabel>
                       {sshKeys.map((k) => (
                         <DropdownMenuItem
                           key={k}
@@ -238,25 +240,25 @@ export default function ServerForm({
                       ))}
                       {sshKeys.length === 0 && (
                         <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                          ไม่พบ key ใน ~/.ssh
+                          {t("ไม่พบ key ใน ~/.ssh")}
                         </div>
                       )}
                       <div className="my-1 h-px bg-border" />
                       <DropdownMenuItem onSelect={() => void browseKey()}>
-                        <FolderOpen className="size-3.5" /> เรียกดูไฟล์อื่น…
+                        <FolderOpen className="size-3.5" /> {t("เรียกดูไฟล์อื่น…")}
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </Field>
-              <Field className="col-span-2" label="หรือวางเนื้อหา private key (เก็บแบบเข้ารหัส)">
+              <Field className="col-span-2" label={t("หรือวางเนื้อหา private key (เก็บแบบเข้ารหัส)")}>
                 <Textarea
                   className="h-20 font-mono text-xs"
                   value={form.privateKey ?? ''}
                   onChange={(e) => upd('privateKey', e.target.value)}
                 />
               </Field>
-              <Field className="col-span-2" label="Passphrase (ถ้ามี)">
+              <Field className="col-span-2" label={t("Passphrase (ถ้ามี)")}>
                 <Input
                   type="password"
                   value={form.secret ?? ''}
@@ -277,12 +279,12 @@ export default function ServerForm({
               {existingGroups.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" title="เลือก group ที่มี">
+                    <Button variant="outline" size="icon" title={t("เลือก group ที่มี")}>
                       <ChevronDown className="size-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="max-h-60 min-w-[12rem] overflow-y-auto">
-                    <DropdownMenuLabel>Group ที่มีอยู่</DropdownMenuLabel>
+                    <DropdownMenuLabel>{t("Group ที่มีอยู่")}</DropdownMenuLabel>
                     {existingGroups.map((g) => (
                       <DropdownMenuItem
                         key={g}
@@ -306,7 +308,7 @@ export default function ServerForm({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="none">— ไม่มี —</SelectItem>
+                <SelectItem value="none">{t("— ไม่มี —")}</SelectItem>
                 {servers
                   .filter((s) => s.id !== editing?.id && s.id !== serverIdRef.current)
                   .map((s) => (
@@ -327,8 +329,8 @@ export default function ServerForm({
           <div className="flex items-start gap-2 rounded-lg border border-border bg-background/40 px-3 py-2 text-xs text-muted-foreground">
             <ShieldCheck className="mt-0.5 size-3.5 shrink-0 text-[hsl(var(--success))]" />
             <span>
-              รหัสผ่าน/คีย์ถูกเข้ารหัสเก็บในเครื่องด้วย Keychain — macOS อาจถามขออนุญาตครั้งแรก
-              กด “Always Allow” ได้เลย
+              {t("รหัสผ่าน/คีย์ถูกเข้ารหัสเก็บในเครื่องด้วย Keychain — macOS อาจถามขออนุญาตครั้งแรก")}
+              {t("กด “Always Allow” ได้เลย")}
             </span>
           </div>
         )}
@@ -350,15 +352,15 @@ export default function ServerForm({
         <div className="flex items-center justify-between pt-1">
           <Button variant="outline" onClick={test} disabled={testing || !form.host || !form.username}>
             {testing ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
-            ทดสอบ
+            {t("ทดสอบ")}
           </Button>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={handleClose}>
-              ยกเลิก
+              {t("ยกเลิก")}
             </Button>
             <Button onClick={save} disabled={busy || !form.host || !form.username}>
               {busy && <Loader2 className="size-4 animate-spin" />}
-              บันทึก
+              {t("บันทึก")}
             </Button>
           </div>
         </div>

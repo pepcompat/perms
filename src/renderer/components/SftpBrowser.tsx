@@ -22,6 +22,7 @@ import { Button } from './ui/button'
 import { cn } from '../lib/utils'
 import { humanSize, joinRemote, parentPath, isArchive } from '../lib/format'
 import FileEditor from './FileEditor'
+import { useT } from '../lib/i18n'
 
 export default function SftpBrowser({
   sessionId,
@@ -34,6 +35,7 @@ export default function SftpBrowser({
   open: boolean
   onClose: () => void
 }): JSX.Element {
+  const t = useT()
   const [cwd, setCwd] = useState('')
   const [entries, setEntries] = useState<SftpEntry[]>([])
   const [loading, setLoading] = useState(false)
@@ -108,7 +110,7 @@ export default function SftpBrowser({
     }
   }
   const mkdir = async (): Promise<void> => {
-    const name = prompt('ชื่อโฟลเดอร์ใหม่')?.trim()
+    const name = prompt(t("ชื่อโฟลเดอร์ใหม่"))?.trim()
     if (!name) return
     try {
       await window.api.sftp.mkdir(sessionId, joinRemote(cwd, name))
@@ -148,7 +150,7 @@ export default function SftpBrowser({
   const zipSelected = async (): Promise<void> => {
     const names = [...selected]
     if (!names.length) return
-    const base = prompt('ชื่อไฟล์บีบอัด (ไม่ต้องใส่นามสกุล)', names.length === 1 ? names[0] : 'archive')?.trim()
+    const base = prompt(t("ชื่อไฟล์บีบอัด (ไม่ต้องใส่นามสกุล)"), names.length === 1 ? names[0] : 'archive')?.trim()
     if (!base) return
     setBusy(true)
     try {
@@ -200,7 +202,7 @@ export default function SftpBrowser({
       <DialogContent className="flex h-[76vh] max-w-3xl flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <FolderSymlink className="size-4 text-primary" /> ไฟล์บนเซิร์ฟเวอร์ (SFTP)
+            <FolderSymlink className="size-4 text-primary" /> {t("ไฟล์บนเซิร์ฟเวอร์ (SFTP)")}
           </DialogTitle>
           <DialogDescription className="truncate">{title}</DialogDescription>
         </DialogHeader>
@@ -213,19 +215,19 @@ export default function SftpBrowser({
           <Button
             variant="outline"
             size="icon-sm"
-            title="ขึ้นบน"
+            title={t("ขึ้นบน")}
             disabled={!cwd || cwd === '/'}
             onClick={() => void load(parentPath(cwd))}
           >
             <ArrowUp className="size-3.5" />
           </Button>
-          <Button variant="outline" size="icon-sm" title="รีเฟรช" onClick={() => void load(cwd)}>
+          <Button variant="outline" size="icon-sm" title={t("รีเฟรช")} onClick={() => void load(cwd)}>
             <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
           </Button>
           <div className="mx-1 min-w-0 flex-1 truncate rounded-md border border-border bg-background/50 px-2.5 py-1.5 font-mono text-xs text-muted-foreground">
             {cwd || '…'}
           </div>
-          <Button variant="outline" size="sm" title="สร้างโฟลเดอร์" onClick={() => void mkdir()}>
+          <Button variant="outline" size="sm" title={t("สร้างโฟลเดอร์")} onClick={() => void mkdir()}>
             <FolderPlus className="size-3.5" />
           </Button>
           <Button size="sm" onClick={() => void upload()} disabled={busy || !cwd}>
@@ -239,15 +241,15 @@ export default function SftpBrowser({
             <span className="text-xs font-medium">เลือก {selected.size} รายการ</span>
             <div className="ml-auto flex items-center gap-1">
               <Button size="sm" onClick={() => void download([...selected])} disabled={busy}>
-                <Download className="size-3.5" /> ดาวน์โหลด
+                <Download className="size-3.5" /> {t("ดาวน์โหลด")}
               </Button>
               <Button variant="outline" size="sm" onClick={() => void zipSelected()} disabled={busy}>
-                <FileArchive className="size-3.5" /> บีบอัด
+                <FileArchive className="size-3.5" /> {t("บีบอัด")}
               </Button>
-              <Button variant="outline" size="icon-sm" title="ลบที่เลือก" onClick={() => void removeSelected()} disabled={busy}>
+              <Button variant="outline" size="icon-sm" title={t("ลบที่เลือก")} onClick={() => void removeSelected()} disabled={busy}>
                 <Trash2 className="size-3.5 text-destructive" />
               </Button>
-              <Button variant="ghost" size="icon-sm" title="ยกเลิกการเลือก" onClick={clearSel}>
+              <Button variant="ghost" size="icon-sm" title={t("ยกเลิกการเลือก")} onClick={clearSel}>
                 <X className="size-3.5" />
               </Button>
             </div>
@@ -277,7 +279,7 @@ export default function SftpBrowser({
                   onChange={() => toggleSel(e.name)}
                   onClick={(ev) => ev.stopPropagation()}
                   className="size-3.5 shrink-0 accent-[hsl(var(--primary))]"
-                  title="เลือก"
+                  title={t("เลือก")}
                 />
                 <span className="shrink-0">
                   {e.type === 'dir' ? (
@@ -301,7 +303,7 @@ export default function SftpBrowser({
                 <div className="flex w-28 shrink-0 justify-end gap-0.5 opacity-0 group-hover:opacity-100">
                   {e.type !== 'dir' && isArchive(e.name) && (
                     <button
-                      title="แตกไฟล์ (unzip)"
+                      title={t("แตกไฟล์ (unzip)")}
                       onClick={() => void extract(e.name)}
                       className="rounded p-1 text-sky-400 hover:bg-sky-400/10"
                     >
@@ -310,7 +312,7 @@ export default function SftpBrowser({
                   )}
                   {e.type !== 'dir' && (
                     <button
-                      title="แก้ไข"
+                      title={t("แก้ไข")}
                       onClick={() => setEditing({ path: joinRemote(cwd, e.name), name: e.name })}
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                     >
@@ -325,7 +327,7 @@ export default function SftpBrowser({
                     <Download className="size-3.5" />
                   </button>
                   <button
-                    title="ลบ"
+                    title={t("ลบ")}
                     onClick={() => void remove(e)}
                     className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
                   >
@@ -335,7 +337,7 @@ export default function SftpBrowser({
               </div>
             ))}
           {!error && !loading && entries.length === 0 && (
-            <div className="py-8 text-center text-xs text-muted-foreground">โฟลเดอร์ว่าง</div>
+            <div className="py-8 text-center text-xs text-muted-foreground">{t("โฟลเดอร์ว่าง")}</div>
           )}
         </div>
 

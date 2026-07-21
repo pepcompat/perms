@@ -3,6 +3,7 @@ import type { ChangelogEntry } from '../lib/changelog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { logoUrl } from '../lib/logo'
+import { useT } from '../lib/i18n'
 
 export default function WhatsNew({
   version,
@@ -16,6 +17,7 @@ export default function WhatsNew({
   /** true = ผู้ใช้กดเปิดเอง (ดู changelog) · false = เด้งอัตโนมัติหลังอัปเดต */
   manual?: boolean
 }): JSX.Element {
+  const t = useT()
   const multi = entries.length > 1
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -26,7 +28,7 @@ export default function WhatsNew({
             <div className="flex flex-col">
               <span className="flex items-center gap-1.5">
                 <Sparkles className="size-4 text-primary" />
-                {manual ? 'บันทึกการเปลี่ยนแปลง' : 'มีอะไรใหม่'}
+                {manual ? t("บันทึกการเปลี่ยนแปลง") : t("มีอะไรใหม่")}
               </span>
             </div>
           </DialogTitle>
@@ -38,8 +40,8 @@ export default function WhatsNew({
               </>
             ) : (
               <>
-                อัปเดตเป็น Perms <span className="font-mono text-foreground">v{version}</span> แล้ว —
-                สรุปสิ่งที่เพิ่ม/ปรับ
+                อัปเดตเป็น Perms <span className="font-mono text-foreground">v{version}</span> {t("แล้ว —")}
+                {t("สรุปสิ่งที่เพิ่ม/ปรับ")}
               </>
             )}
           </DialogDescription>
@@ -69,7 +71,7 @@ export default function WhatsNew({
         </div>
 
         <div className="flex justify-end">
-          <Button onClick={onClose}>เริ่มใช้งาน</Button>
+          <Button onClick={onClose}>{t("เริ่มใช้งาน")}</Button>
         </div>
       </DialogContent>
     </Dialog>

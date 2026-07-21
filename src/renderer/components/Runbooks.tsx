@@ -10,6 +10,7 @@ import { Textarea } from './ui/textarea'
 import { Label } from './ui/label'
 import { Badge } from './ui/badge'
 import { Separator } from './ui/separator'
+import { useT } from '../lib/i18n'
 
 const paramStoreKey = (id: string): string => `runbook.params.${id}`
 
@@ -32,6 +33,7 @@ export default function Runbooks({
   open: boolean
   onClose: () => void
 }): JSX.Element {
+  const t = useT()
   const { activeId } = useTabs()
   const [runbooks, setRunbooks] = useState<RunbookRecord[]>([])
   const [editing, setEditing] = useState<RunbookRecord | null>(null)
@@ -83,7 +85,7 @@ export default function Runbooks({
 
   const run = (rb: RunbookRecord): void => {
     if (!activeId) {
-      alert('เปิด terminal session ก่อนถึงจะรัน runbook ได้')
+      alert(t("เปิด terminal session ก่อนถึงจะรัน runbook ได้"))
       return
     }
     const names = extractPlaceholdersAll(rb.steps.map((s) => s.command))
@@ -119,7 +121,7 @@ export default function Runbooks({
             <DialogTitle className="flex items-center gap-2">
               <BookText className="size-4 text-primary" /> Runbooks
             </DialogTitle>
-            <DialogDescription>ชุดคำสั่งที่บันทึกไว้ใช้ซ้ำ</DialogDescription>
+            <DialogDescription>{t("ชุดคำสั่งที่บันทึกไว้ใช้ซ้ำ")}</DialogDescription>
           </DialogHeader>
 
           <div className="-mr-2 flex-1 space-y-2 overflow-y-auto pr-2">
@@ -133,18 +135,18 @@ export default function Runbooks({
                   <div className="min-w-0">
                     <div className="truncate text-sm font-medium">{rb.name}</div>
                     <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                      <Badge variant="outline">{rb.steps.length} คำสั่ง</Badge>
+                      <Badge variant="outline">{rb.steps.length} {t('คำสั่ง')}</Badge>
                       {params.length > 0 && (
                         <Badge variant="secondary" className="gap-1">
                           <Variable className="size-3" />
-                          {params.length} ช่องกรอก
+                          {params.length} {t('ช่องกรอก')}
                         </Badge>
                       )}
                     </div>
                   </div>
                   <div className="flex gap-1.5">
                     <Button size="sm" onClick={() => run(rb)}>
-                      <Play className="size-3.5" /> รัน
+                      <Play className="size-3.5" /> {t("รัน")}
                     </Button>
                     <Button variant="outline" size="icon-sm" onClick={() => startEdit(rb)}>
                       <Pencil className="size-3.5" />
@@ -157,24 +159,24 @@ export default function Runbooks({
               )
             })}
             {runbooks.length === 0 && (
-              <div className="py-8 text-center text-xs text-muted-foreground">ยังไม่มี runbook</div>
+              <div className="py-8 text-center text-xs text-muted-foreground">{t("ยังไม่มี runbook")}</div>
             )}
           </div>
 
           <Separator />
 
           <div className="space-y-2.5">
-            <div className="text-sm font-medium">{editing ? 'แก้ไข runbook' : 'สร้างใหม่'}</div>
+            <div className="text-sm font-medium">{editing ? t("แก้ไข runbook") : t("สร้างใหม่")}</div>
             <Input
-              placeholder="ชื่อ runbook"
+              placeholder={t("ชื่อ runbook")}
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
             <div className="flex flex-col gap-1.5">
               <Label>
-                คำสั่ง (บรรทัดละ 1 คำสั่ง · ใช้{' '}
+                {t('คำสั่ง (บรรทัดละ 1 คำสั่ง · ใช้')}{' '}
                 <code className="rounded bg-muted px-1 font-mono text-[11px]">{'{{ชื่อ}}'}</code>{' '}
-                เพื่อสร้างช่องให้กรอกตอนรัน)
+                {t('เพื่อสร้างช่องให้กรอกตอนรัน)')}
               </Label>
               <Textarea
                 className="h-24 font-mono text-xs"
@@ -186,11 +188,11 @@ export default function Runbooks({
             <div className="flex justify-end gap-2">
               {editing && (
                 <Button variant="ghost" onClick={() => startEdit(null)}>
-                  ยกเลิก
+                  {t("ยกเลิก")}
                 </Button>
               )}
               <Button onClick={save} disabled={!name && !stepsText}>
-                <Plus className="size-4" /> บันทึก
+                <Plus className="size-4" /> {t("บันทึก")}
               </Button>
             </div>
           </div>
@@ -204,7 +206,7 @@ export default function Runbooks({
             <DialogTitle className="flex items-center gap-2">
               <Play className="size-4 text-primary" /> {paramRb?.name}
             </DialogTitle>
-            <DialogDescription>กรอกค่าก่อนรัน</DialogDescription>
+            <DialogDescription>{t("กรอกค่าก่อนรัน")}</DialogDescription>
           </DialogHeader>
 
           <div className="space-y-3">
@@ -236,10 +238,10 @@ export default function Runbooks({
 
           <div className="flex justify-end gap-2">
             <Button variant="ghost" onClick={() => setParamRb(null)}>
-              ยกเลิก
+              {t("ยกเลิก")}
             </Button>
             <Button onClick={runWithParams} disabled={!allFilled}>
-              <Play className="size-4" /> รัน
+              <Play className="size-4" /> {t("รัน")}
             </Button>
           </div>
         </DialogContent>

@@ -27,6 +27,7 @@ import { useAiDraft } from '../store/useAiDraft'
 import SftpBrowser from './SftpBrowser'
 import DockerPanel from './DockerPanel'
 import DockerIcon from './DockerIcon'
+import { useT } from '../lib/i18n'
 
 // Catppuccin Mocha — palette ที่เข้ากับธีมม่วงของแอป ทำให้ output (ls, git, ฯลฯ) มีสีสวย
 const THEME = {
@@ -63,6 +64,7 @@ export default function TerminalView({
   sessionId: string
   visible: boolean
 }): JSX.Element {
+  const t = useT()
   const hostRef = useRef<HTMLDivElement>(null)
   const termRef = useRef<Terminal | null>(null)
   const fitRef = useRef<FitAddon | null>(null)
@@ -492,7 +494,7 @@ export default function TerminalView({
           >
             <MenuItem
               icon={<Sparkles className="size-3.5 text-primary" />}
-              label="ถาม AI: ทำไมพัง / ช่วยแก้"
+              label={t("ถาม AI: ทำไมพัง / ช่วยแก้")}
               onClick={() => {
                 askAiHelp(menu.sel)
                 closeMenu()
@@ -500,7 +502,7 @@ export default function TerminalView({
             />
             <MenuItem
               icon={<Bot className="size-3.5 text-primary" />}
-              label="ส่งที่เลือกให้ AI"
+              label={t("ส่งที่เลือกให้ AI")}
               disabled={!menu.sel}
               onClick={() => {
                 sendToAi('```\n' + redactSecrets(menu.sel.trim()) + '\n```')
@@ -509,7 +511,7 @@ export default function TerminalView({
             />
             <MenuItem
               icon={<Copy className="size-3.5" />}
-              label="คัดลอกที่เลือก"
+              label={t("คัดลอกที่เลือก")}
               shortcut="⌘C"
               disabled={!menu.sel}
               onClick={() => {
@@ -519,7 +521,7 @@ export default function TerminalView({
             />
             <MenuItem
               icon={<ClipboardPaste className="size-3.5" />}
-              label="วาง"
+              label={t("วาง")}
               shortcut="⌘V"
               onClick={() => {
                 void pasteClip()
@@ -529,7 +531,7 @@ export default function TerminalView({
             <div className="my-1 h-px bg-border" />
             <MenuItem
               icon={<TextSelect className="size-3.5" />}
-              label="เลือกทั้งหมด"
+              label={t("เลือกทั้งหมด")}
               onClick={() => {
                 termRef.current?.selectAll()
                 closeMenu()
@@ -537,7 +539,7 @@ export default function TerminalView({
             />
             <MenuItem
               icon={<Eraser className="size-3.5" />}
-              label="ล้างหน้าจอ"
+              label={t("ล้างหน้าจอ")}
               onClick={() => {
                 clearTerm()
                 closeMenu()
@@ -559,33 +561,33 @@ export default function TerminalView({
         {tabKind === 'ssh' && (
           <>
             {dockerAvailable && (
-              <ToolBtn title="จัดการ Docker containers" onClick={() => setDockerOpen(true)}>
+              <ToolBtn title={t("จัดการ Docker containers")} onClick={() => setDockerOpen(true)}>
                 <DockerIcon className="size-3.5 text-[#2496ED]" />
               </ToolBtn>
             )}
-            <ToolBtn title="ไฟล์ (SFTP)" onClick={() => setSftpOpen(true)}>
+            <ToolBtn title={t("ไฟล์ (SFTP)")} onClick={() => setSftpOpen(true)}>
               <FolderSymlink className="size-3.5" />
             </ToolBtn>
             <div className="mx-0.5 h-4 w-px bg-border" />
           </>
         )}
-        <ToolBtn title="ถาม AI: ทำไมพัง / ช่วยแก้" onClick={() => askAiHelp(termRef.current?.getSelection())}>
+        <ToolBtn title={t("ถาม AI: ทำไมพัง / ช่วยแก้")} onClick={() => askAiHelp(termRef.current?.getSelection())}>
           <Sparkles className="size-3.5 text-primary" />
         </ToolBtn>
-        <ToolBtn title="ค้นหา (⌘F)" onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchInputRef.current?.focus()) }}>
+        <ToolBtn title={t("ค้นหา (⌘F)")} onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchInputRef.current?.focus()) }}>
           <Search className="size-3.5" />
         </ToolBtn>
-        <ToolBtn title="คัดลอกที่เลือก" onClick={copySel}>
+        <ToolBtn title={t("คัดลอกที่เลือก")} onClick={copySel}>
           <Copy className="size-3.5" />
         </ToolBtn>
-        <ToolBtn title="ล้างหน้าจอ" onClick={clearTerm}>
+        <ToolBtn title={t("ล้างหน้าจอ")} onClick={clearTerm}>
           <Eraser className="size-3.5" />
         </ToolBtn>
         <div className="mx-0.5 h-4 w-px bg-border" />
-        <ToolBtn title="ลดขนาดฟอนต์" onClick={() => bumpFont(-1)}>
+        <ToolBtn title={t("ลดขนาดฟอนต์")} onClick={() => bumpFont(-1)}>
           <AArrowDown className="size-3.5" />
         </ToolBtn>
-        <ToolBtn title="เพิ่มขนาดฟอนต์" onClick={() => bumpFont(1)}>
+        <ToolBtn title={t("เพิ่มขนาดฟอนต์")} onClick={() => bumpFont(1)}>
           <AArrowUp className="size-3.5" />
         </ToolBtn>
       </div>
@@ -605,16 +607,16 @@ export default function TerminalView({
                   : searchRef.current?.findNext(query)
               if (e.key === 'Escape') setSearchOpen(false)
             }}
-            placeholder="ค้นหา…"
+            placeholder={t("ค้นหา…")}
             className="w-44 bg-transparent px-1 text-sm outline-none placeholder:text-muted-foreground"
           />
-          <ToolBtn title="ก่อนหน้า (⇧⏎)" onClick={() => searchRef.current?.findPrevious(query)}>
+          <ToolBtn title={t("ก่อนหน้า (⇧⏎)")} onClick={() => searchRef.current?.findPrevious(query)}>
             <ChevronUp className="size-3.5" />
           </ToolBtn>
-          <ToolBtn title="ถัดไป (⏎)" onClick={() => searchRef.current?.findNext(query)}>
+          <ToolBtn title={t("ถัดไป (⏎)")} onClick={() => searchRef.current?.findNext(query)}>
             <ChevronDown className="size-3.5" />
           </ToolBtn>
-          <ToolBtn title="ปิด (Esc)" onClick={() => setSearchOpen(false)}>
+          <ToolBtn title={t("ปิด (Esc)")} onClick={() => setSearchOpen(false)}>
             <X className="size-3.5" />
           </ToolBtn>
         </div>

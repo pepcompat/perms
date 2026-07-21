@@ -36,6 +36,7 @@ import {
   DropdownMenuItem
 } from './ui/dropdown-menu'
 import { cn } from '../lib/utils'
+import { useT } from '../lib/i18n'
 
 const PROVIDER_OPTS: { id: AiProvider; label: string }[] = [
   { id: 'openai', label: 'OpenAI' },
@@ -56,6 +57,7 @@ const MODE_LABEL: Record<AiMode, string> = {
 }
 
 export default function AISidebar({ width }: { width: number }): JSX.Element {
+  const t = useT()
   const { settings } = useSettings()
   const { activeId } = useTabs()
   const chatKey = activeId ?? '__none__' // แต่ละ tab/session มีบทสนทนาของตัวเอง
@@ -121,7 +123,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
         {items.length > 0 && (
           <button
             onClick={() => clearChat(chatKey)}
-            title="ล้างแชท"
+            title={t("ล้างแชท")}
             className="no-drag ml-auto flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
           >
             <RotateCcw className="size-3.5" />
@@ -132,7 +134,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
       {!configured && (
         <div className="flex items-center gap-2 border-b border-border bg-[hsl(var(--warning))]/10 px-3 py-2 text-xs text-[hsl(var(--warning))]">
           <AlertTriangle className="size-3.5 shrink-0" />
-          ยังไม่ได้ตั้ง API key ของ {provider} — ไปที่ Settings
+          {t('ยังไม่ได้ตั้ง API key ของ')} {provider} — {t('ไปที่ Settings')}
         </div>
       )}
 
@@ -142,13 +144,13 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
             <div className="flex size-12 items-center justify-center rounded-2xl bg-primary/15">
               <Sparkles className="size-6 text-primary" />
             </div>
-            <p className="text-sm font-medium">ถาม AI เกี่ยวกับ server ได้เลย</p>
+            <p className="text-sm font-medium">{t("ถาม AI เกี่ยวกับ server ได้เลย")}</p>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              เช่น “เช็ค disk ว่าตัวไหนเต็ม” หรือ “หา process ที่กิน CPU สูงสุด”
+              {t("เช่น “เช็ค disk ว่าตัวไหนเต็ม” หรือ “หา process ที่กิน CPU สูงสุด”")}
               {!activeId && (
                 <>
                   <br />
-                  <span className="text-[hsl(var(--warning))]">เปิด terminal session ก่อนเพื่อให้ AI รันคำสั่งได้</span>
+                  <span className="text-[hsl(var(--warning))]">{t("เปิด terminal session ก่อนเพื่อให้ AI รันคำสั่งได้")}</span>
                 </>
               )}
             </p>
@@ -207,11 +209,11 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
               )}
             >
               <AlertTriangle className="size-3.5" />
-              {approval.danger ? 'คำสั่งอันตราย — ต้องยืนยันก่อนรัน' : 'AI ขออนุมัติรันคำสั่ง'}
+              {approval.danger ? t("คำสั่งอันตราย — ต้องยืนยันก่อนรัน") : t("AI ขออนุมัติรันคำสั่ง")}
             </div>
             {approval.danger && (
               <div className="mb-2 rounded-lg bg-destructive/10 px-2.5 py-1.5 text-xs text-destructive">
-                ⚠️ {approval.danger} · ตรวจให้ดีก่อนอนุมัติ
+                ⚠️ {approval.danger} · {t('ตรวจให้ดีก่อนอนุมัติ')}
               </div>
             )}
             <pre className="mb-3 overflow-x-auto rounded-lg bg-black/40 px-3 py-2 font-mono text-xs text-foreground">
@@ -219,10 +221,10 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
             </pre>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => respondApproval(false)}>
-                <X className="size-3.5" /> ปฏิเสธ
+                <X className="size-3.5" /> {t("ปฏิเสธ")}
               </Button>
               <Button size="sm" onClick={() => respondApproval(true)} className="bg-[hsl(var(--success))] hover:bg-[hsl(var(--success))]/90">
-                <Check className="size-3.5" /> อนุมัติ & รัน
+                <Check className="size-3.5" /> {t("อนุมัติ & รัน")}
               </Button>
             </div>
           </div>
@@ -234,7 +236,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
           <Textarea
             ref={inputRef}
             className="max-h-44 min-h-[54px] w-full resize-none border-0 bg-transparent px-3.5 py-3 shadow-none focus-visible:ring-0"
-            placeholder="พิมพ์คำถามถึง AI… (รองรับ Markdown)"
+            placeholder={t("พิมพ์คำถามถึง AI… (รองรับ Markdown)")}
             value={input}
             onChange={(e) => setInput(chatKey, e.target.value)}
             onKeyDown={(e) => {
@@ -260,7 +262,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                           : 'bg-muted-foreground'
                     )}
                   />
-                  {MODE_LABEL[mode]}
+                  {t(MODE_LABEL[mode])}
                 </Chip>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="start" className="min-w-[15rem]">
@@ -273,8 +275,8 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                     onSelect={() => setMode(m.id)}
                   >
                     <span className="flex flex-col">
-                      <span>{m.label}</span>
-                      <span className="text-[11px] font-normal text-muted-foreground">{m.desc}</span>
+                      <span>{t(m.label)}</span>
+                      <span className="text-[11px] font-normal text-muted-foreground">{t(m.desc)}</span>
                     </span>
                   </DropdownMenuItem>
                 ))}
@@ -287,12 +289,12 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
               disabled={!webSupported || mode === 'agentic'}
               title={
                 mode === 'agentic'
-                  ? 'web search ปิดในโหมด agentic (กัน prompt injection)'
+                  ? t('web search ปิดในโหมด agentic (กัน prompt injection)')
                   : !webSupported
-                    ? 'web search รองรับเฉพาะ Anthropic / Google'
+                    ? t('web search รองรับเฉพาะ Anthropic / Google')
                     : webOn
-                      ? 'web search: เปิด'
-                      : 'web search: ปิด'
+                      ? t('web search: เปิด')
+                      : t('web search: ปิด')
               }
               className={cn(
                 'flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-medium transition-colors disabled:opacity-40',
@@ -305,7 +307,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
             </button>
 
             {activeId && (
-              <span title="session ใช้งานอยู่" className="flex items-center text-[hsl(var(--success))]">
+              <span title={t("session ใช้งานอยู่")} className="flex items-center text-[hsl(var(--success))]">
                 <TerminalIcon className="size-3.5" />
               </span>
             )}
@@ -341,7 +343,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                   </Chip>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="max-h-72 min-w-[15rem] overflow-y-auto">
-                  <DropdownMenuLabel>โมเดล {PROVIDER_OPTS.find((p) => p.id === provider)?.label}</DropdownMenuLabel>
+                  <DropdownMenuLabel>{t('โมเดล')} {PROVIDER_OPTS.find((p) => p.id === provider)?.label}</DropdownMenuLabel>
                   {MODEL_PRESETS[provider].map((m) => (
                     <DropdownMenuItem
                       key={m}
@@ -354,7 +356,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                   ))}
                   <div className="my-1 h-px bg-border" />
                   <div className="px-2 py-1 text-[11px] text-muted-foreground">
-                    พิมพ์โมเดลเองได้ที่ Settings
+                    {t("พิมพ์โมเดลเองได้ที่ Settings")}
                   </div>
                 </DropdownMenuContent>
               </DropdownMenu>

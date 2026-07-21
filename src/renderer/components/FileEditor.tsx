@@ -16,6 +16,7 @@ import { Save, Loader2, FileText, ShieldCheck, Check } from 'lucide-react'
 import { Dialog, DialogContent } from './ui/dialog'
 import { Button } from './ui/button'
 import { cn } from '../lib/utils'
+import { useT } from '../lib/i18n'
 
 function langFor(name: string): Extension[] {
   const n = name.toLowerCase()
@@ -43,6 +44,7 @@ export default function FileEditor({
   name: string
   onClose: (changed: boolean) => void
 }): JSX.Element {
+  const t = useT()
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [saveError, setSaveError] = useState('')
@@ -80,7 +82,7 @@ export default function FileEditor({
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       if (msg.includes('EXTERNAL_CHANGED')) {
-        if (confirm('ไฟล์ถูกแก้ไขบนเซิร์ฟเวอร์ระหว่างที่คุณเปิดอยู่ — บันทึกทับของเดิมไหม?')) {
+        if (confirm(t("ไฟล์ถูกแก้ไขบนเซิร์ฟเวอร์ระหว่างที่คุณเปิดอยู่ — บันทึกทับของเดิมไหม?"))) {
           setSaving(false)
           await doSave(true)
           return
@@ -157,7 +159,7 @@ export default function FileEditor({
   }, [loading, loadError, name])
 
   const close = (): void => {
-    if (dirty && !confirm('มีการแก้ไขที่ยังไม่บันทึก — ปิดโดยไม่บันทึกไหม?')) return
+    if (dirty && !confirm(t("มีการแก้ไขที่ยังไม่บันทึก — ปิดโดยไม่บันทึกไหม?"))) return
     onClose(savedOnceRef.current)
   }
 
@@ -170,25 +172,25 @@ export default function FileEditor({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 truncate text-sm font-medium">
               {name}
-              {dirty && <span className="size-1.5 shrink-0 rounded-full bg-[hsl(var(--warning))]" title="ยังไม่บันทึก" />}
+              {dirty && <span className="size-1.5 shrink-0 rounded-full bg-[hsl(var(--warning))]" title={t("ยังไม่บันทึก")} />}
             </div>
             <div className="truncate font-mono text-[11px] text-muted-foreground">{path}</div>
           </div>
           {justSaved && (
             <span className="flex items-center gap-1 text-xs text-[hsl(var(--success))]">
-              <Check className="size-3.5" /> บันทึกแล้ว
+              <Check className="size-3.5" /> {t("บันทึกแล้ว")}
             </span>
           )}
           <Button size="sm" onClick={() => void doSave()} disabled={saving || loading || !!loadError || !dirty}>
             {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
-            บันทึก
+            {t("บันทึก")}
             <kbd className="ml-1 rounded bg-black/20 px-1 text-[10px] opacity-70">⌘S</kbd>
           </Button>
         </div>
 
         {saveError && (
           <div className="border-b border-destructive/40 bg-destructive/10 px-3 py-1.5 text-xs text-destructive">
-            บันทึกไม่สำเร็จ: {saveError}
+            {t('บันทึกไม่สำเร็จ')}: {saveError}
           </div>
         )}
 
@@ -209,7 +211,7 @@ export default function FileEditor({
         {!loading && !loadError && (
           <div className="flex items-center gap-1.5 border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
             <ShieldCheck className="size-3.5 shrink-0 text-[hsl(var(--success))]" />
-            เขียนแบบปลอดภัย (atomic + คงสิทธิ์ไฟล์เดิม) · ⌘Z ย้อน / ⇧⌘Z ทำซ้ำ · เนื้อหาไม่ถูกส่งไป AI
+            {t('เขียนแบบปลอดภัย (atomic + คงสิทธิ์ไฟล์เดิม) · ⌘Z ย้อน / ⇧⌘Z ทำซ้ำ · เนื้อหาไม่ถูกส่งไป AI')}
           </div>
         )}
       </DialogContent>

@@ -68,7 +68,7 @@ export default function Settings({
       if (!r.ok) {
         toast(
           r.reason === 'dev'
-            ? 'โหมด dev ยังไม่มีระบบอัปเดต (เฉพาะตัวติดตั้งจริง)'
+            ? t('โหมด dev ยังไม่มีระบบอัปเดต (เฉพาะตัวติดตั้งจริง)')
             : `ตรวจสอบไม่สำเร็จ: ${r.reason ?? 'unknown'}`,
           'error'
         )
@@ -207,7 +207,7 @@ export default function Settings({
           <span>
             API key ถูก<span className="text-foreground">เข้ารหัสเก็บในเครื่องคุณ</span>ด้วย Keychain ของ
             ระบบ (ไม่ส่งออกที่ไหน) — ครั้งแรก macOS อาจถามขออนุญาตเข้าถึง Keychain
-            กด <span className="font-medium text-foreground">“Always Allow”</span> ได้เลย ปลอดภัย
+            กด <span className="font-medium text-foreground">“Always Allow”</span> {t("ได้เลย ปลอดภัย")}
           </span>
         </div>
 
@@ -224,7 +224,7 @@ export default function Settings({
                   <span className="text-sm font-semibold">{p.label}</span>
                   {configured ? (
                     <Badge variant="success">
-                      <Check className="size-2.5" /> ตั้งค่าแล้ว
+                      <Check className="size-2.5" /> {t("ตั้งค่าแล้ว")}
                     </Badge>
                   ) : (
                     <Badge variant="outline">ยังไม่ตั้ง</Badge>

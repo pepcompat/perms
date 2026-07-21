@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Check, Copy } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { translate, useLang } from '../lib/i18n'
 
 function CodeBlock({ children }: { children: ReactNode }): JSX.Element {
   const [copied, setCopied] = useState(false)
@@ -17,7 +18,7 @@ function CodeBlock({ children }: { children: ReactNode }): JSX.Element {
       <button
         onClick={copy}
         className="absolute right-1.5 top-1.5 z-10 rounded-md border border-border bg-card/80 p-1 text-muted-foreground opacity-0 backdrop-blur transition-opacity hover:text-foreground group-hover/code:opacity-100"
-        title="คัดลอกโค้ด"
+        title={translate('คัดลอกโค้ด', useLang.getState().lang)}
       >
         {copied ? <Check className="size-3.5 text-[hsl(var(--success))]" /> : <Copy className="size-3.5" />}
       </button>

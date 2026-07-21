@@ -1,5 +1,6 @@
 import { Component, type ReactNode } from 'react'
 import { AlertTriangle, RotateCcw } from 'lucide-react'
+import { translate, useLang } from '../lib/i18n'
 
 interface Props {
   children: ReactNode
@@ -41,7 +42,7 @@ export class ErrorBoundary extends Component<Props, State> {
             <AlertTriangle className="size-6 text-destructive" />
           </div>
           <div>
-            <p className="text-sm font-medium">เกิดข้อผิดพลาดในส่วนนี้</p>
+            <p className="text-sm font-medium">{translate("เกิดข้อผิดพลาดในส่วนนี้", useLang.getState().lang)}</p>
             <p className="mt-1 max-w-md break-words font-mono text-xs text-muted-foreground">
               {this.state.error.message}
             </p>
@@ -50,7 +51,7 @@ export class ErrorBoundary extends Component<Props, State> {
             onClick={() => this.setState({ error: null })}
             className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5 text-sm transition-colors hover:bg-accent"
           >
-            <RotateCcw className="size-4" /> ลองใหม่
+            <RotateCcw className="size-4" /> {translate("ลองใหม่", useLang.getState().lang)}
           </button>
         </div>
       )

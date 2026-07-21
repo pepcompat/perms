@@ -4,6 +4,7 @@ import type { SessionRecord, CommandRecord } from '@shared/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Badge } from './ui/badge'
 import { cn } from '../lib/utils'
+import { useT } from '../lib/i18n'
 
 export default function SessionHistory({
   open,
@@ -12,6 +13,7 @@ export default function SessionHistory({
   open: boolean
   onClose: () => void
 }): JSX.Element {
+  const t = useT()
   const [sessions, setSessions] = useState<SessionRecord[]>([])
   const [selected, setSelected] = useState<string | null>(null)
   const [commands, setCommands] = useState<CommandRecord[]>([])
@@ -61,7 +63,7 @@ export default function SessionHistory({
               </button>
             ))}
             {sessions.length === 0 && (
-              <div className="p-6 text-center text-xs text-muted-foreground">ยังไม่มีประวัติ</div>
+              <div className="p-6 text-center text-xs text-muted-foreground">{t("ยังไม่มีประวัติ")}</div>
             )}
           </div>
 
@@ -90,12 +92,12 @@ export default function SessionHistory({
             ))}
             {selected && commands.length === 0 && (
               <div className="p-6 text-center text-xs text-muted-foreground">
-                ไม่มีคำสั่งที่บันทึกใน session นี้
+                {t("ไม่มีคำสั่งที่บันทึกใน session นี้")}
               </div>
             )}
             {!selected && (
               <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-                เลือก session เพื่อดูประวัติคำสั่ง
+                {t("เลือก session เพื่อดูประวัติคำสั่ง")}
               </div>
             )}
           </div>

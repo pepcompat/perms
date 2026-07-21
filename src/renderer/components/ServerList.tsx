@@ -132,7 +132,7 @@ export default function ServerList({
   }
 
   const remove = async (s: ServerRecord): Promise<void> => {
-    if (confirm(`ลบ server "${s.name}"?`)) {
+    if (confirm(`${t('ลบ server')} "${s.name}"?`)) {
       await window.api.servers.remove(s.id)
       await refresh()
     }
@@ -247,7 +247,7 @@ export default function ServerList({
               <ChevronRight
                 className={cn('size-3 transition-transform', !collapsed.has(group) && 'rotate-90')}
               />
-              <span className="truncate">{group}</span>
+              <span className="truncate">{t(group)}</span>
               <span className="ml-auto rounded-full bg-secondary px-1.5 text-[9px] text-muted-foreground">
                 {list.length}
               </span>
@@ -335,7 +335,7 @@ export default function ServerList({
                 setFormOpen(true)
               }}
             >
-              <Plus className="size-3.5" /> เพิ่ม server
+              <Plus className="size-3.5" /> {t("เพิ่ม server")}
             </Button>
           </div>
         )}

@@ -16,6 +16,8 @@
 [⬇️ ดาวน์โหลด](https://github.com/pepcompat/perms-desktop/releases/latest) ·
 [🐛 รายงานบั๊ก](https://github.com/pepcompat/perms/issues)
 
+**ภาษาไทย** · [English](#english)
+
 </div>
 
 ---
@@ -108,3 +110,61 @@ DB tables: `servers`, `secrets`, `sessions`, `commands`, `ai_history`, `runbooks
 
 ใช้ open-source dependencies แบบ permissive (MIT / BSD / Apache-2.0 / ISC / OFL) — ดูรายการ license
 ทั้งหมดใน **[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md)** (สร้างใหม่ได้ด้วย `pnpm licenses`)
+
+---
+
+<a id="english"></a>
+
+# 🇬🇧 English
+
+**Perms** is a desktop **SSH / terminal manager with a built-in AI agent**.
+Everything runs on your machine — servers, secrets, command history and AI
+conversations are stored in a local database. There is no cloud backend.
+
+## Features
+
+- 🔐 **Full SSH support** — password / private key (+passphrase) / ssh-agent / **jump host (bastion)**, with drag-to-reorder groups
+- 🖥️ **Terminal** for both SSH and local shells in multiple tabs (xterm.js), with inline history suggestions
+- 🤖 **AI agent, 3 modes** — *suggest* / *approve before running* / *agentic* — works with **OpenAI, Anthropic and Google**
+- 📁 **SFTP + file editor** — browse, upload, download, **zip/unzip**, download a whole folder, and **edit files on the server** (e.g. `.env`) with syntax highlighting, undo/redo and `⌘S` to save
+- 🐳 **Docker manager** — containers grouped by compose stack; start / stop / restart / logs / remove, and open a terminal inside a container
+- 📚 **Knowledge base** (the AI remembers what you teach it), **runbooks** with `{{param}}` placeholders, and command history
+- ✨ **"Ask AI why it failed"** — one click sends the last command and its output to the AI for a diagnosis
+
+## Security & privacy
+
+- Secrets (API keys, SSH passwords/passphrases) are encrypted with the **OS keychain** (Electron `safeStorage`) — never stored in plaintext
+- All data lives in a **local SQLite database** on your machine
+- AI messages go **only** to the provider you choose, using **your own API key**, and secrets (keys/passwords/tokens) are **redacted before sending**
+- Agentic mode **asks for confirmation before running destructive commands** (`rm -rf`, `mkfs`, `dd`, …)
+- File edits are written **atomically** and preserve the original permissions
+
+## Download
+
+Grab an installer from **[Releases](https://github.com/pepcompat/perms-desktop/releases/latest)**:
+`.dmg` (macOS, signed + notarized) · `.exe` (Windows) · `.AppImage` / `.deb` (Linux).
+The app updates itself when a new version ships.
+
+## Build from source
+
+Requires **Node.js 20+** and **pnpm**:
+
+```bash
+pnpm install     # installs deps and rebuilds native modules for Electron
+pnpm dev         # run in development
+pnpm build       # build an installer for the current OS
+pnpm typecheck   # type check
+pnpm test        # run tests (vitest)
+```
+
+## Contributing
+
+Issues and pull requests are welcome — feel free to open an issue first to
+discuss a bug or an idea. Please make sure `pnpm typecheck && pnpm test` passes
+before opening a PR (CI checks every push and PR).
+
+## License
+
+Released under the **[MIT License](LICENSE)** © pepcompat.
+Third-party dependencies are all permissive (MIT / BSD / Apache-2.0 / ISC / OFL) —
+see **[THIRD-PARTY-LICENSES.md](THIRD-PARTY-LICENSES.md)**.

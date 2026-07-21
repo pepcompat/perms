@@ -2,7 +2,8 @@ import type { SFTPWrapper, FileEntryWithStats, Stats } from 'ssh2'
 import { posix } from 'path'
 import { nanoid } from 'nanoid'
 import type { SftpEntry, SftpFileContent } from '@shared/types'
-import { getSessionHandle } from './session-manager'
+import { shQuote } from '@shared/shell-quote'
+import { getSessionHandle, execSilent } from './session-manager'
 import { SshSession } from './ssh-session'
 
 const MAX_EDIT_BYTES = 2 * 1024 * 1024 // 2MB — กันเปิดไฟล์ใหญ่/log มหึมามาแก้เป็นข้อความ
@@ -110,6 +111,68 @@ export async function sftpUpload(
 /** ต่อ path แบบ posix (remote เป็น unix เสมอ) */
 export function remoteJoin(dir: string, name: string): string {
   return posix.join(dir, name)
+}
+
+/** นามสกุลไฟล์บีบอัดที่แตกได้ */
+export function archiveKind(name: string): 'zip' | 'tar.gz' | 'tar.bz2' | 'tar.xz' | 'tar' | 'gz' | null {
+  const n = name.toLowerCase()
+  if (n.endsWith('.zip')) return 'zip'
+  if (n.endsWith('.tar.gz') || n.endsWith('.tgz')) return 'tar.gz'
+  if (n.endsWith('.tar.bz2') || n.endsWith('.tbz2')) return 'tar.bz2'
+  if (n.endsWith('.tar.xz') || n.endsWith('.txz')) return 'tar.xz'
+  if (n.endsWith('.tar')) return 'tar'
+  if (n.endsWith('.gz')) return 'gz'
+  return null
+}
+
+/**
+ * บีบอัดรายการใน dir → archive ที่ destDir/base.(zip|tar.gz)
+ * ใช้ zip ก่อน ถ้าไม่มีบนเครื่องปลายทางจะ fallback เป็น tar.gz
+ */
+export async function sftpArchive(
+  sessionId: string,
+  dir: string,
+  names: string[],
+  destDir: string,
+  base: string
+): Promise<{ path: string; name: string }> {
+  if (!names.length) throw new Error('ไม่ได้เลือกไฟล์')
+  const items = names.map(shQuote).join(' ')
+  const d = shQuote(dir)
+
+  const zipName = `${base}.zip`
+  const zipPath = posix.join(destDir, zipName)
+  const zip = await execSilent(sessionId, `cd ${d} && zip -qr ${shQuote(zipPath)} ${items}`)
+  if (zip.exitCode === 0) return { path: zipPath, name: zipName }
+
+  const tarName = `${base}.tar.gz`
+  const tarPath = posix.join(destDir, tarName)
+  const tar = await execSilent(sessionId, `cd ${d} && tar -czf ${shQuote(tarPath)} ${items}`)
+  if (tar.exitCode !== 0) {
+    throw new Error(`บีบอัดไม่สำเร็จ: ${(zip.output + '\n' + tar.output).trim().slice(0, 300)}`)
+  }
+  return { path: tarPath, name: tarName }
+}
+
+/** แตกไฟล์บีบอัดในโฟลเดอร์เดียวกัน */
+export async function sftpExtract(sessionId: string, dir: string, name: string): Promise<void> {
+  const kind = archiveKind(name)
+  if (!kind) throw new Error('ไม่รู้จักรูปแบบไฟล์บีบอัดนี้')
+  const f = shQuote(name)
+  const d = shQuote(dir)
+  const cmd =
+    kind === 'zip'
+      ? `cd ${d} && unzip -o ${f}`
+      : kind === 'gz'
+        ? `cd ${d} && gunzip -kf ${f}`
+        : `cd ${d} && tar -x${kind === 'tar.gz' ? 'z' : kind === 'tar.bz2' ? 'j' : kind === 'tar.xz' ? 'J' : ''}f ${f}`
+  const r = await execSilent(sessionId, cmd)
+  if (r.exitCode !== 0) throw new Error(`แตกไฟล์ไม่สำเร็จ: ${r.output.trim().slice(0, 300)}`)
+}
+
+/** ลบไฟล์บน remote (ใช้เก็บกวาด archive ชั่วคราว) */
+export async function sftpRemoveRemote(sessionId: string, path: string): Promise<void> {
+  await execSilent(sessionId, `rm -f ${shQuote(path)}`)
 }
 
 function statP(sftp: SFTPWrapper, path: string): Promise<Stats> {

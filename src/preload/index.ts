@@ -103,6 +103,21 @@ const api = {
       expectedMtime: number | null
     ): Promise<{ mtime: number }> =>
       ipcRenderer.invoke(IPC.sftpWrite, sessionId, path, content, mode, expectedMtime),
+    archive: (
+      sessionId: string,
+      dir: string,
+      names: string[],
+      base: string
+    ): Promise<{ path: string; name: string }> =>
+      ipcRenderer.invoke(IPC.sftpArchive, sessionId, dir, names, base),
+    extract: (sessionId: string, dir: string, name: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.sftpExtract, sessionId, dir, name),
+    downloadArchive: (
+      sessionId: string,
+      dir: string,
+      names: string[]
+    ): Promise<{ ok?: boolean; canceled?: boolean; savedTo?: string; error?: string }> =>
+      ipcRenderer.invoke(IPC.sftpDownloadArchive, sessionId, dir, names),
     onProgress: (cb: (p: SftpProgress) => void): (() => void) => {
       const listener = (_e: unknown, p: SftpProgress): void => cb(p)
       ipcRenderer.on(IPC.sftpProgress, listener)

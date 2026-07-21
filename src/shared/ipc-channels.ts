@@ -21,6 +21,9 @@ export const IPC = {
   sftpUpload: 'sftp:upload',
   sftpRead: 'sftp:read',
   sftpWrite: 'sftp:write',
+  sftpArchive: 'sftp:archive',
+  sftpExtract: 'sftp:extract',
+  sftpDownloadArchive: 'sftp:downloadArchive',
   /** event main→renderer: ความคืบหน้าการถ่ายโอน */
   sftpProgress: 'sftp:progress',
 

@@ -59,6 +59,9 @@ import {
   sftpUpload,
   sftpReadFile,
   sftpWriteFile,
+  sftpArchive,
+  sftpExtract,
+  sftpRemoveRemote,
   remoteJoin
 } from '../terminal/sftp'
 import { dockerList, dockerAction, dockerLogs } from '../docker'
@@ -106,6 +109,53 @@ export function registerIpc(): void {
     IPC.sftpWrite,
     (_e, sessionId: string, path: string, content: string, mode: number, expectedMtime: number | null) =>
       sftpWriteFile(sessionId, path, content, mode, expectedMtime)
+  )
+
+  // บีบอัดในที่เดิม (ปุ่ม zip)
+  ipcMain.handle(
+    IPC.sftpArchive,
+    (_e, sessionId: string, dir: string, names: string[], base: string) =>
+      sftpArchive(sessionId, dir, names, dir, base)
+  )
+  ipcMain.handle(IPC.sftpExtract, (_e, sessionId: string, dir: string, name: string) =>
+    sftpExtract(sessionId, dir, name)
+  )
+
+  // ดาวน์โหลดหลายไฟล์/ทั้งโฟลเดอร์ → บีบอัดที่ /tmp แล้วโหลด แล้วลบไฟล์ชั่วคราว
+  ipcMain.handle(
+    IPC.sftpDownloadArchive,
+    async (_e, sessionId: string, dir: string, names: string[]) => {
+      const win = activeWindow()
+      if (!win) return { ok: false, error: 'no window' }
+      const base = `perms-${nanoid(6)}`
+      let archive: { path: string; name: string }
+      try {
+        archive = await sftpArchive(sessionId, dir, names, '/tmp', base)
+      } catch (err) {
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
+      }
+      const ext = archive.name.slice(base.length)
+      const suggested = (names.length === 1 ? names[0] : basename(dir) || 'download') + ext
+      const res = await dialog.showSaveDialog(win, { defaultPath: suggested })
+      if (res.canceled || !res.filePath) {
+        await sftpRemoveRemote(sessionId, archive.path)
+        return { canceled: true }
+      }
+      const transferId = nanoid()
+      try {
+        await sftpDownload(sessionId, archive.path, res.filePath, (transferred, total) =>
+          emitSftp({ transferId, name: suggested, direction: 'down', transferred, total })
+        )
+        emitSftp({ transferId, name: suggested, direction: 'down', transferred: 1, total: 1, done: true })
+        return { ok: true, savedTo: res.filePath }
+      } catch (err) {
+        const error = err instanceof Error ? err.message : String(err)
+        emitSftp({ transferId, name: suggested, direction: 'down', transferred: 0, total: 1, done: true, error })
+        return { ok: false, error }
+      } finally {
+        await sftpRemoveRemote(sessionId, archive.path)
+      }
+    }
   )
 
   // ---- docker ----

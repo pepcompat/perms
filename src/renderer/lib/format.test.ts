@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { humanSize, joinRemote, parentPath } from './format'
+import { humanSize, joinRemote, parentPath, isArchive } from './format'
 
 describe('humanSize', () => {
   it('ต่ำกว่า 1KB → เป็น B', () => {
@@ -24,6 +24,19 @@ describe('joinRemote', () => {
   })
   it('dir ที่ลงท้ายด้วย / ไม่ซ้อน slash', () => {
     expect(joinRemote('/home/', 'x')).toBe('/home/x')
+  })
+})
+
+describe('isArchive', () => {
+  it('ไฟล์บีบอัด → true', () => {
+    for (const n of ['a.zip', 'b.tar.gz', 'c.tgz', 'd.tar', 'e.gz', 'f.tar.bz2', 'g.txz', 'H.ZIP']) {
+      expect(isArchive(n)).toBe(true)
+    }
+  })
+  it('ไฟล์ทั่วไป → false', () => {
+    for (const n of ['a.txt', '.env', 'docker-compose.yml', 'image.png', 'script.sh']) {
+      expect(isArchive(n)).toBe(false)
+    }
   })
 })
 

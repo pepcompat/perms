@@ -20,6 +20,7 @@ import { Button } from './ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { logoUrl } from '../lib/logo'
+import { useT } from '../lib/i18n'
 import ServerForm from './ServerForm'
 
 export default function ServerList({
@@ -38,6 +39,7 @@ export default function ServerList({
   onOpenChangelog: () => void
 }): JSX.Element {
   const { servers, refresh } = useServers()
+  const t = useT()
   const { addTab } = useTabs()
   const tabs = useTabs((s) => s.tabs)
   const setActive = useTabs((s) => s.setActive)
@@ -177,7 +179,7 @@ export default function ServerList({
                 <MonitorDot className="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>Local terminal</TooltipContent>
+            <TooltipContent>{t('Local terminal')}</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
@@ -192,7 +194,7 @@ export default function ServerList({
                 <Plus className="size-4" />
               </Button>
             </TooltipTrigger>
-            <TooltipContent>เพิ่ม server</TooltipContent>
+            <TooltipContent>{t('เพิ่ม server')}</TooltipContent>
           </Tooltip>
         </div>
       </div>
@@ -257,7 +259,7 @@ export default function ServerList({
                 key={s.id}
                 onClick={() => onCardClick(s)}
                 onDoubleClick={() => onCardDblClick(s)}
-                title="คลิก: ไป tab ล่าสุด · ดับเบิลคลิก: เปิด tab ใหม่"
+                title={t("คลิก: ไป tab ล่าสุด · ดับเบิลคลิก: เปิด tab ใหม่")}
                 className="group mb-px flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent"
               >
                 <span
@@ -265,7 +267,7 @@ export default function ServerList({
                     'size-1.5 shrink-0 rounded-full ring-2 ring-background',
                     isConnected(s.id) ? 'bg-[hsl(var(--success))]' : 'bg-muted-foreground/40'
                   )}
-                  title={isConnected(s.id) ? 'เชื่อมต่ออยู่' : 'ไม่ได้เชื่อมต่อ'}
+                  title={isConnected(s.id) ? t("เชื่อมต่ออยู่") : t("ไม่ได้เชื่อมต่อ")}
                 />
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] font-medium leading-tight">{s.name}</div>
@@ -324,7 +326,7 @@ export default function ServerList({
             <div className="flex size-12 items-center justify-center rounded-full bg-accent">
               <ServerIcon className="size-5 text-muted-foreground" />
             </div>
-            <p className="text-xs text-muted-foreground">ยังไม่มี server</p>
+            <p className="text-xs text-muted-foreground">{t('ยังไม่มี server')}</p>
             <Button
               variant="outline"
               size="sm"
@@ -340,13 +342,13 @@ export default function ServerList({
       </div>
 
       <div className="flex flex-col gap-0.5 border-t border-border p-2">
-        <SideLink icon={<History className="size-4" />} label="Session history" onClick={onOpenHistory} />
-        <SideLink icon={<BookText className="size-4" />} label="Runbooks" onClick={onOpenRunbooks} />
-        <SideLink icon={<SettingsIcon className="size-4" />} label="Settings" onClick={onOpenSettings} />
+        <SideLink icon={<History className="size-4" />} label={t('Session history')} onClick={onOpenHistory} />
+        <SideLink icon={<BookText className="size-4" />} label={t('Runbooks')} onClick={onOpenRunbooks} />
+        <SideLink icon={<SettingsIcon className="size-4" />} label={t('Settings')} onClick={onOpenSettings} />
         {version && (
           <button
             onClick={onOpenChangelog}
-            title="ดูว่ามีอะไรใหม่ (changelog)"
+            title={t("ดูว่ามีอะไรใหม่ (changelog)")}
             className="ml-1 mt-0.5 self-start rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/50 transition-colors hover:text-muted-foreground"
           >
             v{version}

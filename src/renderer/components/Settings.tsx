@@ -7,13 +7,15 @@ import {
   Loader2,
   ChevronDown,
   Brain,
-  RefreshCw
+  RefreshCw,
+  Languages
 } from 'lucide-react'
 import type { AiProvider, AiMode } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { toast } from '../store/useToast'
 import { MODEL_PRESETS } from '../lib/models'
 import { cn } from '../lib/utils'
+import { useT, useLang } from '../lib/i18n'
 import { logoUrl } from '../lib/logo'
 import KnowledgePanel from './KnowledgePanel'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
@@ -45,6 +47,9 @@ export default function Settings({
   onClose: () => void
 }): JSX.Element {
   const { settings, set, refresh } = useSettings()
+  const t = useT()
+  const lang = useLang((s) => s.lang)
+  const setLang = useLang((s) => s.setLang)
   const [tab, setTab] = useState<'ai' | 'knowledge' | 'update'>('ai')
   const [keys, setKeys] = useState<Record<string, string>>({})
   const [busy, setBusy] = useState<string | null>(null)
@@ -127,6 +132,26 @@ export default function Settings({
           <DialogTitle>Settings</DialogTitle>
         </DialogHeader>
 
+        {/* ภาษา */}
+        <div className="flex shrink-0 items-center gap-2">
+          <Languages className="size-3.5 text-muted-foreground" />
+          <span className="text-xs text-muted-foreground">{t('ภาษา')}</span>
+          <div className="ml-auto flex gap-1 rounded-lg bg-secondary/40 p-0.5">
+            {(['th', 'en'] as const).map((l) => (
+              <button
+                key={l}
+                onClick={() => setLang(l)}
+                className={cn(
+                  'rounded-md px-2.5 py-1 text-xs font-medium transition-colors',
+                  lang === l ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                {l === 'th' ? 'ไทย' : 'English'}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* tabs */}
         <div className="flex shrink-0 gap-1 rounded-lg bg-secondary/40 p-1">
           <TabBtn active={tab === 'ai'} onClick={() => setTab('ai')} icon={<KeyRound className="size-3.5" />}>
@@ -137,14 +162,14 @@ export default function Settings({
             onClick={() => setTab('knowledge')}
             icon={<Brain className="size-3.5" />}
           >
-            คลังความรู้
+            {t('คลังความรู้')}
           </TabBtn>
           <TabBtn
             active={tab === 'update'}
             onClick={() => setTab('update')}
             icon={<RefreshCw className="size-3.5" />}
           >
-            อัปเดต
+            {t('อัปเดต')}
           </TabBtn>
         </div>
 
@@ -158,7 +183,7 @@ export default function Settings({
                 <div className="min-w-0">
                   <div className="text-sm font-semibold">Perms</div>
                   <div className="text-xs text-muted-foreground">
-                    เวอร์ชันปัจจุบัน{' '}
+                    {t('เวอร์ชันปัจจุบัน')}{' '}
                     <span className="font-mono text-foreground">{appVersion || '—'}</span>
                   </div>
                 </div>
@@ -168,7 +193,7 @@ export default function Settings({
                   ) : (
                     <RefreshCw className="size-4" />
                   )}
-                  ตรวจสอบอัปเดต
+                  {t('ตรวจสอบอัปเดต')}
                 </Button>
               </div>
             </div>

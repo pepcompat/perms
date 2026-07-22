@@ -1,9 +1,10 @@
 import { Sparkles } from 'lucide-react'
 import type { ChangelogEntry } from '../lib/changelog'
+import { pickLang } from '../lib/changelog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { logoUrl } from '../lib/logo'
-import { useT } from '../lib/i18n'
+import { useT, useLang } from '../lib/i18n'
 
 export default function WhatsNew({
   version,
@@ -18,6 +19,7 @@ export default function WhatsNew({
   manual?: boolean
 }): JSX.Element {
   const t = useT()
+  const lang = useLang((s) => s.lang)
   const multi = entries.length > 1
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -55,14 +57,16 @@ export default function WhatsNew({
                   <span className="rounded-full bg-secondary px-2 py-0.5 font-mono text-[11px] text-muted-foreground">
                     v{e.version}
                   </span>
-                  <span className="text-xs font-medium text-muted-foreground">{e.title}</span>
+                  <span className="text-xs font-medium text-muted-foreground">
+                    {pickLang(e.title, e.titleEn, lang)}
+                  </span>
                 </div>
               )}
               <ul className="space-y-2">
                 {e.items.map((it, i) => (
                   <li key={i} className="flex gap-2.5 text-sm">
                     <span className="shrink-0 text-base leading-tight">{it.icon}</span>
-                    <span className="leading-snug">{it.text}</span>
+                    <span className="leading-snug">{pickLang(it.text, it.textEn, lang)}</span>
                   </li>
                 ))}
               </ul>

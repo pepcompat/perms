@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { whatsNewFor } from './changelog'
+import { whatsNewFor, CHANGELOG, pickLang } from './changelog'
 
 describe('whatsNewFor', () => {
   it('current ไม่มีใน changelog → ไม่โชว์', () => {
@@ -27,5 +27,36 @@ describe('whatsNewFor', () => {
       '1.2.0',
       '1.1.1'
     ])
+  })
+})
+
+describe('changelog 2 ภาษา', () => {
+  // กันเวอร์ชันใหม่ถูกเพิ่มโดยลืมเขียนภาษาอังกฤษ
+  it('ทุก entry มีทั้งไทยและอังกฤษ', () => {
+    const missing: string[] = []
+    for (const e of CHANGELOG) {
+      if (!e.title.trim()) missing.push(`${e.version}: title`)
+      if (!e.titleEn.trim()) missing.push(`${e.version}: titleEn`)
+      e.items.forEach((it, i) => {
+        if (!it.text.trim()) missing.push(`${e.version}: items[${i}].text`)
+        if (!it.textEn.trim()) missing.push(`${e.version}: items[${i}].textEn`)
+      })
+    }
+    expect(missing).toEqual([])
+  })
+
+  it('ข้อความอังกฤษต้องไม่มีอักษรไทยปน', () => {
+    const thai = /[฀-๿]/
+    const bad = CHANGELOG.flatMap((e) => [
+      ...(thai.test(e.titleEn) ? [`${e.version}: titleEn`] : []),
+      ...e.items.flatMap((it, i) => (thai.test(it.textEn) ? [`${e.version}: items[${i}]`] : []))
+    ])
+    expect(bad).toEqual([])
+  })
+
+  it('pickLang เลือกตามภาษา และ fallback เป็นไทยถ้า en ว่าง', () => {
+    expect(pickLang('ไทย', 'English', 'th')).toBe('ไทย')
+    expect(pickLang('ไทย', 'English', 'en')).toBe('English')
+    expect(pickLang('ไทย', '', 'en')).toBe('ไทย')
   })
 })

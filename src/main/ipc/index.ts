@@ -66,6 +66,27 @@ import {
 } from '../terminal/sftp'
 import { dockerList, dockerAction, dockerLogs } from '../docker'
 import { runChat, resolveApproval, cancelRequest } from '../ai/agent'
+import {
+  enqueue as transferEnqueue,
+  listTransfers,
+  cancelTransfer,
+  retryTransfer,
+  clearFinished
+} from '../terminal/transfer-queue'
+import { listSnapshots, getSnapshot, deleteSnapshot } from '../db/repos/snapshots-repo'
+import { listKnownHosts, forgetHostKey } from '../db/repos/known-hosts-repo'
+import { resolveHostKeyPrompt } from '../ssh/host-key-guard'
+import { openLocalTunnel, openRemoteTunnel, closeTunnel, listTunnels } from '../ssh/tunnel'
+import {
+  hasSystemd,
+  systemdList,
+  systemdAction,
+  systemdStatus,
+  journalLogs,
+  type SystemdAction
+} from '../systemd'
+import { getGuardPolicy, setGuardPolicy } from '../db/repos/settings-repo'
+import type { GuardPolicy } from '@shared/ai-guard'
 
 export function registerIpc(): void {
   // ---- servers ----
@@ -82,6 +103,65 @@ export function registerIpc(): void {
     if (/^https?:\/\//i.test(url)) void shell.openExternal(url)
   })
   ipcMain.handle(IPC.appVersion, () => app.getVersion())
+
+  // ---- คิวรับส่งไฟล์ (resume + checksum + retry) ----
+  ipcMain.handle(
+    IPC.transferEnqueue,
+    (_e, input: { sessionId: string; kind: 'upload' | 'download'; remotePath: string; localPath: string }) =>
+      transferEnqueue(input)
+  )
+  ipcMain.handle(IPC.transferList, () => listTransfers())
+  ipcMain.handle(IPC.transferCancel, (_e, id: string) => cancelTransfer(id))
+  ipcMain.handle(IPC.transferRetry, (_e, id: string) => retryTransfer(id))
+  ipcMain.handle(IPC.transferClear, () => clearFinished())
+
+  // ---- snapshot ไฟล์ ----
+  ipcMain.handle(IPC.snapshotList, (_e, serverId: string | null, path: string) =>
+    listSnapshots(serverId, path)
+  )
+  ipcMain.handle(IPC.snapshotGet, (_e, id: string) => getSnapshot(id))
+  ipcMain.handle(IPC.snapshotDelete, (_e, id: string) => deleteSnapshot(id))
+
+  // ---- host key ----
+  ipcMain.handle(IPC.hostKeysList, () => listKnownHosts())
+  ipcMain.handle(IPC.hostKeysForget, (_e, id: string) => forgetHostKey(id))
+  ipcMain.on(IPC.hostKeyRespond, (_e, id: string, accepted: boolean) =>
+    resolveHostKeyPrompt(id, accepted)
+  )
+
+  // ---- อุโมงค์ SSH ----
+  ipcMain.handle(
+    IPC.tunnelOpen,
+    (
+      _e,
+      input: {
+        sessionId: string
+        type: 'local' | 'remote'
+        listenPort: number
+        destHost: string
+        destPort: number
+      }
+    ) => (input.type === 'local' ? openLocalTunnel(input) : openRemoteTunnel(input))
+  )
+  ipcMain.handle(IPC.tunnelClose, (_e, id: string) => closeTunnel(id))
+  ipcMain.handle(IPC.tunnelList, (_e, sessionId?: string) => listTunnels(sessionId))
+
+  // ---- systemd / journal ----
+  ipcMain.handle(IPC.systemdHas, (_e, sessionId: string) => hasSystemd(sessionId))
+  ipcMain.handle(IPC.systemdList, (_e, sessionId: string) => systemdList(sessionId))
+  ipcMain.handle(IPC.systemdAction, (_e, sessionId: string, unit: string, action: SystemdAction) =>
+    systemdAction(sessionId, unit, action)
+  )
+  ipcMain.handle(IPC.systemdStatus, (_e, sessionId: string, unit: string) =>
+    systemdStatus(sessionId, unit)
+  )
+  ipcMain.handle(IPC.systemdLogs, (_e, sessionId: string, unit: string, lines?: number) =>
+    journalLogs(sessionId, unit, lines)
+  )
+
+  // ---- นโยบายกรองคำสั่ง AI ----
+  ipcMain.handle(IPC.guardGet, () => getGuardPolicy())
+  ipcMain.handle(IPC.guardSet, (_e, policy: GuardPolicy) => setGuardPolicy(policy))
 
   ipcMain.handle(IPC.sshListKeys, () => listPrivateKeys())
   ipcMain.handle(IPC.sshPickKey, () => pickKeyFile())
@@ -172,17 +252,17 @@ export function registerIpc(): void {
       if (!win) return { ok: false, error: 'no window' }
       const res = await dialog.showSaveDialog(win, { defaultPath: name })
       if (res.canceled || !res.filePath) return { canceled: true }
-      const transferId = nanoid()
+      // เข้าคิวแทนการโหลดตรง ๆ — คิวจัดการ resume, ตรวจ checksum และลองใหม่เองเมื่อเน็ตสะดุด
       try {
-        await sftpDownload(sessionId, remotePath, res.filePath, (transferred, total) =>
-          emitSftp({ transferId, name, direction: 'down', transferred, total })
-        )
-        emitSftp({ transferId, name, direction: 'down', transferred: 1, total: 1, done: true })
-        return { ok: true, savedTo: res.filePath }
+        await transferEnqueue({
+          sessionId,
+          kind: 'download',
+          remotePath,
+          localPath: res.filePath
+        })
+        return { ok: true, savedTo: res.filePath, queued: true }
       } catch (err) {
-        const error = err instanceof Error ? err.message : String(err)
-        emitSftp({ transferId, name, direction: 'down', transferred: 0, total: 1, done: true, error })
-        return { ok: false, error }
+        return { ok: false, error: err instanceof Error ? err.message : String(err) }
       }
     }
   )
@@ -196,20 +276,19 @@ export function registerIpc(): void {
     if (res.canceled || res.filePaths.length === 0) return { canceled: true }
     let count = 0
     for (const local of res.filePaths) {
-      const name = basename(local)
-      const transferId = nanoid()
       try {
-        await sftpUpload(sessionId, local, remoteJoin(remoteDir, name), (transferred, total) =>
-          emitSftp({ transferId, name, direction: 'up', transferred, total })
-        )
-        emitSftp({ transferId, name, direction: 'up', transferred: 1, total: 1, done: true })
+        await transferEnqueue({
+          sessionId,
+          kind: 'upload',
+          localPath: local,
+          remotePath: remoteJoin(remoteDir, basename(local))
+        })
         count++
-      } catch (err) {
-        const error = err instanceof Error ? err.message : String(err)
-        emitSftp({ transferId, name, direction: 'up', transferred: 0, total: 1, done: true, error })
+      } catch {
+        /* ไฟล์นี้เข้าคิวไม่ได้ — ข้ามไป ตัวอื่นยังไปต่อได้ */
       }
     }
-    return { ok: true, count }
+    return { ok: true, count, queued: true }
   })
 
   // ---- terminal ----

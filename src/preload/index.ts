@@ -21,8 +21,17 @@ import type {
   SftpEntry,
   SftpProgress,
   SftpFileContent,
-  DockerContainer
+  DockerContainer,
+  FileSnapshot,
+  FileSnapshotMeta,
+  HostKeyPrompt,
+  TunnelInfo,
+  SystemdUnit,
+  JournalLine,
+  KnownHostRecord
 } from '../shared/types'
+import type { TransferItem } from '../shared/transfer-queue'
+import type { GuardPolicy } from '../shared/ai-guard'
 
 const api = {
   platform: process.platform,
@@ -123,6 +132,82 @@ const api = {
       ipcRenderer.on(IPC.sftpProgress, listener)
       return () => ipcRenderer.removeListener(IPC.sftpProgress, listener)
     }
+  },
+
+  transfers: {
+    enqueue: (input: {
+      sessionId: string
+      kind: 'upload' | 'download'
+      remotePath: string
+      localPath: string
+    }): Promise<TransferItem> => ipcRenderer.invoke(IPC.transferEnqueue, input),
+    list: (): Promise<TransferItem[]> => ipcRenderer.invoke(IPC.transferList),
+    cancel: (id: string): Promise<void> => ipcRenderer.invoke(IPC.transferCancel, id),
+    retry: (id: string): Promise<void> => ipcRenderer.invoke(IPC.transferRetry, id),
+    clear: (): Promise<void> => ipcRenderer.invoke(IPC.transferClear),
+    onUpdate: (cb: (items: TransferItem[]) => void): (() => void) => {
+      const listener = (_e: unknown, items: TransferItem[]): void => cb(items)
+      ipcRenderer.on(IPC.transferUpdate, listener)
+      return () => ipcRenderer.removeListener(IPC.transferUpdate, listener)
+    }
+  },
+
+  snapshots: {
+    list: (serverId: string | null, path: string): Promise<FileSnapshotMeta[]> =>
+      ipcRenderer.invoke(IPC.snapshotList, serverId, path),
+    get: (id: string): Promise<FileSnapshot | null> => ipcRenderer.invoke(IPC.snapshotGet, id),
+    remove: (id: string): Promise<void> => ipcRenderer.invoke(IPC.snapshotDelete, id)
+  },
+
+  hostKeys: {
+    list: (): Promise<KnownHostRecord[]> => ipcRenderer.invoke(IPC.hostKeysList),
+    forget: (id: string): Promise<void> => ipcRenderer.invoke(IPC.hostKeysForget, id),
+    respond: (id: string, accepted: boolean): void =>
+      ipcRenderer.send(IPC.hostKeyRespond, id, accepted),
+    onPrompt: (cb: (p: HostKeyPrompt) => void): (() => void) => {
+      const listener = (_e: unknown, p: HostKeyPrompt): void => cb(p)
+      ipcRenderer.on(IPC.hostKeyPrompt, listener)
+      return () => ipcRenderer.removeListener(IPC.hostKeyPrompt, listener)
+    }
+  },
+
+  tunnels: {
+    open: (input: {
+      sessionId: string
+      type: 'local' | 'remote'
+      listenPort: number
+      destHost: string
+      destPort: number
+    }): Promise<TunnelInfo> => ipcRenderer.invoke(IPC.tunnelOpen, input),
+    close: (id: string): Promise<void> => ipcRenderer.invoke(IPC.tunnelClose, id),
+    list: (sessionId?: string): Promise<TunnelInfo[]> =>
+      ipcRenderer.invoke(IPC.tunnelList, sessionId),
+    onUpdate: (cb: (items: TunnelInfo[]) => void): (() => void) => {
+      const listener = (_e: unknown, items: TunnelInfo[]): void => cb(items)
+      ipcRenderer.on(IPC.tunnelUpdate, listener)
+      return () => ipcRenderer.removeListener(IPC.tunnelUpdate, listener)
+    }
+  },
+
+  systemd: {
+    has: (sessionId: string): Promise<boolean> => ipcRenderer.invoke(IPC.systemdHas, sessionId),
+    list: (sessionId: string): Promise<SystemdUnit[]> =>
+      ipcRenderer.invoke(IPC.systemdList, sessionId),
+    action: (
+      sessionId: string,
+      unit: string,
+      action: string
+    ): Promise<{ ok: boolean; output: string }> =>
+      ipcRenderer.invoke(IPC.systemdAction, sessionId, unit, action),
+    status: (sessionId: string, unit: string): Promise<string> =>
+      ipcRenderer.invoke(IPC.systemdStatus, sessionId, unit),
+    logs: (sessionId: string, unit: string, lines?: number): Promise<JournalLine[]> =>
+      ipcRenderer.invoke(IPC.systemdLogs, sessionId, unit, lines)
+  },
+
+  guard: {
+    get: (): Promise<GuardPolicy> => ipcRenderer.invoke(IPC.guardGet),
+    set: (policy: GuardPolicy): Promise<void> => ipcRenderer.invoke(IPC.guardSet, policy)
   },
 
   docker: {

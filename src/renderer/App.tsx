@@ -9,6 +9,8 @@ import Runbooks from './components/Runbooks'
 import UpdateToast from './components/UpdateToast'
 import WhatsNew from './components/WhatsNew'
 import Toaster from './components/Toaster'
+import HostKeyDialog from './components/HostKeyDialog'
+import TransferQueue from './components/TransferQueue'
 import { whatsNewFor, CHANGELOG, type ChangelogEntry } from './lib/changelog'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Resizer, useResizable } from './components/Resizer'
@@ -17,8 +19,10 @@ import { logoUrl } from './lib/logo'
 import { useTabs } from './store/useTabs'
 import { useSettings } from './store/useSettings'
 import { toast } from './store/useToast'
+import { useT } from './lib/i18n'
 
 export default function App(): JSX.Element {
+  const t = useT()
   const { tabs, activeId } = useTabs()
   const { refresh } = useSettings()
   const [showSettings, setShowSettings] = useState(false)
@@ -73,7 +77,7 @@ export default function App(): JSX.Element {
                 <img src={logoUrl} alt="Perms" className="size-20 rounded-2xl shadow-xl" />
                 <div className="text-center">
                   <p className="text-base font-semibold text-foreground">Perms</p>
-                  <p className="mt-1 text-sm">เลือก server เพื่อเชื่อม SSH หรือเปิด local terminal</p>
+                  <p className="mt-1 text-sm">{t('เลือก server เพื่อเชื่อม SSH หรือเปิด local terminal')}</p>
                 </div>
               </div>
             ) : (
@@ -108,6 +112,8 @@ export default function App(): JSX.Element {
           />
         )}
 
+        <HostKeyDialog />
+        <TransferQueue />
         <UpdateToast />
         <Toaster />
       </div>

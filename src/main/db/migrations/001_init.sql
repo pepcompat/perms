@@ -88,7 +88,34 @@ CREATE TABLE IF NOT EXISTS knowledge (
   FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE SET NULL
 );
 
+-- known_hosts: ลายนิ้วมือ host key ที่ยอมรับไว้แล้ว (กัน MITM)
+-- ผูกกับ host:port ไม่ผูกกับ server row เพราะ key เป็นของ "เครื่อง" ไม่ใช่ของบัญชี
+-- และหลาย server row อาจชี้เครื่องเดียวกันคนละ user
+CREATE TABLE IF NOT EXISTS known_hosts (
+  id          TEXT PRIMARY KEY,           -- host:port (ตัวพิมพ์เล็ก)
+  host        TEXT NOT NULL,
+  port        INTEGER NOT NULL DEFAULT 22,
+  key_type    TEXT NOT NULL,              -- ssh-ed25519 | ssh-rsa | ecdsa-...
+  fingerprint TEXT NOT NULL,              -- SHA256:xxxx (แบบ OpenSSH)
+  first_seen  INTEGER NOT NULL,
+  last_seen   INTEGER NOT NULL
+);
+
+-- file_snapshots: สำเนาไฟล์ก่อนบันทึกทับ ใช้ดู diff และย้อนกลับ
+CREATE TABLE IF NOT EXISTS file_snapshots (
+  id          TEXT PRIMARY KEY,
+  server_id   TEXT,                       -- null = ไฟล์ในเครื่อง
+  path        TEXT NOT NULL,
+  content     TEXT NOT NULL,
+  size        INTEGER NOT NULL,
+  mode        INTEGER,
+  reason      TEXT NOT NULL DEFAULT 'save', -- save | rollback | manual
+  created_at  INTEGER NOT NULL,
+  FOREIGN KEY (server_id) REFERENCES servers(id) ON DELETE CASCADE
+);
+
 CREATE INDEX IF NOT EXISTS idx_commands_session ON commands(session_id);
+CREATE INDEX IF NOT EXISTS idx_snapshots_path ON file_snapshots(server_id, path, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ai_history_session ON ai_history(session_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_server ON sessions(server_id);
 CREATE INDEX IF NOT EXISTS idx_knowledge_server ON knowledge(server_id);

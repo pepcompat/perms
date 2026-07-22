@@ -216,6 +216,33 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                 ⚠️ {approval.danger} · {t('ตรวจให้ดีก่อนอนุมัติ')}
               </div>
             )}
+
+            {/* payload preview — ให้เห็นชัดว่ากำลังจะยิงอะไร ใส่เครื่องไหน และทำไมถึงถาม */}
+            {approval.preview && (
+              <div className="mb-2 space-y-1 rounded-lg border border-border/60 bg-black/20 px-2.5 py-2 text-[11px]">
+                <div className="flex gap-2">
+                  <span className="w-14 shrink-0 text-muted-foreground">{t('ปลายทาง')}</span>
+                  <span className="min-w-0 break-all font-medium">{approval.preview.target}</span>
+                </div>
+                <div className="flex gap-2">
+                  <span className="w-14 shrink-0 text-muted-foreground">{t('เครื่องมือ')}</span>
+                  <span className="font-mono">{approval.preview.toolName}</span>
+                </div>
+                {approval.preview.extraArgs.map((a) => (
+                  <div key={a.key} className="flex gap-2">
+                    <span className="w-14 shrink-0 truncate text-muted-foreground">{a.key}</span>
+                    <span className="min-w-0 break-all font-mono">{a.value}</span>
+                  </div>
+                ))}
+                {approval.preview.reasons.length > 0 && (
+                  <div className="flex gap-2 pt-0.5">
+                    <span className="w-14 shrink-0 text-muted-foreground">{t('เหตุผล')}</span>
+                    <span className="min-w-0">{approval.preview.reasons.join(' · ')}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
             <pre className="mb-3 overflow-x-auto rounded-lg bg-black/40 px-3 py-2 font-mono text-xs text-foreground">
               {approval.command}
             </pre>

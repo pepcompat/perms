@@ -27,6 +27,45 @@ export const IPC = {
   /** event main→renderer: ความคืบหน้าการถ่ายโอน */
   sftpProgress: 'sftp:progress',
 
+  // คิวรับส่งไฟล์ (resume + ตรวจ checksum + ลองใหม่อัตโนมัติ)
+  transferEnqueue: 'transfer:enqueue',
+  transferList: 'transfer:list',
+  transferCancel: 'transfer:cancel',
+  transferRetry: 'transfer:retry',
+  transferClear: 'transfer:clear',
+  /** event main→renderer: สถานะคิวทั้งหมด */
+  transferUpdate: 'transfer:update',
+
+  // snapshot ไฟล์ (ดู diff / ย้อนกลับ)
+  snapshotList: 'snapshot:list',
+  snapshotGet: 'snapshot:get',
+  snapshotDelete: 'snapshot:delete',
+
+  // host key (ยืนยันตัวตนเซิร์ฟเวอร์)
+  hostKeysList: 'hostkey:list',
+  hostKeysForget: 'hostkey:forget',
+  hostKeyRespond: 'hostkey:respond',
+  /** event main→renderer: ขอให้ผู้ใช้ยืนยัน host key */
+  hostKeyPrompt: 'hostkey:prompt',
+
+  // อุโมงค์ SSH (port forward)
+  tunnelOpen: 'tunnel:open',
+  tunnelClose: 'tunnel:close',
+  tunnelList: 'tunnel:list',
+  /** event main→renderer: รายการอุโมงค์ทั้งหมด */
+  tunnelUpdate: 'tunnel:update',
+
+  // systemd / journal
+  systemdHas: 'systemd:has',
+  systemdList: 'systemd:list',
+  systemdAction: 'systemd:action',
+  systemdStatus: 'systemd:status',
+  systemdLogs: 'systemd:logs',
+
+  // นโยบายกรองคำสั่ง AI
+  guardGet: 'guard:get',
+  guardSet: 'guard:set',
+
   // docker (จัดการ container บนเซิร์ฟเวอร์ SSH)
   dockerList: 'docker:list',
   dockerAction: 'docker:action',

@@ -40,5 +40,8 @@ jobs:
       - name: Test
         run: pnpm run test
 
+      - name: Check i18n coverage
+        run: pnpm run check:i18n
+
       - name: Build (bundle main/preload/renderer)
         run: pnpm exec electron-vite build

@@ -5,6 +5,8 @@ import type { SftpEntry, SftpFileContent } from '@shared/types'
 import { shQuote } from '@shared/shell-quote'
 import { getSessionHandle, execSilent } from './session-manager'
 import { SshSession } from './ssh-session'
+import { getSession } from '../db/repos/sessions-repo'
+import { addSnapshot } from '../db/repos/snapshots-repo'
 
 const MAX_EDIT_BYTES = 2 * 1024 * 1024 // 2MB — กันเปิดไฟล์ใหญ่/log มหึมามาแก้เป็นข้อความ
 
@@ -231,6 +233,26 @@ export async function sftpWriteFile(
     const cur = await statP(sftp, path).catch(() => null)
     if (cur && (cur.mtime ?? 0) * 1000 - expectedMtime > 1500) throw new Error('EXTERNAL_CHANGED')
   }
+
+  // เก็บสำเนาของเดิมไว้ก่อนทับ — พลาดแล้วย้อนกลับได้
+  // ถ้าอ่านของเดิมไม่ได้ (ไฟล์ใหม่/สิทธิ์ไม่พอ) ก็ข้ามไป ไม่ควรทำให้บันทึกไม่ได้
+  try {
+    const before = await new Promise<Buffer>((resolve, reject) =>
+      sftp.readFile(path, (e, d) => (e ? reject(e) : resolve(d as Buffer)))
+    )
+    if (!before.includes(0)) {
+      addSnapshot({
+        serverId: getSession(id)?.serverId ?? null,
+        path,
+        content: before.toString('utf8'),
+        mode: mode || null,
+        reason: 'save'
+      })
+    }
+  } catch {
+    /* ไม่มีของเดิมให้เก็บ */
+  }
+
   const tmp = `${path}.perms~${nanoid(6)}`
   const data = Buffer.from(content, 'utf8')
   await new Promise<void>((resolve, reject) =>

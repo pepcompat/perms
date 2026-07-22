@@ -12,11 +12,15 @@ import { properties } from '@codemirror/legacy-modes/mode/properties'
 import { dockerFile } from '@codemirror/legacy-modes/mode/dockerfile'
 import { nginx } from '@codemirror/legacy-modes/mode/nginx'
 import { python } from '@codemirror/legacy-modes/mode/python'
-import { Save, Loader2, FileText, ShieldCheck, Check } from 'lucide-react'
+import { Save, Loader2, FileText, ShieldCheck, Check, History, Undo2, X } from 'lucide-react'
+import type { FileSnapshotMeta } from '@shared/types'
 import { Dialog, DialogContent } from './ui/dialog'
 import { Button } from './ui/button'
+import DiffView from './DiffView'
 import { cn } from '../lib/utils'
 import { useT } from '../lib/i18n'
+import { useTabs } from '../store/useTabs'
+import { toast } from '../store/useToast'
 
 function langFor(name: string): Extension[] {
   const n = name.toLowerCase()
@@ -51,6 +55,12 @@ export default function FileEditor({
   const [dirty, setDirty] = useState(false)
   const [saving, setSaving] = useState(false)
   const [justSaved, setJustSaved] = useState(false)
+
+  // ประวัติเวอร์ชัน (snapshot ก่อนบันทึกแต่ละครั้ง)
+  const serverId = useTabs((s) => s.tabs.find((tb) => tb.sessionId === sessionId)?.serverId ?? null)
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [snaps, setSnaps] = useState<FileSnapshotMeta[]>([])
+  const [picked, setPicked] = useState<{ id: string; content: string } | null>(null)
 
   const hostRef = useRef<HTMLDivElement>(null)
   const viewRef = useRef<EditorView | null>(null)
@@ -163,6 +173,42 @@ export default function FileEditor({
     onClose(savedOnceRef.current)
   }
 
+  const openHistory = async (): Promise<void> => {
+    setHistoryOpen(true)
+    setPicked(null)
+    setSnaps(await window.api.snapshots.list(serverId, path))
+  }
+
+  const pickSnapshot = async (id: string): Promise<void> => {
+    const snap = await window.api.snapshots.get(id)
+    if (snap) setPicked({ id, content: snap.content })
+  }
+
+  /**
+   * ย้อนกลับ = โหลดเนื้อหาเก่าเข้า editor แล้วให้ผู้ใช้กดบันทึกเอง
+   * ไม่เขียนทับทันที เพราะผู้ใช้ควรได้เห็นของจริงก่อน และการบันทึกครั้งนั้น
+   * จะสร้าง snapshot ใหม่ให้อัตโนมัติ แปลว่าย้อนกลับเองก็ยังย้อนกลับได้อีก
+   */
+  const rollback = (): void => {
+    const view = viewRef.current
+    if (!view || !picked) return
+    view.dispatch({
+      changes: { from: 0, to: view.state.doc.length, insert: picked.content }
+    })
+    setDirty(picked.content !== originalRef.current)
+    setHistoryOpen(false)
+    setPicked(null)
+    toast(t('โหลดเวอร์ชันเก่าเข้ามาแล้ว — กดบันทึกเพื่อยืนยัน'))
+  }
+
+  const fmtTime = (ms: number): string =>
+    new Date(ms).toLocaleString(undefined, {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+
   return (
     <Dialog open onOpenChange={(o) => !o && close()}>
       <DialogContent className="flex h-[85vh] max-w-4xl flex-col gap-0 overflow-hidden p-0">
@@ -181,6 +227,16 @@ export default function FileEditor({
               <Check className="size-3.5" /> {t("บันทึกแล้ว")}
             </span>
           )}
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => void openHistory()}
+            disabled={loading || !!loadError}
+            title={t('ประวัติเวอร์ชัน')}
+          >
+            <History className="size-3.5" />
+            {t('ประวัติ')}
+          </Button>
           <Button size="sm" onClick={() => void doSave()} disabled={saving || loading || !!loadError || !dirty}>
             {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             {t("บันทึก")}
@@ -204,7 +260,75 @@ export default function FileEditor({
             {loadError}
           </div>
         ) : (
-          <div ref={hostRef} className="min-h-0 flex-1 overflow-auto" />
+          <div className="relative min-h-0 flex-1">
+            <div ref={hostRef} className="h-full overflow-auto" />
+
+            {/* แผงประวัติ — ซ้อนทับ editor ไม่ทำลาย state ของ CodeMirror */}
+            {historyOpen && (
+              <div className="absolute inset-0 flex bg-card">
+                <div className="flex w-64 shrink-0 flex-col border-r border-border">
+                  <div className="flex items-center justify-between border-b border-border px-3 py-2 text-xs font-medium">
+                    {t('ประวัติเวอร์ชัน')}
+                    <button
+                      onClick={() => setHistoryOpen(false)}
+                      className="rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                    >
+                      <X className="size-3.5" />
+                    </button>
+                  </div>
+                  <div className="min-h-0 flex-1 overflow-y-auto">
+                    {snaps.length === 0 ? (
+                      <p className="p-3 text-xs text-muted-foreground">
+                        {t('ยังไม่มีเวอร์ชันเก่า — จะเก็บให้อัตโนมัติทุกครั้งที่บันทึก')}
+                      </p>
+                    ) : (
+                      snaps.map((s) => (
+                        <button
+                          key={s.id}
+                          onClick={() => void pickSnapshot(s.id)}
+                          className={cn(
+                            'flex w-full flex-col gap-0.5 border-b border-border/50 px-3 py-2 text-left text-xs hover:bg-accent/50',
+                            picked?.id === s.id && 'bg-accent'
+                          )}
+                        >
+                          <span className="font-medium">{fmtTime(s.createdAt)}</span>
+                          <span className="text-[11px] text-muted-foreground">
+                            {(s.size / 1024).toFixed(1)} KB ·{' '}
+                            {s.reason === 'rollback' ? t('ย้อนกลับ') : t('ก่อนบันทึก')}
+                          </span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex min-w-0 flex-1 flex-col">
+                  {picked ? (
+                    <>
+                      <div className="flex shrink-0 items-center justify-between border-b border-border px-3 py-1.5">
+                        <span className="text-xs text-muted-foreground">
+                          {t('เทียบ: เวอร์ชันเก่า → ที่กำลังแก้อยู่')}
+                        </span>
+                        <Button size="sm" variant="secondary" onClick={rollback}>
+                          <Undo2 className="size-3.5" />
+                          {t('ย้อนกลับมาเวอร์ชันนี้')}
+                        </Button>
+                      </div>
+                      <DiffView
+                        before={picked.content}
+                        after={viewRef.current?.state.doc.toString() ?? ''}
+                        className="min-h-0 flex-1"
+                      />
+                    </>
+                  ) : (
+                    <div className="flex flex-1 items-center justify-center p-6 text-sm text-muted-foreground">
+                      {t('เลือกเวอร์ชันทางซ้ายเพื่อดูความต่าง')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
         )}
 
         {/* footer — โน้ตความปลอดภัย */}

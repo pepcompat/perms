@@ -17,7 +17,9 @@ import {
   TextSelect,
   ClipboardPaste,
   Sparkles,
-  FolderSymlink
+  FolderSymlink,
+  Power,
+  Waypoints
 } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { redactSecrets } from '@shared/redact'
@@ -26,6 +28,8 @@ import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import SftpBrowser from './SftpBrowser'
 import DockerPanel from './DockerPanel'
+import SystemdPanel from './SystemdPanel'
+import TunnelPanel from './TunnelPanel'
 import DockerIcon from './DockerIcon'
 import { useT } from '../lib/i18n'
 
@@ -94,6 +98,9 @@ export default function TerminalView({
   const [sftpOpen, setSftpOpen] = useState(false)
   const [dockerOpen, setDockerOpen] = useState(false)
   const [dockerAvailable, setDockerAvailable] = useState(false)
+  const [systemdOpen, setSystemdOpen] = useState(false)
+  const [systemdAvailable, setSystemdAvailable] = useState(false)
+  const [tunnelOpen, setTunnelOpen] = useState(false)
 
   // --- autocomplete จากประวัติคำสั่ง (จัดอันดับด้วย frecency + server เดียวกัน) ---
   const statsRef = useRef<CommandStat[]>([])
@@ -376,6 +383,23 @@ export default function TerminalView({
     }
   }, [tabKind, sessionId])
 
+  // SSH: เครื่องปลายทางใช้ systemd ไหม → ถ้าใช่ โชว์ปุ่มจัดการ service
+  useEffect(() => {
+    if (tabKind !== 'ssh') return
+    let cancelled = false
+    window.api.systemd
+      .has(sessionId)
+      .then((ok) => {
+        if (!cancelled) setSystemdAvailable(ok)
+      })
+      .catch(() => {
+        /* ไม่มี systemd (เช่น alpine/busybox) — ไม่โชว์ปุ่ม */
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [tabKind, sessionId])
+
   // ปรับขนาดฟอนต์
   useEffect(() => {
     if (termRef.current) {
@@ -565,6 +589,14 @@ export default function TerminalView({
                 <DockerIcon className="size-3.5 text-[#2496ED]" />
               </ToolBtn>
             )}
+            {systemdAvailable && (
+              <ToolBtn title={t("จัดการ service (systemd)")} onClick={() => setSystemdOpen(true)}>
+                <Power className="size-3.5 text-[hsl(var(--success))]" />
+              </ToolBtn>
+            )}
+            <ToolBtn title={t("อุโมงค์ SSH (port forward)")} onClick={() => setTunnelOpen(true)}>
+              <Waypoints className="size-3.5" />
+            </ToolBtn>
             <ToolBtn title={t("ไฟล์ (SFTP)")} onClick={() => setSftpOpen(true)}>
               <FolderSymlink className="size-3.5" />
             </ToolBtn>
@@ -671,6 +703,12 @@ export default function TerminalView({
         />
       )}
 
+      {tabKind === 'ssh' && systemdOpen && (
+        <SystemdPanel sessionId={sessionId} open={systemdOpen} onClose={() => setSystemdOpen(false)} />
+      )}
+      {tabKind === 'ssh' && tunnelOpen && (
+        <TunnelPanel sessionId={sessionId} open={tunnelOpen} onClose={() => setTunnelOpen(false)} />
+      )}
       {tabKind === 'ssh' && dockerOpen && (
         <DockerPanel
           sessionId={sessionId}

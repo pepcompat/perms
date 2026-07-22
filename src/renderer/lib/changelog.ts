@@ -23,6 +23,49 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.0',
+    title: 'ปลอดภัยขึ้นทั้งระบบ — ตรวจตัวตนเซิร์ฟเวอร์ · ย้อนไฟล์ได้ · อุโมงค์ SSH',
+    titleEn: 'Safer end to end — server identity, file rollback, SSH tunnels',
+    items: [
+      {
+        icon: '🔑',
+        text: 'ตรวจลายนิ้วมือเซิร์ฟเวอร์ (host key) ทุกครั้งที่เชื่อมต่อ — ครั้งแรกให้ยืนยันเอง ถ้าวันหลังลายนิ้วมือเปลี่ยนจะหยุดทันทีพร้อมเตือนว่าอาจโดนดักกลางทาง',
+        textEn:
+          'Verifies the server host key on every connection — you confirm it once, and if it ever changes the connection stops with a man-in-the-middle warning'
+      },
+      {
+        icon: '🕘',
+        text: 'แก้ไฟล์แล้วย้อนกลับได้ — เก็บสำเนาให้อัตโนมัติก่อนบันทึกทุกครั้ง (เก็บ 20 เวอร์ชันล่าสุดต่อไฟล์) ดูความต่างแบบทีละบรรทัดแล้วกดย้อนกลับได้',
+        textEn:
+          'Every save keeps a snapshot first (last 20 per file) — view a line-by-line diff and roll back to any of them'
+      },
+      {
+        icon: '🛡️',
+        text: 'ตัวกรองคำสั่ง AI: ตั้งรูปแบบที่ห้ามรันเอง จำกัดจำนวนคำสั่งต่อรอบ และก่อนอนุมัติจะเห็นครบว่าจะรันอะไร ที่เครื่องไหน ด้วยเครื่องมืออะไร และทำไมถึงถาม',
+        textEn:
+          'AI command guard: define patterns to block, cap commands per run, and see exactly what will run, on which machine, with which tool, and why you are being asked — before you approve'
+      },
+      {
+        icon: '📦',
+        text: 'รับส่งไฟล์ทนเน็ตสะดุด — โอนต่อจากจุดเดิมได้ ตรวจ sha256 ว่าไฟล์ถึงครบจริง และมีคิวที่ลองใหม่ให้เองเมื่อหลุด',
+        textEn:
+          'Resilient transfers — resume from where they stopped, verify sha256 on arrival, and an automatic retry queue when the link drops'
+      },
+      {
+        icon: '🔀',
+        text: 'อุโมงค์ SSH (port forward) ทั้งแบบ local และ remote — ต่อฐานข้อมูลหลัง firewall ได้จากเครื่องเราโดยตรง',
+        textEn:
+          'SSH tunnels (local and remote port forwarding) — reach a database behind a firewall straight from your machine'
+      },
+      {
+        icon: '⚙️',
+        text: 'จัดการ service ของ systemd: เริ่ม/หยุด/รีสตาร์ท และอ่าน log จาก journalctl ได้ในตัว ตัวที่พังจะถูกดันขึ้นบนสุด',
+        textEn:
+          'Manage systemd services — start/stop/restart and read journalctl logs in-app, with failed units sorted to the top'
+      }
+    ]
+  },
+  {
     version: '1.6.0',
     title: 'สลับภาษา ไทย/อังกฤษ + SFTP ทำงานเป็นชุดได้',
     titleEn: 'Thai/English switcher + batch SFTP',

@@ -1,5 +1,7 @@
 import { create } from 'zustand'
 import type { AiMode, AiProvider, AiStreamEvent } from '@shared/types'
+import type { PayloadPreview } from '@shared/ai-guard'
+import { translate, useLang } from '../lib/i18n'
 
 export interface ChatTool {
   name: string
@@ -16,7 +18,12 @@ export interface ChatThread {
   input: string
   running: boolean
   requestId: string | null
-  approval: { callId: string; command: string; danger?: string | null } | null
+  approval: {
+    callId: string
+    command: string
+    danger?: string | null
+    preview?: PayloadPreview
+  } | null
   // ค่าตั้งต่อ session (undefined = ใช้ค่า default จาก settings)
   provider?: AiProvider
   mode?: AiMode
@@ -94,7 +101,21 @@ export const useAiChats = create<State>((set, get) => {
     } else if (ev.type === 'approval_request') {
       patch(key, (t) => ({
         ...t,
-        approval: { callId: ev.callId, command: ev.command, danger: ev.danger }
+        approval: {
+          callId: ev.callId,
+          command: ev.command,
+          danger: ev.danger,
+          preview: ev.preview
+        }
+      }))
+    } else if (ev.type === 'guard_blocked') {
+      // guard บล็อคไปแล้ว ไม่ต้องถามผู้ใช้ — แค่บอกให้รู้ว่าเกิดอะไรขึ้น
+      patch(key, (t) => ({
+        ...t,
+        items: updateLast(t.items, (a) => ({
+          ...a,
+          text: `${a.text}\n\n🛡️ ${translate('ถูกบล็อคโดยตัวกรอง', useLang.getState().lang)}: ${ev.reasons.join(' · ')}\n\`${ev.command}\``
+        }))
       }))
     } else if (ev.type === 'done' || ev.type === 'error') {
       if (ev.type === 'error') {

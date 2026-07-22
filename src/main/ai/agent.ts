@@ -7,7 +7,8 @@ import { AnthropicProvider } from './providers/anthropic'
 import { GoogleProvider } from './providers/google'
 import { TOOL_SCHEMAS, MUTATING_TOOLS, executeTool, dangerousReasonForCall } from './tools'
 import { redactSecrets } from '@shared/redact'
-import { getAiSettings, revealAiKey } from '../db/repos/settings-repo'
+import { evaluateCall, commandTextOf, buildExtraArgs } from '@shared/ai-guard'
+import { getAiSettings, revealAiKey, getGuardPolicy } from '../db/repos/settings-repo'
 import { appendMessage, listMessages } from '../db/repos/ai-repo'
 import { getSession } from '../db/repos/sessions-repo'
 import { getServer } from '../db/repos/servers-repo'
@@ -98,20 +99,40 @@ function loadHistory(sessionId: string | null): ChatMessage[] {
   return msgs
 }
 
+/** คำอธิบายปลายทางที่คำสั่งจะไปรัน — ให้ผู้ใช้เห็นชัดว่ากำลังจะยิงใส่เครื่องไหน */
+function describeTarget(sessionId: string | null): string {
+  if (!sessionId) return 'ไม่มี session ที่เปิดอยู่'
+  const s = getSession(sessionId)
+  if (!s) return 'ไม่ทราบปลายทาง'
+  if (s.kind === 'local') return 'เครื่องนี้ (local)'
+  const srv = s.serverId ? getServer(s.serverId) : null
+  return srv ? `${srv.name} — ${srv.username}@${srv.host}:${srv.port}` : s.title
+}
+
 function requestApproval(
   requestId: string,
   call: ToolCallRequest,
   sessionId: string | null,
-  danger: string | null
+  danger: string | null,
+  reasons: string[]
 ): Promise<boolean> {
   return new Promise((resolve) => {
     pendingApprovals.set(call.id, resolve)
+    const command = commandTextOf(call.arguments) || JSON.stringify(call.arguments)
     emit(requestId, {
       type: 'approval_request',
       callId: call.id,
-      command: String(call.arguments.command ?? JSON.stringify(call.arguments)),
+      command,
       sessionId,
-      danger
+      danger,
+      preview: {
+        toolName: call.name,
+        command,
+        extraArgs: buildExtraArgs(call.arguments),
+        target: describeTarget(sessionId),
+        reasons,
+        danger
+      }
     })
   })
 }
@@ -137,6 +158,10 @@ export async function runChat(requestId: string, input: AiChatInput): Promise<vo
 
   // web search: เปิดได้เฉพาะโหมดที่ไม่ auto-run (กัน prompt injection → auto รันคำสั่ง)
   const webSearch = !!input.webSearch && mode !== 'agentic'
+
+  const policy = getGuardPolicy()
+  // นับเฉพาะคำสั่งที่เปลี่ยนแปลงระบบ — tool อ่านอย่างเดียวไม่ควรกินโควตา
+  let mutatingCount = 0
 
   const abort = new AbortController()
   activeRequests.set(requestId, abort)
@@ -222,13 +247,34 @@ export async function runChat(requestId: string, input: AiChatInput): Promise<vo
         // คำสั่งอันตราย → บังคับขออนุมัติเสมอ แม้โหมด agentic (กัน prompt injection สั่งรันของทำลาย)
         const danger = isMutating ? dangerousReasonForCall(call.name, call.arguments) : null
 
-        if (isMutating && mode === 'suggest') {
-          // โหมดแนะนำ: ไม่รันจริง บอกให้ user รันเอง
-          toolResult = `[suggest mode] Command not executed. Proposed command: ${String(
-            call.arguments.command ?? JSON.stringify(call.arguments)
-          )}`
-        } else if (isMutating && (mode === 'approve' || danger)) {
-          const approved = await requestApproval(requestId, call, sessionId, danger)
+        // guard ตัดสินตามนโยบายที่ผู้ใช้ตั้ง (deny pattern / โควตา / บังคับอนุมัติ)
+        const verdict = evaluateCall({
+          toolName: call.name,
+          args: call.arguments,
+          mutating: isMutating,
+          dangerReason: danger,
+          callIndex: mutatingCount,
+          mode,
+          policy
+        })
+        if (isMutating) mutatingCount++
+
+        if (verdict.action === 'block') {
+          const why = verdict.reasons.join(' · ')
+          emit(requestId, {
+            type: 'guard_blocked',
+            callId: call.id,
+            command: commandTextOf(call.arguments) || JSON.stringify(call.arguments),
+            reasons: verdict.reasons
+          })
+          toolResult =
+            mode === 'suggest'
+              ? `[suggest mode] Command not executed. Proposed command: ${
+                  commandTextOf(call.arguments) || JSON.stringify(call.arguments)
+                }`
+              : `[blocked by guard] ${why}. Not executed. Tell the user why and stop retrying this command.`
+        } else if (verdict.action === 'confirm') {
+          const approved = await requestApproval(requestId, call, sessionId, danger, verdict.reasons)
           if (!approved) {
             toolResult = danger
               ? `[rejected by user] Dangerous command blocked (${danger}). Not executed.`
@@ -237,7 +283,6 @@ export async function runChat(requestId: string, input: AiChatInput): Promise<vo
             toolResult = await executeTool(call.name, call.arguments, { sessionId })
           }
         } else {
-          // agentic หรือ tool ที่ไม่ mutating (read-only)
           toolResult = await executeTool(call.name, call.arguments, { sessionId })
         }
 

@@ -7,8 +7,87 @@ export type Lang = 'th' | 'en'
  * ข้อดี: UI ไทยเดิมไม่เปลี่ยน และถ้าคำไหนยังไม่มีคำแปล จะ fallback เป็นไทยอัตโนมัติ
  */
 const EN: Record<string, string> = {
+  // --- v1.7.0: snapshot/diff, host key, guard, คิวโอนไฟล์, tunnel, systemd ---
+  '(เว้นว่างถ้าไม่เปลี่ยน)': '(leave blank to keep unchanged)',
+  'Local — เปิดพอร์ตในเครื่องเรา': 'Local — open a port on this machine',
+  'Remote — เปิดพอร์ตบนเซิร์ฟเวอร์': 'Remote — open a port on the server',
+  'กรอกค่าก่อนรัน': 'Fill in values before running',
+  'การเชื่อมต่อ': 'connections',
+  'กำลังถ่ายโอน': 'Transferring',
+  'ก่อนบันทึก': 'before save',
+  'ครั้งแรก': 'first time',
+  'คัดลอก': 'Copy',
+  'คัดลอกแล้ว': 'Copied',
+  'คำสั่งไม่สำเร็จ': 'Command failed',
+  'ค้นหา (⌘F)': 'Search (⌘F)',
+  'ค้นหา service': 'Search services',
+  'จัดการ service (systemd)': 'Manage services (systemd)',
+  'จัดการ service บนเซิร์ฟเวอร์ และดู log จาก journalctl': 'Manage services on the server and read journalctl logs',
+  'ฉันตรวจกับผู้ดูแลเซิร์ฟเวอร์แล้วว่าการเปลี่ยนแปลงนี้ถูกต้อง และยอมรับความเสี่ยง': 'I verified this change with the server administrator and accept the risk',
+  'ชุดคำสั่งที่บันทึกไว้ใช้ซ้ำ': 'Saved command sets for reuse',
+  'ซ่อน': 'hiding',
+  'ดู log': 'View logs',
+  'ตรวจได้จากเซิร์ฟเวอร์โดยตรงด้วยคำสั่ง': 'Verify on the server itself with',
+  'ต้องระบุปลายทาง': 'A destination is required',
+  'ถูกบล็อคโดยตัวกรอง': 'Blocked by the guard',
+  'ถ่ายโอนเสร็จ': 'Transferred',
+  'บรรทัด': 'lines',
+  'บรรทัดที่เหมือนกัน': 'unchanged lines',
+  'บันทึก': 'Save',
+  'ประวัติ': 'History',
+  'ประวัติเวอร์ชัน': 'Version history',
+  'ปลายทาง (host)': 'Destination (host)',
+  'ปลายทาง (พอร์ต)': 'Destination (port)',
+  'ปลายทาง': 'Target',
+  'ปิดอุโมงค์': 'Close tunnel',
+  'พอร์ตบนเซิร์ฟเวอร์': 'Port on server',
+  'พอร์ตในเครื่อง': 'Local port',
+  'พอร์ตไม่ถูกต้อง': 'Invalid port',
+  'มีอะไรใหม่': 'What\'s new',
+  'ยกเลิกการเชื่อมต่อ': 'Cancel connection',
+  'ยอมรับ key ใหม่': 'Accept new key',
+  'ยอมรับและจำไว้': 'Accept and remember',
+  'ยังไม่มีอุโมงค์ที่เปิดอยู่': 'No tunnels open yet',
+  'ยังไม่มีเวอร์ชันเก่า — จะเก็บให้อัตโนมัติทุกครั้งที่บันทึก': 'No earlier versions yet — one is kept automatically on every save',
+  'ยังไม่เคยเชื่อมต่อเครื่องนี้มาก่อน ตรวจลายนิ้วมือให้ตรงกับเซิร์ฟเวอร์จริงก่อนยอมรับ': 'You have never connected to this machine before. Check the fingerprint against the real server before accepting',
+  'ยืนยันตัวตนเซิร์ฟเวอร์': 'Verify server identity',
+  'ยืนยันหยุด service': 'Confirm stopping service',
+  'ย้อนกลับ': 'Back',
+  'ย้อนกลับมาเวอร์ชันนี้': 'Restore this version',
+  'รอคิว': 'Queued',
+  'ลองแล้ว': 'attempts',
+  'ลายนิ้วมือ': 'Fingerprint',
+  'ลายนิ้วมือเซิร์ฟเวอร์เปลี่ยนไป': 'Server fingerprint has changed',
+  'ลายนิ้วมือเดิมที่เคยยอมรับ': 'Previously accepted fingerprint',
+  'ลายนิ้วมือใหม่ที่ได้รับตอนนี้': 'Fingerprint received now',
+  'ล้างรายการที่เสร็จแล้ว': 'Clear finished items',
+  'สำเร็จ': 'succeeded',
+  'ส่งต่อพอร์ตผ่านการเชื่อมต่อ SSH ที่เปิดอยู่ — เช่น ต่อฐานข้อมูลหลัง firewall จากเครื่องเรา': 'Forward a port over the open SSH connection — for example, reach a database behind a firewall from this machine',
+  'ส่งเข้า AI': 'Send to AI',
+  'อนุมัติ': 'Approve',
+  'อัปเดตพร้อมติดตั้ง': 'Update ready to install',
+  'อาจมีคนดักกลางทาง (MITM) หรือเซิร์ฟเวอร์ถูกติดตั้งใหม่ — อย่ายอมรับถ้าไม่แน่ใจ': 'Someone may be intercepting the connection (MITM), or the server was rebuilt — do not accept unless you are sure',
+  'อุโมงค์ SSH (Port forward)': 'SSH tunnel (port forward)',
+  'อุโมงค์ SSH (port forward)': 'SSH tunnel (port forward)',
+  'เครื่องมือ': 'Tool',
+  'เซิร์ฟเวอร์': 'Server',
+  'เทียบ: เวอร์ชันเก่า → ที่กำลังแก้อยู่': 'Comparing: older version → what you are editing',
+  'เนื้อหาเหมือนกันทุกประการ': 'The contents are identical',
+  'เปลี่ยน': 'changed',
+  'เปิดพอร์ตที่ 127.0.0.1 ในเครื่องเรา แล้ววิ่งผ่าน SSH ไปหาปลายทางที่มองเห็นจากเซิร์ฟเวอร์': 'Opens a port on 127.0.0.1 here and forwards it over SSH to a destination reachable from the server',
+  'เปิดพอร์ตบนเซิร์ฟเวอร์ แล้ววิ่งกลับมาหาปลายทางที่มองเห็นจากเครื่องเรา': 'Opens a port on the server and forwards it back to a destination reachable from this machine',
+  'เปิดอุโมงค์': 'Open tunnel',
+  'เปิดอุโมงค์แล้ว': 'Tunnel opened',
+  'เพิ่ม server': 'Add server',
+  'เลือก server เพื่อเชื่อม SSH หรือเปิด local terminal': 'Pick a server to connect over SSH, or open a local terminal',
+  'เลือกเวอร์ชันทางซ้ายเพื่อดูความต่าง': 'Pick a version on the left to see the differences',
+  'เหตุผล': 'Reason',
+  'แนะนำ': 'Suggest',
+  'โหลดเวอร์ชันเก่าเข้ามาแล้ว — กดบันทึกเพื่อยืนยัน': 'Older version loaded — press Save to confirm',
+  'ไฟล์บนเซิร์ฟเวอร์ (SFTP)': 'Server files (SFTP)',
+  'ไม่พบ service': 'No services found',
+  'ไม่มี log': 'No logs',
   // ทั่วไป
-  บันทึก: 'Save',
   ยกเลิก: 'Cancel',
   ลบ: 'Delete',
   แก้ไข: 'Edit',
@@ -27,7 +106,6 @@ const EN: Record<string, string> = {
   'กำลังโหลด…': 'Loading…',
 
   // ServerList / ServerForm
-  'เพิ่ม server': 'Add server',
   'ยังไม่มี server': 'No servers yet',
   'Local terminal': 'Local terminal',
   'Session history': 'Session history',
@@ -40,7 +118,6 @@ const EN: Record<string, string> = {
   'ดูว่ามีอะไรใหม่ (changelog)': 'See what’s new (changelog)',
 
   // Terminal toolbar / menu
-  'ค้นหา (⌘F)': 'Search (⌘F)',
   'คัดลอกที่เลือก': 'Copy selection',
   'ล้างหน้าจอ': 'Clear screen',
   'ลดขนาดฟอนต์': 'Decrease font size',
@@ -56,7 +133,6 @@ const EN: Record<string, string> = {
   'ปิด (Esc)': 'Close (Esc)',
 
   // SFTP
-  'ไฟล์บนเซิร์ฟเวอร์ (SFTP)': 'Files on server (SFTP)',
   'ขึ้นบน': 'Up',
   'สร้างโฟลเดอร์': 'New folder',
   'ชื่อโฟลเดอร์ใหม่': 'New folder name',
@@ -72,7 +148,6 @@ const EN: Record<string, string> = {
   'ผิดพลาด': 'Error',
 
   // File editor
-  'กรอกค่าก่อนรัน': 'Fill in values before running',
   'ยังไม่บันทึก': 'Unsaved changes',
   'บันทึกแล้ว': 'Saved',
   'บันทึกไม่สำเร็จ: ': 'Save failed: ',
@@ -92,7 +167,6 @@ const EN: Record<string, string> = {
   'กำลังโหลด log…': 'Loading logs…',
 
   // AI sidebar
-  'อนุมัติ': 'Approve',
   'ปฏิเสธ': 'Reject',
   'อนุมัติ & รัน': 'Approve & run',
   'AI ขออนุมัติรันคำสั่ง': 'The AI wants to run a command',
@@ -120,23 +194,19 @@ const EN: Record<string, string> = {
   'เป็นเวอร์ชันล่าสุดแล้ว': 'You’re on the latest version',
 
   // Runbooks / knowledge
-  'ชุดคำสั่งที่บันทึกไว้ใช้ซ้ำ': 'Saved command sets you can reuse',
   'ชื่อ runbook': 'Runbook name',
   'ยังไม่มี runbook': 'No runbooks yet',
   'ช่องกรอก': 'inputs',
   'คำสั่ง': 'commands',
 
   // WhatsNew
-  'มีอะไรใหม่': 'What’s new',
   'บันทึกการเปลี่ยนแปลง': 'Changelog',
 
   // Update toast
-  'อัปเดตพร้อมติดตั้ง': 'Update ready to install',
   'รีสตาร์ทเลย': 'Restart now',
   'ภายหลัง': 'Later',
 
   // --- เติมรอบแปลงทั้งแอป ---
-  "(เว้นว่างถ้าไม่เปลี่ยน)": "(leave blank to keep)",
   "(ไม่มี log)": "(no logs)",
   "Group ที่มีอยู่": "Existing groups",
   "Passphrase (ถ้ามี)": "Passphrase (if any)",
@@ -203,7 +273,6 @@ const EN: Record<string, string> = {
   "— ไม่มี —": "— none —",
 
   // --- เก็บตกรอบสุดท้าย ---
-  "แนะนำ": "Suggest",
   "เสนอคำสั่ง ไม่รันให้": "Proposes commands without running them",
   "รันเองอัตโนมัติเป็น loop": "Runs by itself in a loop",
   "แก้ไขความรู้แล้ว": "Knowledge updated",

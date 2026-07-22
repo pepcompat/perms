@@ -54,6 +54,11 @@ export class SshSession implements TermSession {
     this.exitCbs.push(cb)
   }
 
+  /** connection ดิบ — ใช้เปิด tunnel (forwardOut/forwardIn) บน session เดิม */
+  getClient(): Client {
+    return this.client
+  }
+
   /** เปิด (และ cache) sftp channel บน connection เดิม — ไม่ต้อง auth ใหม่ */
   getSftp(): Promise<SFTPWrapper> {
     if (this.sftpChan) return Promise.resolve(this.sftpChan)

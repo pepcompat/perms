@@ -1,6 +1,7 @@
 import { getDb } from '../index'
 import { upsertSecret, deleteSecret, revealSecret } from '../../secrets/safe-store'
 import type { AiProvider, AiMode, AppSettings, AiSettings } from '@shared/types'
+import { DEFAULT_GUARD_POLICY, type GuardPolicy } from '@shared/ai-guard'
 
 const DEFAULT_MODELS: Record<AiProvider, string> = {
   openai: 'gpt-4o',
@@ -79,6 +80,30 @@ export function clearAiKey(provider: AiProvider): void {
 export function revealAiKey(provider: AiProvider): string | null {
   const secretId = getRaw(apiKeySecretKey(provider))
   return revealSecret(secretId)
+}
+
+/** นโยบายกรองคำสั่งของ AI — เก็บเป็น JSON ก้อนเดียว */
+export function getGuardPolicy(): GuardPolicy {
+  const raw = getRaw('ai.guardPolicy')
+  if (!raw) return { ...DEFAULT_GUARD_POLICY }
+  try {
+    const parsed = JSON.parse(raw) as Partial<GuardPolicy>
+    return {
+      denyPatterns: Array.isArray(parsed.denyPatterns) ? parsed.denyPatterns : [],
+      requireApprovalForAll: !!parsed.requireApprovalForAll,
+      maxCallsPerRun:
+        typeof parsed.maxCallsPerRun === 'number' && parsed.maxCallsPerRun >= 0
+          ? parsed.maxCallsPerRun
+          : DEFAULT_GUARD_POLICY.maxCallsPerRun
+    }
+  } catch {
+    // ค่าที่เก็บไว้เสีย — ถอยไปใช้ค่าเริ่มต้นที่ปลอดภัย ดีกว่าปล่อยให้ guard หายไปทั้งตัว
+    return { ...DEFAULT_GUARD_POLICY }
+  }
+}
+
+export function setGuardPolicy(policy: GuardPolicy): void {
+  setRaw('ai.guardPolicy', JSON.stringify(policy))
 }
 
 export function updateAiSettings(patch: {

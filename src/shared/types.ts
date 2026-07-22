@@ -1,5 +1,8 @@
 // Type ที่ใช้ร่วมกันระหว่าง main process และ renderer
 
+import type { PayloadPreview } from './ai-guard'
+import type { HostKeyVerdict } from './host-key'
+
 export type AuthType = 'password' | 'key' | 'agent'
 export type SessionKind = 'ssh' | 'local'
 export type AiProvider = 'openai' | 'anthropic' | 'google'
@@ -225,6 +228,88 @@ export type AiStreamEvent =
       sessionId: string | null
       /** ถ้าตั้ง = คำสั่งเข้าข่ายอันตราย (บังคับอนุมัติแม้ agentic) พร้อมเหตุผล */
       danger?: string | null
+      /** รายละเอียดเต็มของสิ่งที่จะรัน — ให้ผู้ใช้ตรวจก่อนกดอนุมัติ */
+      preview?: PayloadPreview
+    }
+  | {
+      /** guard บล็อคคำสั่งนี้ก่อนถึงมือผู้ใช้ (เช่นตรง deny pattern / เกินโควตา) */
+      type: 'guard_blocked'
+      callId: string
+      command: string
+      reasons: string[]
     }
   | { type: 'done' }
   | { type: 'error'; message: string }
+
+/** คำขอยืนยัน host key (main→renderer) */
+export interface HostKeyPrompt {
+  id: string
+  host: string
+  port: number
+  serverName: string
+  keyType: string
+  fingerprint: string
+  verdict: HostKeyVerdict
+  /** ลายนิ้วมือเดิมที่เคยยอมรับไว้ — มีค่าเฉพาะกรณี changed */
+  previousFingerprint: string | null
+  previousKeyType: string | null
+}
+
+/** host key ที่เคยยอมรับไว้แล้ว */
+export interface KnownHostRecord {
+  id: string
+  host: string
+  port: number
+  keyType: string
+  fingerprint: string
+  firstSeen: number
+  lastSeen: number
+}
+
+/** สำเนาไฟล์ก่อนถูกเขียนทับ */
+export interface FileSnapshot {
+  id: string
+  serverId: string | null
+  path: string
+  content: string
+  size: number
+  mode: number | null
+  reason: 'save' | 'rollback' | 'manual'
+  createdAt: number
+}
+
+/** รายการ snapshot แบบไม่เอาเนื้อหา (ใช้โชว์ list ไม่ต้องโหลดทั้งไฟล์) */
+export type FileSnapshotMeta = Omit<FileSnapshot, 'content'>
+
+/** service ของ systemd (parse มาจาก systemctl list-units) */
+export interface SystemdUnit {
+  unit: string
+  load: string
+  active: string
+  sub: string
+  description: string
+}
+
+/** บรรทัด log จาก journalctl */
+export interface JournalLine {
+  time: string
+  host: string
+  source: string
+  message: string
+}
+
+/** อุโมงค์ SSH ที่เปิดค้างไว้ */
+export interface TunnelInfo {
+  id: string
+  sessionId: string
+  type: 'local' | 'remote'
+  /** พอร์ตฝั่งที่เปิดรับ (local สำหรับ type=local, บนเซิร์ฟเวอร์สำหรับ type=remote) */
+  listenPort: number
+  destHost: string
+  destPort: number
+  status: 'open' | 'error'
+  error?: string
+  /** จำนวนการเชื่อมต่อที่ผ่านอุโมงค์นี้ */
+  connections: number
+  createdAt: number
+}

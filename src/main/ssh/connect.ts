@@ -4,6 +4,7 @@ import { join } from 'path'
 import { Client, type ConnectConfig, type ClientChannel } from 'ssh2'
 import { getServerRow } from '../db/repos/servers-repo'
 import { revealSecret } from '../secrets/safe-store'
+import { checkHostKey } from './host-key-guard'
 
 /** ขยาย ~ เป็น home directory (เช่น ~/.ssh/id_ed25519) */
 function expandHome(p: string): string {
@@ -23,7 +24,12 @@ function buildConfig(serverId: string): ConnectConfig & { _host: string } {
     port: row.port,
     username: row.username,
     keepaliveInterval: 15000,
-    readyTimeout: 20000
+    readyTimeout: 20000,
+    // ตรวจตัวตนเซิร์ฟเวอร์ก่อนส่ง credential ใด ๆ — ถ้าไม่ใส่ ssh2 จะรับ key อะไรก็ได้
+    // แปลว่าใครดักกลางทางก็สวมรอยเป็นเซิร์ฟเวอร์เราได้ทันที
+    hostVerifier: (key: Buffer, cb: (ok: boolean) => void) => {
+      checkHostKey(row.host, row.port, row.name, key).then(cb, () => cb(false))
+    }
   }
 
   switch (row.auth_type) {
@@ -105,7 +111,15 @@ export async function connectSsh(serverId: string): Promise<Client> {
 function waitReady(client: Client, cfg: ConnectConfig): Promise<void> {
   return new Promise((resolve, reject) => {
     client.once('ready', () => resolve())
-    client.once('error', (err) => reject(err))
+    client.once('error', (err) => {
+      // ssh2 คืน error กว้าง ๆ เวลา hostVerifier ปฏิเสธ — แปลให้ผู้ใช้เข้าใจว่าเกิดอะไรขึ้น
+      const msg = String((err as Error)?.message ?? err)
+      if (/host (key )?verification|handshake failed/i.test(msg)) {
+        reject(new Error('ไม่ได้ยืนยันตัวตนเซิร์ฟเวอร์ (host key) — ยกเลิกการเชื่อมต่อ'))
+      } else {
+        reject(err)
+      }
+    })
     client.connect(cfg)
   })
 }

@@ -132,7 +132,7 @@ export default function ServerForm({
     try {
       await persist()
       draftRef.current = false // commit แล้ว
-      toast(editing ? 'แก้ไข server แล้ว' : 'เพิ่ม server แล้ว')
+      toast(editing ? t('แก้ไข server แล้ว') : t('เพิ่ม server แล้ว'))
       onClose()
     } finally {
       setBusy(false)
@@ -145,7 +145,7 @@ export default function ServerForm({
     try {
       const rec = await persist()
       const res = await window.api.servers.test(rec.id)
-      setTestResult({ ok: res.ok, msg: res.ok ? 'เชื่อมต่อสำเร็จ' : res.error || 'ล้มเหลว' })
+      setTestResult({ ok: res.ok, msg: res.ok ? t('เชื่อมต่อสำเร็จ') : res.error || t('ล้มเหลว') })
     } catch (e) {
       setTestResult({ ok: false, msg: e instanceof Error ? e.message : String(e) })
     } finally {

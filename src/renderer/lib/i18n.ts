@@ -200,7 +200,38 @@ const EN: Record<string, string> = {
   "ไม่พบ key ใน ~/.ssh": "No keys found in ~/.ssh",
   "ไม่พบที่ค้นหา": "No matches",
   "ไม่มีคำสั่งที่บันทึกใน session นี้": "No commands recorded in this session",
-  "— ไม่มี —": "— none —"
+  "— ไม่มี —": "— none —",
+
+  // --- เก็บตกรอบสุดท้าย ---
+  "แนะนำ": "Suggest",
+  "เสนอคำสั่ง ไม่รันให้": "Proposes commands without running them",
+  "รันเองอัตโนมัติเป็น loop": "Runs by itself in a loop",
+  "แก้ไขความรู้แล้ว": "Knowledge updated",
+  "เพิ่มความรู้แล้ว": "Knowledge added",
+  "{{ชื่อ}}": "{{name}}",
+  "แก้ไข server แล้ว": "Server updated",
+  "เพิ่ม server แล้ว": "Server added",
+  "เชื่อมต่อสำเร็จ": "Connected successfully",
+  "ล้มเหลว": "Failed",
+  "อื่นๆ": "Other",
+  "ตรวจสอบไม่สำเร็จ": "Check failed",
+  "พบเวอร์ชันใหม่": "New version available",
+  "กำลังดาวน์โหลด…": "downloading…",
+  "บันทึก API key แล้ว": "API key saved",
+  "ลบ API key แล้ว": "API key removed",
+  "เลือกโมเดล": "Pick a model",
+  "บันทึกการตั้งค่าแล้ว": "Settings saved",
+  "API key ถูกเข้ารหัสเก็บในเครื่องคุณด้วย Keychain ของระบบ (ไม่ส่งออกที่ไหน) — ครั้งแรก macOS อาจถามขออนุญาตเข้าถึง Keychain กด “Always Allow” ได้เลย ปลอดภัย": "Your API key is encrypted on this machine with the system keychain and never leaves it — the first time, macOS may ask for keychain access; clicking “Always Allow” is safe.",
+  "•••••••• (เปลี่ยน key)": "•••••••• (change key)",
+  "ดาวน์โหลดไม่สำเร็จ": "Download failed",
+  "รายการที่เลือก": "selected items",
+  "รายการ": "items",
+  "ยังไม่มี session — เปิดจากรายการ server หรือ local": "No sessions yet — open one from the server list or a local shell",
+  "ช่วยดูให้หน่อยว่าเกิดอะไรขึ้นใน terminal นี้ ถ้ามี error บอกสาเหตุและวิธีแก้": "Take a look at what happened in this terminal — if there's an error, explain the cause and how to fix it",
+  "กำลังดาวน์โหลดอัปเดต": "Downloading update",
+  "ดาวน์โหลดเสร็จแล้ว — รีสตาร์ทเพื่อใช้เวอร์ชันใหม่": "has been downloaded — restart to use the new version",
+  "กำลังใช้": "currently on",
+  "อัปเดตเป็น Perms": "Updated to Perms"
 }
 
 interface LangState {

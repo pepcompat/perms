@@ -120,7 +120,7 @@ export default function SftpBrowser({
     }
   }
   const remove = async (e: SftpEntry): Promise<void> => {
-    if (!confirm(`ลบ "${e.name}"?`)) return
+    if (!confirm(`${t('ลบ')} "${e.name}"?`)) return
     try {
       await window.api.sftp.remove(sessionId, joinRemote(cwd, e.name), e.type === 'dir')
       await load(cwd)
@@ -139,7 +139,7 @@ export default function SftpBrowser({
         await window.api.sftp.download(sessionId, joinRemote(cwd, single.name), single.name)
       } else {
         const r = await window.api.sftp.downloadArchive(sessionId, cwd, names)
-        if (r.error) alert(`ดาวน์โหลดไม่สำเร็จ: ${r.error}`)
+        if (r.error) alert(`${t('ดาวน์โหลดไม่สำเร็จ')}: ${r.error}`)
       }
     } finally {
       setBusy(false)
@@ -179,7 +179,7 @@ export default function SftpBrowser({
 
   const removeSelected = async (): Promise<void> => {
     const names = [...selected]
-    if (!names.length || !confirm(`ลบ ${names.length} รายการที่เลือก?`)) return
+    if (!names.length || !confirm(`${t('ลบ')} ${names.length} ${t('รายการที่เลือก')}?`)) return
     setBusy(true)
     try {
       for (const n of names) {
@@ -231,14 +231,14 @@ export default function SftpBrowser({
             <FolderPlus className="size-3.5" />
           </Button>
           <Button size="sm" onClick={() => void upload()} disabled={busy || !cwd}>
-            {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />} อัปโหลด
+            {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />} {t('อัปโหลด')}
           </Button>
         </div>
 
         {/* แถบเมื่อเลือกหลายรายการ */}
         {selected.size > 0 && (
           <div className="flex items-center gap-2 rounded-lg border border-primary/40 bg-primary/5 px-2.5 py-1.5">
-            <span className="text-xs font-medium">เลือก {selected.size} รายการ</span>
+            <span className="text-xs font-medium">{t('เลือก')} {selected.size} {t('รายการ')}</span>
             <div className="ml-auto flex items-center gap-1">
               <Button size="sm" onClick={() => void download([...selected])} disabled={busy}>
                 <Download className="size-3.5" /> {t("ดาวน์โหลด")}
@@ -320,7 +320,7 @@ export default function SftpBrowser({
                     </button>
                   )}
                   <button
-                    title={e.type === 'dir' ? 'ดาวน์โหลดทั้งโฟลเดอร์ (บีบอัด)' : 'ดาวน์โหลด'}
+                    title={e.type === 'dir' ? t('ดาวน์โหลดทั้งโฟลเดอร์ (บีบอัด)') : t('ดาวน์โหลด')}
                     onClick={() => void download([e.name])}
                     className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                   >
@@ -344,24 +344,24 @@ export default function SftpBrowser({
         {/* transfers */}
         {activeTransfers.length > 0 && (
           <div className="space-y-1.5 border-t border-border pt-2">
-            {activeTransfers.map((t) => {
-              const pct = t.total > 0 ? Math.round((t.transferred / t.total) * 100) : 0
+            {activeTransfers.map((tr) => {
+              const pct = tr.total > 0 ? Math.round((tr.transferred / tr.total) * 100) : 0
               return (
-                <div key={t.transferId} className="flex items-center gap-2 text-xs">
-                  {t.direction === 'up' ? (
+                <div key={tr.transferId} className="flex items-center gap-2 text-xs">
+                  {tr.direction === 'up' ? (
                     <Upload className="size-3 shrink-0 text-primary" />
                   ) : (
                     <Download className="size-3 shrink-0 text-primary" />
                   )}
-                  <span className="w-40 shrink-0 truncate">{t.name}</span>
+                  <span className="w-40 shrink-0 truncate">{tr.name}</span>
                   <div className="h-1 flex-1 overflow-hidden rounded-full bg-secondary">
                     <div
-                      className={cn('h-full rounded-full', t.error ? 'bg-destructive' : 'bg-primary')}
-                      style={{ width: `${t.error ? 100 : pct}%` }}
+                      className={cn('h-full rounded-full', tr.error ? 'bg-destructive' : 'bg-primary')}
+                      style={{ width: `${tr.error ? 100 : pct}%` }}
                     />
                   </div>
                   <span className="w-24 shrink-0 text-right text-muted-foreground">
-                    {t.error ? 'ผิดพลาด' : t.done ? 'เสร็จ' : `${pct}%`}
+                    {tr.error ? t('ผิดพลาด') : tr.done ? t('เสร็จ') : `${pct}%`}
                   </span>
                 </div>
               )

@@ -42,7 +42,7 @@ export default function UpdateToast(): JSX.Element | null {
         <div>
           <div className="mb-2 flex items-center gap-2 text-sm font-medium">
             <Download className="size-4 text-primary" />
-            กำลังดาวน์โหลดอัปเดต {version}
+            {t('กำลังดาวน์โหลดอัปเดต')} {version}
           </div>
           <div className="h-1.5 w-full overflow-hidden rounded-full bg-secondary">
             <div
@@ -67,7 +67,7 @@ export default function UpdateToast(): JSX.Element | null {
             </button>
           </div>
           <p className="mb-3 text-xs text-muted-foreground">
-            Perms {version} ดาวน์โหลดเสร็จแล้ว — รีสตาร์ทเพื่อใช้เวอร์ชันใหม่
+            Perms {version} {t('ดาวน์โหลดเสร็จแล้ว — รีสตาร์ทเพื่อใช้เวอร์ชันใหม่')}
           </p>
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setDismissed(true)}>

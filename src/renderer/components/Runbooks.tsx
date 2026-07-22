@@ -175,7 +175,7 @@ export default function Runbooks({
             <div className="flex flex-col gap-1.5">
               <Label>
                 {t('คำสั่ง (บรรทัดละ 1 คำสั่ง · ใช้')}{' '}
-                <code className="rounded bg-muted px-1 font-mono text-[11px]">{'{{ชื่อ}}'}</code>{' '}
+                <code className="rounded bg-muted px-1 font-mono text-[11px]">{t('{{ชื่อ}}')}</code>{' '}
                 {t('เพื่อสร้างช่องให้กรอกตอนรัน)')}
               </Label>
               <Textarea

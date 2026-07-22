@@ -453,7 +453,7 @@ export default function TerminalView({
     body = redactSecrets(body).slice(0, 4000).trim()
     if (!body) return
     sendToAi(
-      `ช่วยดูให้หน่อยว่าเกิดอะไรขึ้นใน terminal นี้ ถ้ามี error บอกสาเหตุและวิธีแก้:\n\n\`\`\`\n${body}\n\`\`\``
+      `${t('ช่วยดูให้หน่อยว่าเกิดอะไรขึ้นใน terminal นี้ ถ้ามี error บอกสาเหตุและวิธีแก้')}:\n\n\`\`\`\n${body}\n\`\`\``
     )
   }
 

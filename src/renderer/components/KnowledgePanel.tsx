@@ -64,7 +64,7 @@ export default function KnowledgePanel(): JSX.Element {
       serverId: serverId === 'none' ? null : serverId,
       source: editing?.source ?? 'user'
     })
-    toast(editing ? 'แก้ไขความรู้แล้ว' : 'เพิ่มความรู้แล้ว')
+    toast(editing ? t('แก้ไขความรู้แล้ว') : t('เพิ่มความรู้แล้ว'))
     startEdit(null)
     load()
   }

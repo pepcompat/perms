@@ -35,13 +35,13 @@ export default function WhatsNew({
           <DialogDescription>
             {manual ? (
               <>
-                บันทึกการเปลี่ยนแปลง · กำลังใช้{' '}
+                {t('บันทึกการเปลี่ยนแปลง')} · {t('กำลังใช้')}{' '}
                 <span className="font-mono text-foreground">v{version}</span>
               </>
             ) : (
               <>
-                อัปเดตเป็น Perms <span className="font-mono text-foreground">v{version}</span> {t("แล้ว —")}
-                {t("สรุปสิ่งที่เพิ่ม/ปรับ")}
+                {t('อัปเดตเป็น Perms')} <span className="font-mono text-foreground">v{version}</span> —{' '}
+                {t('สรุปสิ่งที่เพิ่ม/ปรับ')}
               </>
             )}
           </DialogDescription>

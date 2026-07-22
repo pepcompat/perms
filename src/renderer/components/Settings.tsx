@@ -69,13 +69,13 @@ export default function Settings({
         toast(
           r.reason === 'dev'
             ? t('โหมด dev ยังไม่มีระบบอัปเดต (เฉพาะตัวติดตั้งจริง)')
-            : `ตรวจสอบไม่สำเร็จ: ${r.reason ?? 'unknown'}`,
+            : `${t('ตรวจสอบไม่สำเร็จ')}: ${r.reason ?? 'unknown'}`,
           'error'
         )
       } else if (r.updateAvailable) {
-        toast(`พบเวอร์ชันใหม่ ${r.version} — กำลังดาวน์โหลด…`)
+        toast(`${t('พบเวอร์ชันใหม่')} ${r.version} — ${t('กำลังดาวน์โหลด…')}`)
       } else {
-        toast(`เป็นเวอร์ชันล่าสุดแล้ว (${r.currentVersion ?? appVersion}) ✓`)
+        toast(`${t('เป็นเวอร์ชันล่าสุดแล้ว')} (${r.currentVersion ?? appVersion}) ✓`)
       }
     } finally {
       setChecking(false)
@@ -93,9 +93,9 @@ export default function Settings({
     try {
       set(await window.api.settings.setAiKey(p, key))
       setKeys((k) => ({ ...k, [p]: '' }))
-      toast(`บันทึก API key ของ ${labelOf(p)} แล้ว`)
+      toast(`${t('บันทึก API key แล้ว')}: ${labelOf(p)}`)
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'บันทึกไม่สำเร็จ', 'error')
+      toast(e instanceof Error ? e.message : t('บันทึกไม่สำเร็จ'), 'error')
     } finally {
       setBusy(null)
     }
@@ -105,7 +105,7 @@ export default function Settings({
     setBusy(p)
     set(await window.api.settings.clearAiKey(p))
     setBusy(null)
-    toast(`ลบ API key ของ ${labelOf(p)} แล้ว`)
+    toast(`${t('ลบ API key แล้ว')}: ${labelOf(p)}`)
   }
 
   const updateModel = async (p: AiProvider, model: string): Promise<void> => {
@@ -114,7 +114,7 @@ export default function Settings({
 
   const selectModel = async (p: AiProvider, model: string): Promise<void> => {
     await updateModel(p, model)
-    toast(`เลือกโมเดล ${model}`)
+    toast(`${t('เลือกโมเดล')}: ${model}`)
   }
 
   const updateDefault = async (patch: {
@@ -122,7 +122,7 @@ export default function Settings({
     defaultMode?: AiMode
   }): Promise<void> => {
     set(await window.api.settings.updateAi(patch))
-    toast('บันทึกการตั้งค่าแล้ว')
+    toast(t('บันทึกการตั้งค่าแล้ว'))
   }
 
   return (
@@ -205,9 +205,7 @@ export default function Settings({
         <div className="flex items-start gap-2 rounded-lg border border-border bg-background/40 px-3 py-2.5 text-xs text-muted-foreground">
           <ShieldCheck className="mt-0.5 size-4 shrink-0 text-[hsl(var(--success))]" />
           <span>
-            API key ถูก<span className="text-foreground">เข้ารหัสเก็บในเครื่องคุณ</span>ด้วย Keychain ของ
-            ระบบ (ไม่ส่งออกที่ไหน) — ครั้งแรก macOS อาจถามขออนุญาตเข้าถึง Keychain
-            กด <span className="font-medium text-foreground">“Always Allow”</span> {t("ได้เลย ปลอดภัย")}
+            {t('API key ถูกเข้ารหัสเก็บในเครื่องคุณด้วย Keychain ของระบบ (ไม่ส่งออกที่ไหน) — ครั้งแรก macOS อาจถามขออนุญาตเข้าถึง Keychain กด “Always Allow” ได้เลย ปลอดภัย')}
           </span>
         </div>
 
@@ -227,18 +225,18 @@ export default function Settings({
                       <Check className="size-2.5" /> {t("ตั้งค่าแล้ว")}
                     </Badge>
                   ) : (
-                    <Badge variant="outline">ยังไม่ตั้ง</Badge>
+                    <Badge variant="outline">{t('ยังไม่ตั้ง')}</Badge>
                   )}
                 </div>
                 <div className="mb-3 flex gap-2">
                   <Input
                     type="password"
-                    placeholder={configured ? '•••••••• (เปลี่ยน key)' : p.placeholder}
+                    placeholder={configured ? t('•••••••• (เปลี่ยน key)') : p.placeholder}
                     value={keys[p.id] ?? ''}
                     onChange={(e) => setKeys((k) => ({ ...k, [p.id]: e.target.value }))}
                   />
                   <Button onClick={() => saveKey(p.id)} disabled={busy === p.id || !keys[p.id]}>
-                    {busy === p.id ? <Loader2 className="size-4 animate-spin" /> : 'บันทึก'}
+                    {busy === p.id ? <Loader2 className="size-4 animate-spin" /> : t('บันทึก')}
                   </Button>
                   {configured && (
                     <Button variant="outline" size="icon" onClick={() => clearKey(p.id)}>
@@ -252,17 +250,17 @@ export default function Settings({
                     <Input
                       value={settings.ai.models[p.id]}
                       onChange={(e) => updateModel(p.id, e.target.value)}
-                      placeholder="เลือกหรือพิมพ์ชื่อโมเดล"
+                      placeholder={t('เลือกหรือพิมพ์ชื่อโมเดล')}
                       className="flex-1 font-mono text-xs"
                     />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" title="เลือกโมเดล">
+                        <Button variant="outline" size="icon" title={t("เลือกโมเดล")}>
                           <ChevronDown className="size-4" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="max-h-72 min-w-[16rem] overflow-y-auto">
-                        <DropdownMenuLabel>โมเดล {p.label}</DropdownMenuLabel>
+                        <DropdownMenuLabel>{t('โมเดล')} {p.label}</DropdownMenuLabel>
                         {MODEL_PRESETS[p.id].map((m) => (
                           <DropdownMenuItem
                             key={m}
@@ -286,7 +284,7 @@ export default function Settings({
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
-            <Label>Provider เริ่มต้น</Label>
+            <Label>{t('Provider เริ่มต้น')}</Label>
             <Select
               value={settings.ai.defaultProvider}
               onValueChange={(v) => updateDefault({ defaultProvider: v as AiProvider })}
@@ -302,7 +300,7 @@ export default function Settings({
             </Select>
           </div>
           <div className="flex flex-col gap-1.5">
-            <Label>โหมด AI เริ่มต้น</Label>
+            <Label>{t('โหมด AI เริ่มต้น')}</Label>
             <Select
               value={settings.ai.defaultMode}
               onValueChange={(v) => updateDefault({ defaultMode: v as AiMode })}
@@ -311,9 +309,9 @@ export default function Settings({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="suggest">แนะนำเฉยๆ</SelectItem>
-                <SelectItem value="approve">อนุมัติก่อนรัน</SelectItem>
-                <SelectItem value="agentic">Agentic (รันเอง)</SelectItem>
+                <SelectItem value="suggest">{t('แนะนำเฉยๆ')}</SelectItem>
+                <SelectItem value="approve">{t('อนุมัติก่อนรัน')}</SelectItem>
+                <SelectItem value="agentic">{t('Agentic (รันเอง)')}</SelectItem>
               </SelectContent>
             </Select>
           </div>

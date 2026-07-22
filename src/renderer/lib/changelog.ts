@@ -23,6 +23,34 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.6.0',
+    title: 'สลับภาษา ไทย/อังกฤษ + SFTP ทำงานเป็นชุดได้',
+    titleEn: 'Thai/English switcher + batch SFTP',
+    items: [
+      {
+        icon: '🌐',
+        text: 'สลับภาษา ไทย ⇄ English ได้ทั้งโปรแกรมจาก Settings — รวมถึงหน้านี้ด้วย',
+        textEn: 'Switch the whole app between Thai and English from Settings — including this page'
+      },
+      {
+        icon: '🗜️',
+        text: 'SFTP บีบอัด/แตกไฟล์บนเซิร์ฟเวอร์ได้ (zip · tar.gz · tgz · tar) โดยไม่ต้องพิมพ์คำสั่งเอง',
+        textEn: 'Compress and extract archives on the server (zip · tar.gz · tgz · tar) without typing a command'
+      },
+      {
+        icon: '📥',
+        text: 'เลือกหลายไฟล์ดาวน์โหลดพร้อมกัน หรือดาวน์โหลดทั้งโฟลเดอร์ในครั้งเดียว',
+        textEn: 'Select multiple files to download at once, or grab an entire folder in one go'
+      },
+      {
+        icon: '🧠',
+        text: 'คำแนะนำคำสั่งฉลาดขึ้น — เรียงตามความถี่ + ใช้ล่าสุด และดันคำสั่งของ server เครื่องนั้นขึ้นก่อน',
+        textEn:
+          'Smarter command suggestions — ranked by how often and how recently you use them, with this server’s own commands first'
+      }
+    ]
+  },
+  {
     version: '1.5.0',
     title: 'จัดการ Docker container บนเซิร์ฟเวอร์',
     titleEn: 'Manage Docker containers on your servers',

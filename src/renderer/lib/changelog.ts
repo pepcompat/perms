@@ -23,6 +23,30 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.1',
+    title: 'ปรับหน้าตาให้อ่านง่ายขึ้น',
+    titleEn: 'Easier on the eyes',
+    items: [
+      {
+        icon: '⚙️',
+        text: 'เปลี่ยนไอคอนปุ่มจัดการ service — เดิมเป็นสัญลักษณ์ปิดเครื่อง ดูน่ากลัวเกินจริง',
+        textEn:
+          'New icon for the service button — the old power symbol looked more alarming than it should'
+      },
+      {
+        icon: '💬',
+        text: 'คำอธิบายปุ่ม (tooltip) ขึ้นเร็วขึ้นมาก ตัวใหญ่ขึ้น มีลูกศรชี้ที่ปุ่ม และเลื่อนไปปุ่มถัดไปแล้วขึ้นทันทีไม่ต้องรอใหม่',
+        textEn:
+          'Tooltips appear far faster and larger, point at the button they describe, and follow instantly as you move between buttons'
+      },
+      {
+        icon: '⌨️',
+        text: 'คีย์ลัดแยกออกมาแสดงเป็นปุ่มในคำอธิบาย เช่น ค้นหา ⌘F อ่านง่ายกว่าเดิม',
+        textEn: 'Keyboard shortcuts now show as a key badge in the tooltip, e.g. Search ⌘F'
+      }
+    ]
+  },
+  {
     version: '1.7.0',
     title: 'ปลอดภัยขึ้นทั้งระบบ — ตรวจตัวตนเซิร์ฟเวอร์ · ย้อนไฟล์ได้ · อุโมงค์ SSH',
     titleEn: 'Safer end to end — server identity, file rollback, SSH tunnels',

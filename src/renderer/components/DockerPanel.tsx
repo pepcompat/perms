@@ -15,6 +15,7 @@ import type { DockerContainer } from '@shared/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Badge } from './ui/badge'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import DockerIcon from './DockerIcon'
 import { useT } from '../lib/i18n'
@@ -132,7 +133,9 @@ export default function DockerPanel({
       key={c.id}
       className="flex items-center gap-2.5 rounded-lg border border-border bg-background/40 p-2.5"
     >
-      <span className={cn('size-2 shrink-0 rounded-full', stateColor(c.state))} title={c.state} />
+      <Hint label={c.state}>
+        <span className={cn('size-2 shrink-0 rounded-full', stateColor(c.state))} />
+      </Hint>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium">{c.service || c.name || c.id}</div>
         <div className="truncate text-[11px] text-muted-foreground">
@@ -176,15 +179,16 @@ export default function DockerPanel({
           <DialogTitle className="flex items-center gap-2 pr-8">
             <DockerIcon className="size-4 text-[#2496ED]" /> Docker Containers
             {!logs && (
-              <Button
-                variant="outline"
-                size="icon-sm"
-                className="ml-auto"
-                title={t("รีเฟรช")}
-                onClick={() => void load()}
-              >
-                <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
-              </Button>
+              <Hint label={t("รีเฟรช")}>
+                <Button
+                  variant="outline"
+                  size="icon-sm"
+                  className="ml-auto"
+                  onClick={() => void load()}
+                >
+                  <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
+                </Button>
+              </Hint>
             )}
           </DialogTitle>
           <DialogDescription className="truncate">
@@ -271,16 +275,17 @@ function IconBtn({
   children: ReactNode
 }): JSX.Element {
   return (
-    <button
-      title={title}
-      onClick={onClick}
-      disabled={disabled}
-      className={cn(
-        'rounded p-1.5 transition-colors disabled:pointer-events-none disabled:opacity-40',
-        TONE[tone]
-      )}
-    >
-      {children}
-    </button>
+    <Hint label={title} side="top">
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={cn(
+          'rounded p-1.5 transition-colors disabled:pointer-events-none disabled:opacity-40',
+          TONE[tone]
+        )}
+      >
+        {children}
+      </button>
+    </Hint>
   )
 }

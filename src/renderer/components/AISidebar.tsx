@@ -35,6 +35,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuItem
 } from './ui/dropdown-menu'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { useT } from '../lib/i18n'
 
@@ -121,13 +122,14 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
         </div>
         <span className="text-sm font-semibold tracking-tight">AI Agent</span>
         {items.length > 0 && (
-          <button
-            onClick={() => clearChat(chatKey)}
-            title={t("ล้างแชท")}
-            className="no-drag ml-auto flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-          >
-            <RotateCcw className="size-3.5" />
-          </button>
+          <Hint label={t("ล้างแชท")}>
+            <button
+              onClick={() => clearChat(chatKey)}
+              className="no-drag ml-auto flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            >
+              <RotateCcw className="size-3.5" />
+            </button>
+          </Hint>
         )}
       </div>
 
@@ -311,10 +313,7 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
             </DropdownMenu>
 
             {/* Web search toggle */}
-            <button
-              onClick={toggleWeb}
-              disabled={!webSupported || mode === 'agentic'}
-              title={
+            <Hint label={
                 mode === 'agentic'
                   ? t('web search ปิดในโหมด agentic (กัน prompt injection)')
                   : !webSupported
@@ -322,21 +321,27 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
                     : webOn
                       ? t('web search: เปิด')
                       : t('web search: ปิด')
-              }
-              className={cn(
-                'flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-medium transition-colors disabled:opacity-40',
-                webOn
-                  ? 'bg-primary/15 text-primary'
-                  : 'text-muted-foreground hover:bg-accent hover:text-foreground'
-              )}
-            >
-              <Globe className="size-3.5" /> Web
-            </button>
+              }>
+              <button
+                onClick={toggleWeb}
+                disabled={!webSupported || mode === 'agentic'}
+                className={cn(
+                  'flex h-7 items-center gap-1 rounded-lg px-2 text-xs font-medium transition-colors disabled:opacity-40',
+                  webOn
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                )}
+              >
+                <Globe className="size-3.5" /> Web
+              </button>
+            </Hint>
 
             {activeId && (
-              <span title={t("session ใช้งานอยู่")} className="flex items-center text-[hsl(var(--success))]">
-                <TerminalIcon className="size-3.5" />
-              </span>
+              <Hint label={t("session ใช้งานอยู่")}>
+                <span className="flex items-center text-[hsl(var(--success))]">
+                  <TerminalIcon className="size-3.5" />
+                </span>
+              </Hint>
             )}
 
             <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-1">

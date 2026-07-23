@@ -12,6 +12,7 @@ import {
 import { summarize, type TransferItem } from '@shared/transfer-queue'
 import { humanSize } from '../lib/format'
 import { Button } from './ui/button'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { useT } from '../lib/i18n'
 
@@ -54,16 +55,17 @@ export default function TransferQueue(): JSX.Element | null {
           )}
         </span>
         <span className="text-[11px] text-muted-foreground">{s.percent}%</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            void window.api.transfers.clear()
-          }}
-          title={t('ล้างรายการที่เสร็จแล้ว')}
-          className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-        >
-          <Trash2 className="size-3" />
-        </button>
+        <Hint label={t('ล้างรายการที่เสร็จแล้ว')}>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              void window.api.transfers.clear()
+            }}
+            className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+          >
+            <Trash2 className="size-3" />
+          </button>
+        </Hint>
       </button>
 
       {!collapsed && (
@@ -101,22 +103,24 @@ export default function TransferQueue(): JSX.Element | null {
                   </span>
 
                   {it.status === 'failed' && (
-                    <button
-                      onClick={() => void window.api.transfers.retry(it.id)}
-                      title={t('ลองใหม่')}
-                      className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
-                    >
-                      <RotateCw className="size-3" />
-                    </button>
+                    <Hint label={t('ลองใหม่')}>
+                      <button
+                        onClick={() => void window.api.transfers.retry(it.id)}
+                        className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-accent hover:text-foreground"
+                      >
+                        <RotateCw className="size-3" />
+                      </button>
+                    </Hint>
                   )}
                   {(it.status === 'running' || it.status === 'queued') && (
-                    <button
-                      onClick={() => void window.api.transfers.cancel(it.id)}
-                      title={t('ยกเลิก')}
-                      className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-                    >
-                      <X className="size-3" />
-                    </button>
+                    <Hint label={t('ยกเลิก')}>
+                      <button
+                        onClick={() => void window.api.transfers.cancel(it.id)}
+                        className="shrink-0 rounded p-0.5 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+                      >
+                        <X className="size-3" />
+                      </button>
+                    </Hint>
                   )}
                 </div>
 
@@ -133,10 +137,12 @@ export default function TransferQueue(): JSX.Element | null {
                 )}
 
                 {it.error && (
-                  <p className="mt-1 truncate text-[11px] text-destructive" title={it.error}>
-                    {it.error}
-                    {it.attempts > 1 && ` (${t('ลองแล้ว')} ${it.attempts})`}
-                  </p>
+                  <Hint label={it.error}>
+                    <p className="mt-1 truncate text-[11px] text-destructive">
+                      {it.error}
+                      {it.attempts > 1 && ` (${t('ลองแล้ว')} ${it.attempts})`}
+                    </p>
+                  </Hint>
                 )}
               </div>
             )

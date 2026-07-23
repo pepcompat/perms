@@ -19,6 +19,7 @@ import {
 import type { SftpEntry, SftpProgress } from '@shared/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { humanSize, joinRemote, parentPath, isArchive } from '../lib/format'
 import FileEditor from './FileEditor'
@@ -209,27 +210,34 @@ export default function SftpBrowser({
 
         {/* toolbar + path */}
         <div className="flex items-center gap-1.5">
-          <Button variant="outline" size="icon-sm" title="Home" onClick={() => void load('.')}>
-            <Home className="size-3.5" />
-          </Button>
-          <Button
-            variant="outline"
-            size="icon-sm"
-            title={t("ขึ้นบน")}
-            disabled={!cwd || cwd === '/'}
-            onClick={() => void load(parentPath(cwd))}
-          >
-            <ArrowUp className="size-3.5" />
-          </Button>
-          <Button variant="outline" size="icon-sm" title={t("รีเฟรช")} onClick={() => void load(cwd)}>
-            <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
-          </Button>
+          <Hint label={"Home"}>
+            <Button variant="outline" size="icon-sm" onClick={() => void load('.')}>
+              <Home className="size-3.5" />
+            </Button>
+          </Hint>
+          <Hint label={t("ขึ้นบน")}>
+            <Button
+              variant="outline"
+              size="icon-sm"
+              disabled={!cwd || cwd === '/'}
+              onClick={() => void load(parentPath(cwd))}
+            >
+              <ArrowUp className="size-3.5" />
+            </Button>
+          </Hint>
+          <Hint label={t("รีเฟรช")}>
+            <Button variant="outline" size="icon-sm" onClick={() => void load(cwd)}>
+              <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
+            </Button>
+          </Hint>
           <div className="mx-1 min-w-0 flex-1 truncate rounded-md border border-border bg-background/50 px-2.5 py-1.5 font-mono text-xs text-muted-foreground">
             {cwd || '…'}
           </div>
-          <Button variant="outline" size="sm" title={t("สร้างโฟลเดอร์")} onClick={() => void mkdir()}>
-            <FolderPlus className="size-3.5" />
-          </Button>
+          <Hint label={t("สร้างโฟลเดอร์")}>
+            <Button variant="outline" size="sm" onClick={() => void mkdir()}>
+              <FolderPlus className="size-3.5" />
+            </Button>
+          </Hint>
           <Button size="sm" onClick={() => void upload()} disabled={busy || !cwd}>
             {busy ? <Loader2 className="size-3.5 animate-spin" /> : <Upload className="size-3.5" />} {t('อัปโหลด')}
           </Button>
@@ -246,12 +254,16 @@ export default function SftpBrowser({
               <Button variant="outline" size="sm" onClick={() => void zipSelected()} disabled={busy}>
                 <FileArchive className="size-3.5" /> {t("บีบอัด")}
               </Button>
-              <Button variant="outline" size="icon-sm" title={t("ลบที่เลือก")} onClick={() => void removeSelected()} disabled={busy}>
-                <Trash2 className="size-3.5 text-destructive" />
-              </Button>
-              <Button variant="ghost" size="icon-sm" title={t("ยกเลิกการเลือก")} onClick={clearSel}>
-                <X className="size-3.5" />
-              </Button>
+              <Hint label={t("ลบที่เลือก")}>
+                <Button variant="outline" size="icon-sm" onClick={() => void removeSelected()} disabled={busy}>
+                  <Trash2 className="size-3.5 text-destructive" />
+                </Button>
+              </Hint>
+              <Hint label={t("ยกเลิกการเลือก")}>
+                <Button variant="ghost" size="icon-sm" onClick={clearSel}>
+                  <X className="size-3.5" />
+                </Button>
+              </Hint>
             </div>
           </div>
         )}
@@ -279,7 +291,7 @@ export default function SftpBrowser({
                   onChange={() => toggleSel(e.name)}
                   onClick={(ev) => ev.stopPropagation()}
                   className="size-3.5 shrink-0 accent-[hsl(var(--primary))]"
-                  title={t("เลือก")}
+                  aria-label={t("เลือก")}
                 />
                 <span className="shrink-0">
                   {e.type === 'dir' ? (
@@ -290,49 +302,54 @@ export default function SftpBrowser({
                     <FileText className="size-4 text-muted-foreground" />
                   )}
                 </span>
-                <button
-                  onClick={() => enter(e)}
-                  className="min-w-0 flex-1 truncate text-left text-sm"
-                  title={e.name}
-                >
-                  {e.name}
-                </button>
+                <Hint label={e.name}>
+                  <button
+                    onClick={() => enter(e)}
+                    className="min-w-0 flex-1 truncate text-left text-sm"
+                  >
+                    {e.name}
+                  </button>
+                </Hint>
                 <span className="w-20 shrink-0 text-right text-xs text-muted-foreground">
                   {e.type === 'file' ? humanSize(e.size) : ''}
                 </span>
                 <div className="flex w-28 shrink-0 justify-end gap-0.5 opacity-0 group-hover:opacity-100">
                   {e.type !== 'dir' && isArchive(e.name) && (
-                    <button
-                      title={t("แตกไฟล์ (unzip)")}
-                      onClick={() => void extract(e.name)}
-                      className="rounded p-1 text-sky-400 hover:bg-sky-400/10"
-                    >
-                      <FileArchive className="size-3.5" />
-                    </button>
+                    <Hint label={t("แตกไฟล์ (unzip)")}>
+                      <button
+                        onClick={() => void extract(e.name)}
+                        className="rounded p-1 text-sky-400 hover:bg-sky-400/10"
+                      >
+                        <FileArchive className="size-3.5" />
+                      </button>
+                    </Hint>
                   )}
                   {e.type !== 'dir' && (
+                    <Hint label={t("แก้ไข")}>
+                      <button
+                        onClick={() => setEditing({ path: joinRemote(cwd, e.name), name: e.name })}
+                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                      >
+                        <Pencil className="size-3.5" />
+                      </button>
+                    </Hint>
+                  )}
+                  <Hint label={e.type === 'dir' ? t('ดาวน์โหลดทั้งโฟลเดอร์ (บีบอัด)') : t('ดาวน์โหลด')}>
                     <button
-                      title={t("แก้ไข")}
-                      onClick={() => setEditing({ path: joinRemote(cwd, e.name), name: e.name })}
+                      onClick={() => void download([e.name])}
                       className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
                     >
-                      <Pencil className="size-3.5" />
+                      <Download className="size-3.5" />
                     </button>
-                  )}
-                  <button
-                    title={e.type === 'dir' ? t('ดาวน์โหลดทั้งโฟลเดอร์ (บีบอัด)') : t('ดาวน์โหลด')}
-                    onClick={() => void download([e.name])}
-                    className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                  >
-                    <Download className="size-3.5" />
-                  </button>
-                  <button
-                    title={t("ลบ")}
-                    onClick={() => void remove(e)}
-                    className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                  >
-                    <Trash2 className="size-3.5" />
-                  </button>
+                  </Hint>
+                  <Hint label={t("ลบ")}>
+                    <button
+                      onClick={() => void remove(e)}
+                      className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
+                    >
+                      <Trash2 className="size-3.5" />
+                    </button>
+                  </Hint>
                 </div>
               </div>
             ))}

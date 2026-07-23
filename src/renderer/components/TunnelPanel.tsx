@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/button'
 import { Input } from './ui/input'
 import { Label } from './ui/label'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { useT } from '../lib/i18n'
 import { toast } from '../store/useToast'
@@ -175,13 +176,14 @@ export default function TunnelPanel({
                 <span className="shrink-0 text-[11px] text-muted-foreground">
                   {tn.connections} {t('การเชื่อมต่อ')}
                 </span>
-                <button
-                  onClick={() => void window.api.tunnels.close(tn.id)}
-                  title={t('ปิดอุโมงค์')}
-                  className="shrink-0 rounded p-1 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
-                >
-                  <X className="size-3.5" />
-                </button>
+                <Hint label={t('ปิดอุโมงค์')}>
+                  <button
+                    onClick={() => void window.api.tunnels.close(tn.id)}
+                    className="shrink-0 rounded p-1 text-muted-foreground hover:bg-destructive/15 hover:text-destructive"
+                  >
+                    <X className="size-3.5" />
+                  </button>
+                </Hint>
               </div>
             ))
           )}

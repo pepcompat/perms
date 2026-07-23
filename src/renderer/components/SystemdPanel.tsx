@@ -8,12 +8,13 @@ import {
   Loader2,
   RefreshCw,
   Search,
-  Power
+  ServerCog
 } from 'lucide-react'
 import type { SystemdUnit, JournalLine } from '@shared/types'
 import { unitTone, type UnitTone } from '@shared/systemd-status'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
+import { Hint } from './ui/tooltip'
 import { Input } from './ui/input'
 import { cn } from '../lib/utils'
 import { useT } from '../lib/i18n'
@@ -47,14 +48,15 @@ function IconBtn({
     muted: 'text-muted-foreground hover:bg-accent hover:text-foreground'
   }
   return (
-    <button
-      title={title}
-      onClick={onClick}
-      disabled={disabled}
-      className={cn('rounded-md p-1.5 transition-colors disabled:opacity-40', tones[tone])}
-    >
-      {children}
-    </button>
+    <Hint label={title} side="top">
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={cn('rounded-md p-1.5 transition-colors disabled:opacity-40', tones[tone])}
+      >
+        {children}
+      </button>
+    </Hint>
   )
 }
 
@@ -145,19 +147,20 @@ export default function SystemdPanel({
           <DialogTitle className="flex items-center gap-2 text-base">
             {logsOf ? (
               <>
-                <button
-                  onClick={() => setLogsOf(null)}
-                  className="rounded p-1 hover:bg-accent"
-                  title={t('ย้อนกลับ')}
-                >
-                  <ArrowLeft className="size-4" />
-                </button>
+                <Hint label={t('ย้อนกลับ')}>
+                  <button
+                    onClick={() => setLogsOf(null)}
+                    className="rounded p-1 hover:bg-accent"
+                  >
+                    <ArrowLeft className="size-4" />
+                  </button>
+                </Hint>
                 <ScrollText className="size-4 text-primary" />
                 <span className="truncate font-mono text-sm">{logsOf}</span>
               </>
             ) : (
               <>
-                <Power className="size-4 text-primary" />
+                <ServerCog className="size-4 text-primary" />
                 {t('Service (systemd)')}
               </>
             )}

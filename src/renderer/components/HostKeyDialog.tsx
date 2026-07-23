@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ShieldAlert, ShieldQuestion, Copy } from 'lucide-react'
 import type { HostKeyPrompt } from '@shared/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
+import { Hint } from './ui/tooltip'
 import { Button } from './ui/button'
 import { useT } from '../lib/i18n'
 import { toast } from '../store/useToast'
@@ -88,13 +89,14 @@ export default function HostKeyDialog(): JSX.Element | null {
               <div className="text-xs text-muted-foreground">
                 {changed ? t('ลายนิ้วมือใหม่ที่ได้รับตอนนี้') : t('ลายนิ้วมือ')}
               </div>
-              <button
-                onClick={() => copy(current.fingerprint)}
-                className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                title={t('คัดลอก')}
-              >
-                <Copy className="size-3.5" />
-              </button>
+              <Hint label={t('คัดลอก')}>
+                <button
+                  onClick={() => copy(current.fingerprint)}
+                  className="rounded p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                >
+                  <Copy className="size-3.5" />
+                </button>
+              </Hint>
             </div>
             <div className="break-all font-mono text-xs">{current.fingerprint}</div>
             <div className="mt-0.5 text-[11px] text-muted-foreground">{current.keyType}</div>

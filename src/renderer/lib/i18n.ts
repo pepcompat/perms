@@ -7,6 +7,7 @@ export type Lang = 'th' | 'en'
  * ข้อดี: UI ไทยเดิมไม่เปลี่ยน และถ้าคำไหนยังไม่มีคำแปล จะ fallback เป็นไทยอัตโนมัติ
  */
 const EN: Record<string, string> = {
+  'เปิดอยู่': 'open',
   // --- v1.7.0: snapshot/diff, host key, guard, คิวโอนไฟล์, tunnel, systemd ---
   '(เว้นว่างถ้าไม่เปลี่ยน)': '(leave blank to keep unchanged)',
   'Local — เปิดพอร์ตในเครื่องเรา': 'Local — open a port on this machine',

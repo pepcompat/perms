@@ -14,6 +14,7 @@ import type { AiProvider, AiMode } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { toast } from '../store/useToast'
 import { MODEL_PRESETS } from '../lib/models'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { useT, useLang } from '../lib/i18n'
 import { logoUrl } from '../lib/logo'
@@ -255,9 +256,11 @@ export default function Settings({
                     />
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon" title={t("เลือกโมเดล")}>
-                          <ChevronDown className="size-4" />
-                        </Button>
+                        <Hint label={t("เลือกโมเดล")}>
+                          <Button variant="outline" size="icon">
+                            <ChevronDown className="size-4" />
+                          </Button>
+                        </Hint>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="max-h-72 min-w-[16rem] overflow-y-auto">
                         <DropdownMenuLabel>{t('โมเดล')} {p.label}</DropdownMenuLabel>

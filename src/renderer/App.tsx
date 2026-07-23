@@ -56,7 +56,7 @@ export default function App(): JSX.Element {
   }, [])
 
   return (
-    <TooltipProvider delayDuration={300}>
+    <TooltipProvider delayDuration={120} skipDelayDuration={400}>
       <div className="flex h-full w-full bg-background text-foreground">
         <ServerList
           width={sidebar.width}

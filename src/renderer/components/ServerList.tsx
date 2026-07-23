@@ -17,7 +17,7 @@ import type { ServerRecord } from '@shared/types'
 import { useServers } from '../store/useServers'
 import { useTabs } from '../store/useTabs'
 import { Button } from './ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from './ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger, Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { logoUrl } from '../lib/logo'
 import { useT } from '../lib/i18n'
@@ -255,20 +255,26 @@ export default function ServerList({
             {!collapsed.has(group) && (
               <div className="ml-2.5 border-l border-border/50 pl-1.5">
                 {list.map((s) => (
+              <Hint
+                key={`hint-${s.id}`}
+                label={t('คลิก: ไป tab ล่าสุด · ดับเบิลคลิก: เปิด tab ใหม่')}
+                side="right"
+                delay={700}
+              >
               <div
                 key={s.id}
                 onClick={() => onCardClick(s)}
                 onDoubleClick={() => onCardDblClick(s)}
-                title={t("คลิก: ไป tab ล่าสุด · ดับเบิลคลิก: เปิด tab ใหม่")}
                 className="group mb-px flex cursor-pointer items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent"
               >
-                <span
-                  className={cn(
-                    'size-1.5 shrink-0 rounded-full ring-2 ring-background',
-                    isConnected(s.id) ? 'bg-[hsl(var(--success))]' : 'bg-muted-foreground/40'
-                  )}
-                  title={isConnected(s.id) ? t("เชื่อมต่ออยู่") : t("ไม่ได้เชื่อมต่อ")}
-                />
+                <Hint label={isConnected(s.id) ? t('เชื่อมต่ออยู่') : t('ไม่ได้เชื่อมต่อ')}>
+                  <span
+                    className={cn(
+                      'size-1.5 shrink-0 rounded-full ring-2 ring-background',
+                      isConnected(s.id) ? 'bg-[hsl(var(--success))]' : 'bg-muted-foreground/40'
+                    )}
+                  />
+                </Hint>
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-[13px] font-medium leading-tight">{s.name}</div>
                   <div className="truncate text-[11px] leading-tight text-muted-foreground">
@@ -280,13 +286,12 @@ export default function ServerList({
                 ) : (
                   <>
                     {tabCount(s.id) >= 2 && (
-                      <span
-                        title={`เปิดอยู่ ${tabCount(s.id)} tab`}
-                        className="flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground group-hover:hidden"
-                      >
-                        <SquareStack className="size-2.5" />
-                        {tabCount(s.id)}
-                      </span>
+                      <Hint label={`${t('เปิดอยู่')} ${tabCount(s.id)} tab`}>
+                        <span className="flex shrink-0 items-center gap-0.5 rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground group-hover:hidden">
+                          <SquareStack className="size-2.5" />
+                          {tabCount(s.id)}
+                        </span>
+                      </Hint>
                     )}
                     <div className="hidden gap-0.5 group-hover:flex">
                       <button
@@ -312,6 +317,7 @@ export default function ServerList({
                   </>
                 )}
               </div>
+              </Hint>
                 ))}
               </div>
             )}
@@ -346,13 +352,14 @@ export default function ServerList({
         <SideLink icon={<BookText className="size-4" />} label={t('Runbooks')} onClick={onOpenRunbooks} />
         <SideLink icon={<SettingsIcon className="size-4" />} label={t('Settings')} onClick={onOpenSettings} />
         {version && (
-          <button
-            onClick={onOpenChangelog}
-            title={t("ดูว่ามีอะไรใหม่ (changelog)")}
-            className="ml-1 mt-0.5 self-start rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/50 transition-colors hover:text-muted-foreground"
-          >
-            v{version}
-          </button>
+          <Hint label={t("ดูว่ามีอะไรใหม่ (changelog)")}>
+            <button
+              onClick={onOpenChangelog}
+              className="ml-1 mt-0.5 self-start rounded px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground/50 transition-colors hover:text-muted-foreground"
+            >
+              v{version}
+            </button>
+          </Hint>
         )}
       </div>
 

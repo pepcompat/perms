@@ -2,6 +2,7 @@ import { useState, type ReactNode } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Check, Copy } from 'lucide-react'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { translate, useLang } from '../lib/i18n'
 
@@ -15,13 +16,14 @@ function CodeBlock({ children }: { children: ReactNode }): JSX.Element {
   }
   return (
     <div className="group/code relative my-2 overflow-hidden rounded-lg border border-border bg-black/40">
-      <button
-        onClick={copy}
-        className="absolute right-1.5 top-1.5 z-10 rounded-md border border-border bg-card/80 p-1 text-muted-foreground opacity-0 backdrop-blur transition-opacity hover:text-foreground group-hover/code:opacity-100"
-        title={translate('คัดลอกโค้ด', useLang.getState().lang)}
-      >
-        {copied ? <Check className="size-3.5 text-[hsl(var(--success))]" /> : <Copy className="size-3.5" />}
-      </button>
+      <Hint label={translate('คัดลอกโค้ด', useLang.getState().lang)}>
+        <button
+          onClick={copy}
+          className="absolute right-1.5 top-1.5 z-10 rounded-md border border-border bg-card/80 p-1 text-muted-foreground opacity-0 backdrop-blur transition-opacity hover:text-foreground group-hover/code:opacity-100"
+        >
+          {copied ? <Check className="size-3.5 text-[hsl(var(--success))]" /> : <Copy className="size-3.5" />}
+        </button>
+      </Hint>
       <pre className="overflow-x-auto px-3 py-2.5 font-mono text-[12px] leading-relaxed">{children}</pre>
     </div>
   )

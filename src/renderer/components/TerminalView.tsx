@@ -18,9 +18,10 @@ import {
   ClipboardPaste,
   Sparkles,
   FolderSymlink,
-  Power,
+  ServerCog,
   Waypoints
 } from 'lucide-react'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { redactSecrets } from '@shared/redact'
 import { rankSuggestions, type CommandStat } from '@shared/suggest'
@@ -591,7 +592,7 @@ export default function TerminalView({
             )}
             {systemdAvailable && (
               <ToolBtn title={t("จัดการ service (systemd)")} onClick={() => setSystemdOpen(true)}>
-                <Power className="size-3.5 text-[hsl(var(--success))]" />
+                <ServerCog className="size-3.5 text-[hsl(var(--success))]" />
               </ToolBtn>
             )}
             <ToolBtn title={t("อุโมงค์ SSH (port forward)")} onClick={() => setTunnelOpen(true)}>
@@ -606,7 +607,7 @@ export default function TerminalView({
         <ToolBtn title={t("ถาม AI: ทำไมพัง / ช่วยแก้")} onClick={() => askAiHelp(termRef.current?.getSelection())}>
           <Sparkles className="size-3.5 text-primary" />
         </ToolBtn>
-        <ToolBtn title={t("ค้นหา (⌘F)")} onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchInputRef.current?.focus()) }}>
+        <ToolBtn title={t("ค้นหา")} keys="⌘F" onClick={() => { setSearchOpen(true); requestAnimationFrame(() => searchInputRef.current?.focus()) }}>
           <Search className="size-3.5" />
         </ToolBtn>
         <ToolBtn title={t("คัดลอกที่เลือก")} onClick={copySel}>
@@ -724,21 +725,24 @@ export default function TerminalView({
 
 function ToolBtn({
   title,
+  keys,
   onClick,
   children
 }: {
   title: string
+  keys?: string
   onClick: () => void
   children: ReactNode
 }): JSX.Element {
   return (
-    <button
-      title={title}
-      onClick={onClick}
-      className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-    >
-      {children}
-    </button>
+    <Hint label={title} keys={keys} side="bottom">
+      <button
+        onClick={onClick}
+        className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+      >
+        {children}
+      </button>
+    </Hint>
   )
 }
 

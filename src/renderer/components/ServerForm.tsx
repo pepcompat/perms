@@ -31,6 +31,7 @@ import { Input } from './ui/input'
 import { Textarea } from './ui/textarea'
 import { Label } from './ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { useT } from '../lib/i18n'
 
@@ -222,9 +223,11 @@ export default function ServerForm({
                   />
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" title={t("เลือก key ในเครื่อง")}>
-                        <KeyRound className="size-4" />
-                      </Button>
+                      <Hint label={t("เลือก key ในเครื่อง")}>
+                        <Button variant="outline" size="icon">
+                          <KeyRound className="size-4" />
+                        </Button>
+                      </Hint>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end" className="max-h-72 min-w-[17rem] overflow-y-auto">
                       <DropdownMenuLabel>{t("SSH keys ใน ~/.ssh")}</DropdownMenuLabel>
@@ -279,9 +282,11 @@ export default function ServerForm({
               {existingGroups.length > 0 && (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon" title={t("เลือก group ที่มี")}>
-                      <ChevronDown className="size-4" />
-                    </Button>
+                    <Hint label={t("เลือก group ที่มี")}>
+                      <Button variant="outline" size="icon">
+                        <ChevronDown className="size-4" />
+                      </Button>
+                    </Hint>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="max-h-60 min-w-[12rem] overflow-y-auto">
                     <DropdownMenuLabel>{t("Group ที่มีอยู่")}</DropdownMenuLabel>

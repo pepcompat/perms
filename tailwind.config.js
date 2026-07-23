@@ -75,6 +75,11 @@ export default {
           from: { opacity: '0', transform: 'translateY(6px)' },
           to: { opacity: '1', transform: 'translateY(0)' }
         },
+        // tooltip: ผุดขึ้นจากจุดที่ชี้ (Radix ตั้ง transform-origin ให้ตามด้านที่วาง)
+        'tooltip-in': {
+          from: { opacity: '0', transform: 'scale(0.94)' },
+          to: { opacity: '1', transform: 'scale(1)' }
+        },
         // สำหรับ dialog ที่จัดกึ่งกลางด้วย translate(-50%,-50%) — ต้องคง offset ไว้
         'dialog-in': {
           from: { opacity: '0', transform: 'translate(-50%, -50%) scale(0.96)' },
@@ -86,7 +91,8 @@ export default {
         'accordion-up': 'accordion-up 0.2s ease-out',
         'fade-in': 'fade-in 0.15s ease-out',
         'slide-up': 'slide-up 0.18s ease-out',
-        'dialog-in': 'dialog-in 0.18s ease-out'
+        'dialog-in': 'dialog-in 0.18s ease-out',
+        'tooltip-in': 'tooltip-in 0.12s cubic-bezier(0.16, 1, 0.3, 1)'
       }
     }
   },

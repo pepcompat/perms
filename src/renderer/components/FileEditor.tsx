@@ -17,6 +17,7 @@ import type { FileSnapshotMeta } from '@shared/types'
 import { Dialog, DialogContent } from './ui/dialog'
 import { Button } from './ui/button'
 import DiffView from './DiffView'
+import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { useT } from '../lib/i18n'
 import { useTabs } from '../store/useTabs'
@@ -218,7 +219,9 @@ export default function FileEditor({
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 truncate text-sm font-medium">
               {name}
-              {dirty && <span className="size-1.5 shrink-0 rounded-full bg-[hsl(var(--warning))]" title={t("ยังไม่บันทึก")} />}
+              {dirty && <Hint label={t("ยังไม่บันทึก")}>
+                          <span className="size-1.5 shrink-0 rounded-full bg-[hsl(var(--warning))]" />
+                        </Hint>}
             </div>
             <div className="truncate font-mono text-[11px] text-muted-foreground">{path}</div>
           </div>
@@ -227,16 +230,17 @@ export default function FileEditor({
               <Check className="size-3.5" /> {t("บันทึกแล้ว")}
             </span>
           )}
-          <Button
-            size="sm"
-            variant="ghost"
-            onClick={() => void openHistory()}
-            disabled={loading || !!loadError}
-            title={t('ประวัติเวอร์ชัน')}
-          >
-            <History className="size-3.5" />
-            {t('ประวัติ')}
-          </Button>
+          <Hint label={t('ประวัติเวอร์ชัน')}>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => void openHistory()}
+              disabled={loading || !!loadError}
+            >
+              <History className="size-3.5" />
+              {t('ประวัติ')}
+            </Button>
+          </Hint>
           <Button size="sm" onClick={() => void doSave()} disabled={saving || loading || !!loadError || !dirty}>
             {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Save className="size-3.5" />}
             {t("บันทึก")}

@@ -28,7 +28,8 @@ import type {
   TunnelInfo,
   SystemdUnit,
   JournalLine,
-  KnownHostRecord
+  KnownHostRecord,
+  LiveSession
 } from '../shared/types'
 import type { TransferItem } from '../shared/transfer-queue'
 import type { GuardPolicy } from '../shared/ai-guard'
@@ -67,6 +68,10 @@ const api = {
     resize: (id: string, cols: number, rows: number): void =>
       ipcRenderer.send(IPC.terminalResize, id, cols, rows),
     close: (id: string): void => ipcRenderer.send(IPC.terminalClose, id),
+    /** session ที่ยังเปิดอยู่ใน main — ใช้สร้าง tab กลับหลัง refresh */
+    list: (): Promise<LiveSession[]> => ipcRenderer.invoke(IPC.terminalList),
+    /** output ล่าสุดของ session (เล่นซ้ำตอนต่อกลับ) */
+    replay: (id: string): Promise<string> => ipcRenderer.invoke(IPC.terminalReplay, id),
     onData: (id: string, cb: (data: string) => void): (() => void) => {
       const ch = IPC.terminalDataPrefix + id
       const listener = (_e: unknown, data: string): void => cb(data)

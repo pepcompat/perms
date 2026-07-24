@@ -25,6 +25,7 @@ import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { redactSecrets } from '@shared/redact'
 import { rankSuggestions, type CommandStat } from '@shared/suggest'
+import { dedupeLive } from '@shared/scrollback'
 import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import SftpBrowser from './SftpBrowser'
@@ -310,8 +311,23 @@ export default function TerminalView({
     const cursorDisp = term.onCursorMove(() => {
       if (suggRef.current) updateGhostPos()
     })
+    // เล่น output ที่ค้างอยู่ใน main กลับมาก่อน (หลัง refresh จอจะได้ไม่ว่างเปล่า)
+    // ระหว่างรอ buffer ให้พัก output สดไว้ในคิว — ไม่งั้นของใหม่จะไปโผล่ก่อนของเก่า
+    const pending: string[] = []
+    let replayed = false
     const offData = window.api.terminal.onData(sessionId, (d) => {
-      if (!disposedRef.current) term.write(d)
+      if (disposedRef.current) return
+      if (replayed) term.write(d)
+      else pending.push(d)
+    })
+    void window.api.terminal.replay(sessionId).then((buf) => {
+      if (disposedRef.current) return
+      if (buf) term.write(buf)
+      // output ที่เกิดพอดีช่วงรอ จะติดมาทั้งใน buffer และในคิว — ตัดส่วนซ้ำออก
+      const rest = buf ? dedupeLive(buf, pending.join('')) : pending.join('')
+      if (rest) term.write(rest)
+      pending.length = 0
+      replayed = true
     })
     const offExit = window.api.terminal.onExit(sessionId, () => {
       if (!disposedRef.current)

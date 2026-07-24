@@ -24,6 +24,7 @@ import { useT } from './lib/i18n'
 export default function App(): JSX.Element {
   const t = useT()
   const { tabs, activeId } = useTabs()
+  const restoreTabs = useTabs((s) => s.restoreTabs)
   const { refresh } = useSettings()
   const [showSettings, setShowSettings] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
@@ -38,6 +39,22 @@ export default function App(): JSX.Element {
   useEffect(() => {
     void refresh()
   }, [refresh])
+
+  // session อยู่ใน main process ไม่ได้ตายไปกับหน้าจอ — พอ renderer โหลดใหม่
+  // (กด refresh หรือ UI แครช) ให้ถามกลับว่ามีอะไรเปิดค้างอยู่แล้วสร้าง tab คืน
+  useEffect(() => {
+    void window.api.terminal.list().then((live) => {
+      if (!live.length) return
+      restoreTabs(
+        live.map((s) => ({
+          sessionId: s.sessionId,
+          title: s.title,
+          kind: s.kind,
+          serverId: s.serverId
+        }))
+      )
+    })
+  }, [restoreTabs])
 
   // AI บันทึกความรู้ → toast
   useEffect(() => {

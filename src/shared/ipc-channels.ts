@@ -76,6 +76,10 @@ export const IPC = {
   terminalWrite: 'terminal:write',
   terminalResize: 'terminal:resize',
   terminalClose: 'terminal:close',
+  /** session ที่ยังเปิดอยู่ (ใช้สร้าง tab กลับหลัง refresh) */
+  terminalList: 'terminal:list',
+  /** output ล่าสุดของ session — เล่นซ้ำตอนต่อกลับ */
+  terminalReplay: 'terminal:replay',
   /** event main→renderer: ต่อท้ายด้วย sessionId -> `terminal:data:<id>` */
   terminalDataPrefix: 'terminal:data:',
   /** event main→renderer: `terminal:exit:<id>` */

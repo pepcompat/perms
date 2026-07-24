@@ -255,6 +255,15 @@ export interface HostKeyPrompt {
   previousKeyType: string | null
 }
 
+/** session ที่ยังเปิดอยู่จริงใน main — ใช้สร้าง tab กลับหลัง refresh */
+export interface LiveSession {
+  sessionId: string
+  kind: SessionKind
+  title: string
+  serverId: string | null
+  openedAt: number
+}
+
 /** host key ที่เคยยอมรับไว้แล้ว */
 export interface KnownHostRecord {
   id: string

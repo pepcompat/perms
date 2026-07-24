@@ -1,7 +1,8 @@
 import { nanoid } from 'nanoid'
 import { BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
-import type { OpenSessionInput, OpenSessionResult } from '@shared/types'
+import type { OpenSessionInput, OpenSessionResult, LiveSession } from '@shared/types'
+import { appendScrollback } from '@shared/scrollback'
 import { PtySession } from './pty-session'
 import { SshSession } from './ssh-session'
 import type { TermSession } from './types'
@@ -10,10 +11,48 @@ import { createSession, endSession, recordCommand } from '../db/repos/sessions-r
 
 const sessions = new Map<string, TermSession>()
 
+/** ข้อมูลประกอบ + output ล่าสุด เก็บไว้ให้ UI ต่อกลับได้หลัง refresh */
+interface SessionMeta {
+  kind: OpenSessionResult['kind']
+  title: string
+  serverId: string | null
+  scrollback: string
+  openedAt: number
+}
+const meta = new Map<string, SessionMeta>()
+
 function broadcast(channel: string, payload: unknown): void {
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send(channel, payload)
   }
+}
+
+/**
+ * ส่ง output ให้ renderer พร้อมเก็บสำเนาไว้เล่นซ้ำ
+ * ต้องเรียกผ่านตัวนี้ทุกที่ ไม่งั้น output บางส่วนจะหายไปตอนต่อกลับ
+ */
+function emitData(id: string, data: string): void {
+  const m = meta.get(id)
+  if (m) m.scrollback = appendScrollback(m.scrollback, data)
+  broadcast(IPC.terminalDataPrefix + id, data)
+}
+
+/** session ที่ยังเปิดอยู่จริงใน main — UI ใช้สร้าง tab กลับมาหลัง refresh */
+export function listLiveSessions(): LiveSession[] {
+  return [...sessions.keys()]
+    .map((id) => {
+      const m = meta.get(id)
+      return m
+        ? { sessionId: id, kind: m.kind, title: m.title, serverId: m.serverId, openedAt: m.openedAt }
+        : null
+    })
+    .filter((s): s is LiveSession => s !== null)
+    .sort((a, b) => a.openedAt - b.openedAt)
+}
+
+/** output ล่าสุดของ session (ใช้ตอน renderer ต่อกลับ) */
+export function replaySession(id: string): string {
+  return meta.get(id)?.scrollback ?? ''
 }
 
 export async function openSession(input: OpenSessionInput): Promise<OpenSessionResult> {
@@ -33,12 +72,15 @@ export async function openSession(input: OpenSessionInput): Promise<OpenSessionR
     term = new PtySession(id, input.cols, input.rows, input.shell)
   }
 
+  meta.set(id, { kind: term.kind, title, serverId, scrollback: '', openedAt: Date.now() })
+
   // ผูก event ส่งข้อมูลกลับ renderer
-  term.onData((data) => broadcast(IPC.terminalDataPrefix + id, data))
+  term.onData((data) => emitData(id, data))
   term.onExit((code) => {
     broadcast(IPC.terminalExitPrefix + id, code)
     endSession(id, code === 0 || code === null ? 'closed' : 'error')
     sessions.delete(id)
+    meta.delete(id)
   })
 
   // สร้าง row ใน DB ด้วย id เดียวกับ terminal session (กัน FK พังตอน recordCommand)
@@ -60,6 +102,7 @@ export function closeSession(id: string): void {
   if (s) {
     s.dispose()
     sessions.delete(id)
+    meta.delete(id)
     endSession(id, 'closed')
   }
 }
@@ -77,9 +120,9 @@ export async function execInSession(
   const s = sessions.get(id)
   if (!s) throw new Error('Session not found or not active')
   // echo คำสั่งให้ user เห็นใน terminal
-  broadcast(IPC.terminalDataPrefix + id, `\r\n\x1b[36m$ ${command}\x1b[0m\r\n`)
+  emitData(id, `\r\n\x1b[36m$ ${command}\x1b[0m\r\n`)
   const result = await s.exec(command)
-  broadcast(IPC.terminalDataPrefix + id, result.output.replace(/\n/g, '\r\n'))
+  emitData(id, result.output.replace(/\n/g, '\r\n'))
   const preview = result.output.slice(0, 2000)
   recordCommand(id, command, source, preview, result.exitCode)
   return result

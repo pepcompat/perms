@@ -47,7 +47,9 @@ import {
   openSession,
   writeSession,
   resizeSession,
-  closeSession
+  closeSession,
+  listLiveSessions,
+  replaySession
 } from '../terminal/session-manager'
 import {
   sftpHome,
@@ -293,6 +295,8 @@ export function registerIpc(): void {
 
   // ---- terminal ----
   ipcMain.handle(IPC.terminalOpen, (_e, input: OpenSessionInput) => openSession(input))
+  ipcMain.handle(IPC.terminalList, () => listLiveSessions())
+  ipcMain.handle(IPC.terminalReplay, (_e, id: string) => replaySession(id))
   ipcMain.on(IPC.terminalWrite, (_e, id: string, data: string) => writeSession(id, data))
   ipcMain.on(IPC.terminalResize, (_e, id: string, cols: number, rows: number) =>
     resizeSession(id, cols, rows)

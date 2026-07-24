@@ -23,6 +23,31 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.3',
+    title: 'Perms ฟรีสำหรับทุกคน ☕',
+    titleEn: 'Perms is free for everyone ☕',
+    items: [
+      {
+        icon: '💛',
+        text: 'Perms เปิดให้ใช้งานฟรี และจะมีอัปเดตปรับปรุง เพิ่มฟีเจอร์ใหม่ ๆ ให้ต่อเนื่องเสมอ',
+        textEn:
+          'Perms is free to use, and will keep receiving improvements and new features over time'
+      },
+      {
+        icon: '☕',
+        text: 'เพิ่มปุ่ม “เลี้ยงกาแฟ” มุมขวาบน — ถ้า Perms มีประโยชน์กับคุณ จะสนับสนุนเป็นกำลังใจก็ยินดีมาก แต่ไม่จำเป็นเลย ทุกฟีเจอร์ใช้ได้ครบเหมือนเดิม',
+        textEn:
+          'Added a “Buy me a coffee” button in the top-right — if Perms is useful to you, your support is a lovely encouragement, but it is entirely optional and every feature stays fully available'
+      },
+      {
+        icon: '🙏',
+        text: 'ขอบคุณทุกคนที่เลือกใช้ Perms และช่วยบอกต่อ — เป็นแรงผลักดันให้พัฒนาต่อไปครับ',
+        textEn:
+          'Thank you to everyone using Perms and spreading the word — it truly motivates continued development'
+      }
+    ]
+  },
+  {
     version: '1.7.2',
     title: 'กด refresh แล้วงานไม่หาย + ปรับหน้าจอให้ยืดหยุ่นขึ้น',
     titleEn: 'Refresh no longer loses your work + a more flexible layout',

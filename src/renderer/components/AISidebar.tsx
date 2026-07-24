@@ -27,6 +27,7 @@ import { useAiDraft } from '../store/useAiDraft'
 import { useAiChats, EMPTY_THREAD } from '../store/useAiChats'
 import { MODEL_PRESETS } from '../lib/models'
 import Markdown from './Markdown'
+import SupportButton from './SupportButton'
 import { Button } from './ui/button'
 import { Textarea } from './ui/textarea'
 import {
@@ -127,7 +128,9 @@ export default function AISidebar({
   if (!open) {
     return (
       <div className="flex h-full w-10 shrink-0 flex-col items-center border-l border-border bg-sidebar">
-        <div className="titlebar h-titlebar w-full shrink-0" />
+        <div className="titlebar flex h-titlebar w-full shrink-0 items-center justify-center">
+          <SupportButton compact />
+        </div>
         <Hint label={t('เปิดแผง AI Agent')} side="left">
           <button
             onClick={onToggle}
@@ -150,7 +153,8 @@ export default function AISidebar({
           <Bot className="size-4 text-primary" />
         </div>
         <span className="text-sm font-semibold tracking-tight">AI Agent</span>
-        <div className="ml-auto flex items-center gap-0.5">
+        <div className="no-drag ml-auto flex items-center gap-1.5">
+          <SupportButton />
           {items.length > 0 && (
             <Hint label={t("ล้างแชท")}>
               <button

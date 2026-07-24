@@ -7,6 +7,9 @@ export type Lang = 'th' | 'en'
  * ข้อดี: UI ไทยเดิมไม่เปลี่ยน และถ้าคำไหนยังไม่มีคำแปล จะ fallback เป็นไทยอัตโนมัติ
  */
 const EN: Record<string, string> = {
+  'เลี้ยงกาแฟ': 'Buy me a coffee',
+  'ถ้าชอบ Perms เลี้ยงกาแฟกันได้นะ ☕': 'If Perms helps you, buy me a coffee ☕',
+  'สแกน หรือคลิกปุ่มเพื่อเปิดลิงก์': 'Scan, or click the button to open the link',
   // --- v1.8.0: ย่อ/ขยายแถบ, progress ในรายการไฟล์, เลือกทั้งหมด ---
   'เปิดแผง AI Agent': 'Show AI Agent panel',
   'ซ่อนแผง AI Agent': 'Hide AI Agent panel',

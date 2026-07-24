@@ -11,7 +11,9 @@ import {
   Loader2,
   ChevronRight,
   SquareStack,
-  GripVertical
+  GripVertical,
+  PanelLeftOpen,
+  PanelLeftClose
 } from 'lucide-react'
 import type { ServerRecord } from '@shared/types'
 import { useServers } from '../store/useServers'
@@ -25,6 +27,8 @@ import ServerForm from './ServerForm'
 
 export default function ServerList({
   width,
+  collapsed: railCollapsed,
+  onToggleCollapsed,
   version,
   onOpenSettings,
   onOpenHistory,
@@ -32,6 +36,9 @@ export default function ServerList({
   onOpenChangelog
 }: {
   width: number
+  /** ย่อเหลือแถบไอคอน */
+  collapsed: boolean
+  onToggleCollapsed: () => void
   version?: string
   onOpenSettings: () => void
   onOpenHistory: () => void
@@ -165,6 +172,99 @@ export default function ServerList({
     persistOrder(next)
   }
 
+  // ---- โหมดย่อ: เหลือเฉพาะไอคอน ----
+  if (railCollapsed) {
+    return (
+      <div className="flex h-full shrink-0 flex-col items-center bg-sidebar" style={{ width }}>
+        <div className="titlebar mac-inset flex h-titlebar w-full shrink-0 items-center justify-center border-b border-border">
+          <Hint label={t('ขยายแถบ server')} side="right">
+            <button onClick={onToggleCollapsed} className="no-drag rounded-md p-1">
+              <img src={logoUrl} alt="Perms" className="size-6 rounded-md shadow-sm" />
+            </button>
+          </Hint>
+        </div>
+
+        <div className="flex w-full flex-1 flex-col items-center gap-1 overflow-y-auto py-2">
+          <Hint label={t('Local terminal')} side="right">
+            <Button variant="ghost" size="icon-sm" onClick={openLocal}>
+              <MonitorDot className="size-4" />
+            </Button>
+          </Hint>
+          <Hint label={t('เพิ่ม server')} side="right">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              onClick={() => {
+                setEditing(null)
+                setFormOpen(true)
+              }}
+            >
+              <Plus className="size-4" />
+            </Button>
+          </Hint>
+
+          <div className="my-1 h-px w-6 bg-border" />
+
+          {/* ย่อแล้วไม่มีที่โชว์ชื่อ — ใช้อักษรแรกแทน ชื่อเต็มอยู่ใน tooltip */}
+          {servers.map((s) => (
+            <Hint
+              key={s.id}
+              side="right"
+              label={
+                <span className="flex flex-col">
+                  <span>{s.name}</span>
+                  <span className="text-[11px] opacity-70">
+                    {s.username}@{s.host}
+                  </span>
+                </span>
+              }
+            >
+              <button
+                onClick={() => onCardClick(s)}
+                onDoubleClick={() => onCardDblClick(s)}
+                className="relative flex size-8 shrink-0 items-center justify-center rounded-lg bg-secondary/60 text-xs font-semibold uppercase text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                {connecting === s.id ? (
+                  <Loader2 className="size-3.5 animate-spin text-primary" />
+                ) : (
+                  s.name.slice(0, 2)
+                )}
+                {isConnected(s.id) && (
+                  <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[hsl(var(--success))] ring-2 ring-sidebar" />
+                )}
+              </button>
+            </Hint>
+          ))}
+        </div>
+
+        <div className="flex w-full flex-col items-center gap-0.5 border-t border-border py-2">
+          <Hint label={t('Session history')} side="right">
+            <Button variant="ghost" size="icon-sm" onClick={onOpenHistory}>
+              <History className="size-4" />
+            </Button>
+          </Hint>
+          <Hint label={t('Runbooks')} side="right">
+            <Button variant="ghost" size="icon-sm" onClick={onOpenRunbooks}>
+              <BookText className="size-4" />
+            </Button>
+          </Hint>
+          <Hint label={t('Settings')} side="right">
+            <Button variant="ghost" size="icon-sm" onClick={onOpenSettings}>
+              <SettingsIcon className="size-4" />
+            </Button>
+          </Hint>
+          <Hint label={t('ขยายแถบ server')} side="right">
+            <Button variant="ghost" size="icon-sm" onClick={onToggleCollapsed}>
+              <PanelLeftOpen className="size-4" />
+            </Button>
+          </Hint>
+        </div>
+
+        {formOpen && <ServerForm editing={editing} open={formOpen} onClose={() => setFormOpen(false)} />}
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full shrink-0 flex-col bg-sidebar" style={{ width }}>
       <div className="titlebar mac-inset flex h-titlebar shrink-0 items-center justify-between gap-1 border-b border-border pl-3 pr-2">
@@ -196,6 +296,11 @@ export default function ServerList({
             </TooltipTrigger>
             <TooltipContent>{t('เพิ่ม server')}</TooltipContent>
           </Tooltip>
+          <Hint label={t('ย่อแถบ server')} side="bottom">
+            <Button variant="ghost" size="icon-sm" onClick={onToggleCollapsed}>
+              <PanelLeftClose className="size-4" />
+            </Button>
+          </Hint>
         </div>
       </div>
 

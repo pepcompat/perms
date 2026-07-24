@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Folder,
   FileText,
@@ -14,9 +14,11 @@ import {
   FolderSymlink,
   Pencil,
   FileArchive,
+  Copy,
   X
 } from 'lucide-react'
 import type { SftpEntry, SftpProgress } from '@shared/types'
+import type { TransferItem } from '@shared/transfer-queue'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { Button } from './ui/button'
 import { Hint } from './ui/tooltip'
@@ -24,6 +26,7 @@ import { cn } from '../lib/utils'
 import { humanSize, joinRemote, parentPath, isArchive } from '../lib/format'
 import FileEditor from './FileEditor'
 import { useT } from '../lib/i18n'
+import { toast } from '../store/useToast'
 
 export default function SftpBrowser({
   sessionId,
@@ -45,6 +48,8 @@ export default function SftpBrowser({
   const [transfers, setTransfers] = useState<Record<string, SftpProgress>>({})
   const [editing, setEditing] = useState<{ path: string; name: string } | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [queue, setQueue] = useState<TransferItem[]>([])
+  const notifiedRef = useRef<Set<string>>(new Set())
 
   const toggleSel = (name: string): void =>
     setSelected((prev) => {
@@ -54,6 +59,16 @@ export default function SftpBrowser({
       return next
     })
   const clearSel = (): void => setSelected(new Set())
+  const allSelected = entries.length > 0 && selected.size === entries.length
+  const someSelected = selected.size > 0 && !allSelected
+  const toggleSelAll = (): void =>
+    setSelected(allSelected ? new Set() : new Set(entries.map((e) => e.name)))
+
+  const copyPath = (): void => {
+    if (!cwd) return
+    void navigator.clipboard.writeText(cwd)
+    toast(t('คัดลอก path แล้ว'))
+  }
 
   const load = async (path: string): Promise<void> => {
     setLoading(true)
@@ -96,6 +111,38 @@ export default function SftpBrowser({
       }
     })
   }, [])
+
+  // คิวโอนไฟล์ (ดาวน์โหลด/อัปโหลดไฟล์เดี่ยว) — เอามาโชว์ progress ใต้ชื่อไฟล์ในรายการ
+  useEffect(() => {
+    void window.api.transfers.list().then(setQueue)
+    return window.api.transfers.onUpdate(setQueue)
+  }, [])
+
+  // แจ้งเตือนตอนโอนเสร็จ/พลาด — จำ id ที่แจ้งไปแล้ว กัน toast ซ้ำทุกครั้งที่คิวอัปเดต
+  useEffect(() => {
+    for (const it of queue) {
+      if (it.status !== 'done' && it.status !== 'failed') continue
+      if (notifiedRef.current.has(it.id)) continue
+      notifiedRef.current.add(it.id)
+      const verb = it.kind === 'download' ? t('ดาวน์โหลด') : t('อัปโหลด')
+      if (it.status === 'done') {
+        const verified = it.verified === 'ok' ? ` · ${t('ตรวจไฟล์ตรงกัน')}` : ''
+        toast(`${verb} ${it.name} ${t('เสร็จแล้ว')}${verified}`)
+        if (it.kind === 'upload') void load(cwd)
+      } else {
+        toast(`${verb} ${it.name} ${t('ไม่สำเร็จ')}: ${it.error ?? ''}`, 'error')
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queue])
+
+  /** งานโอนที่กำลังทำอยู่ของไฟล์นี้ (จับคู่ด้วย path เต็ม) */
+  const transferOf = (name: string): TransferItem | undefined =>
+    queue.find(
+      (q) =>
+        q.remotePath === joinRemote(cwd, name) &&
+        (q.status === 'running' || q.status === 'queued')
+    )
 
   const enter = (e: SftpEntry): void => {
     if (e.type === 'dir') void load(joinRemote(cwd, e.name))
@@ -230,8 +277,17 @@ export default function SftpBrowser({
               <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
             </Button>
           </Hint>
-          <div className="mx-1 min-w-0 flex-1 truncate rounded-md border border-border bg-background/50 px-2.5 py-1.5 font-mono text-xs text-muted-foreground">
-            {cwd || '…'}
+          <div className="mx-1 flex min-w-0 flex-1 items-center gap-1 rounded-md border border-border bg-background/50 pl-2.5 pr-1 py-1 font-mono text-xs text-muted-foreground">
+            <span className="min-w-0 flex-1 truncate">{cwd || '…'}</span>
+            <Hint label={t('คัดลอก path')}>
+              <button
+                onClick={copyPath}
+                disabled={!cwd}
+                className="shrink-0 rounded p-1 transition-colors hover:bg-accent hover:text-foreground disabled:opacity-40"
+              >
+                <Copy className="size-3" />
+              </button>
+            </Hint>
           </div>
           <Hint label={t("สร้างโฟลเดอร์")}>
             <Button variant="outline" size="sm" onClick={() => void mkdir()}>
@@ -265,6 +321,32 @@ export default function SftpBrowser({
                 </Button>
               </Hint>
             </div>
+          </div>
+        )}
+
+        {/* หัวตาราง — เลือกทั้งหมดในโฟลเดอร์นี้ทีเดียว (ใช้ zip/ดาวน์โหลดทั้ง dir) */}
+        {entries.length > 0 && !error && (
+          <div className="flex items-center gap-2.5 border-b border-border/60 px-2 pb-1.5">
+            <input
+              type="checkbox"
+              checked={allSelected}
+              ref={(el) => {
+                // ครึ่ง ๆ กลาง ๆ — ตั้งได้เฉพาะผ่าน DOM ไม่มี prop ให้ใช้
+                if (el) el.indeterminate = someSelected
+              }}
+              onChange={toggleSelAll}
+              className="size-3.5 shrink-0 accent-[hsl(var(--primary))]"
+              aria-label={t('เลือกทั้งหมด')}
+            />
+            <button
+              onClick={toggleSelAll}
+              className="text-[11px] text-muted-foreground transition-colors hover:text-foreground"
+            >
+              {allSelected ? t('ยกเลิกการเลือก') : t('เลือกทั้งหมด')}
+            </button>
+            <span className="ml-auto text-[11px] text-muted-foreground">
+              {entries.length} {t('รายการ')}
+            </span>
           </div>
         )}
 
@@ -302,14 +384,42 @@ export default function SftpBrowser({
                     <FileText className="size-4 text-muted-foreground" />
                   )}
                 </span>
-                <Hint label={e.name}>
-                  <button
-                    onClick={() => enter(e)}
-                    className="min-w-0 flex-1 truncate text-left text-sm"
-                  >
-                    {e.name}
-                  </button>
-                </Hint>
+                {(() => {
+                  const tr = transferOf(e.name)
+                  const pct =
+                    tr && tr.size > 0 ? Math.min(100, Math.round((tr.transferred / tr.size) * 100)) : 0
+                  return (
+                    <div className="min-w-0 flex-1">
+                      <Hint label={e.name}>
+                        <button
+                          onClick={() => enter(e)}
+                          className="block w-full truncate text-left text-sm"
+                        >
+                          {e.name}
+                        </button>
+                      </Hint>
+                      {/* กำลังโอนอยู่ → แถบความคืบหน้าใต้ชื่อไฟล์ */}
+                      {tr && (
+                        <div className="mt-1 flex items-center gap-1.5">
+                          <div className="h-1 flex-1 overflow-hidden rounded-full bg-secondary">
+                            <div
+                              className={cn(
+                                'h-full rounded-full transition-all',
+                                tr.status === 'running' ? 'bg-primary' : 'bg-muted-foreground/40'
+                              )}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">
+                            {tr.status === 'queued'
+                              ? t('รอคิว')
+                              : `${humanSize(tr.transferred)} / ${humanSize(tr.size)} · ${pct}%`}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })()}
                 <span className="w-20 shrink-0 text-right text-xs text-muted-foreground">
                   {e.type === 'file' ? humanSize(e.size) : ''}
                 </span>

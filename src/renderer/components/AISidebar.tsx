@@ -17,7 +17,8 @@ import {
   Sparkles,
   ChevronDown,
   RotateCcw,
-  Globe
+  Globe,
+  PanelRightClose
 } from 'lucide-react'
 import type { AiMode, AiProvider } from '@shared/types'
 import { useSettings } from '../store/useSettings'
@@ -57,7 +58,15 @@ const MODE_LABEL: Record<AiMode, string> = {
   agentic: 'Agentic'
 }
 
-export default function AISidebar({ width }: { width: number }): JSX.Element {
+export default function AISidebar({
+  width,
+  open,
+  onToggle
+}: {
+  width: number
+  open: boolean
+  onToggle: () => void
+}): JSX.Element {
   const t = useT()
   const { settings } = useSettings()
   const { activeId } = useTabs()
@@ -114,6 +123,26 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
   const respondApproval = (approved: boolean): void => approveAction(chatKey, approved)
   const cancel = (): void => cancelAction(chatKey)
 
+  // ปิดอยู่ → เหลือแถบบางให้กดเปิดกลับ (ไม่หายไปเลย จะได้ยังหาเจอ)
+  if (!open) {
+    return (
+      <div className="flex h-full w-10 shrink-0 flex-col items-center border-l border-border bg-sidebar">
+        <div className="titlebar h-titlebar w-full shrink-0" />
+        <Hint label={t('เปิดแผง AI Agent')} side="left">
+          <button
+            onClick={onToggle}
+            className="no-drag mt-1 flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-accent hover:text-primary"
+          >
+            <Bot className="size-4" />
+          </button>
+        </Hint>
+        {running && (
+          <span className="mt-2 size-1.5 animate-pulse rounded-full bg-primary" title="AI" />
+        )}
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-full shrink-0 flex-col border-l border-border bg-sidebar" style={{ width }}>
       <div className="titlebar flex h-titlebar shrink-0 items-center gap-2 border-b border-border px-3">
@@ -121,16 +150,26 @@ export default function AISidebar({ width }: { width: number }): JSX.Element {
           <Bot className="size-4 text-primary" />
         </div>
         <span className="text-sm font-semibold tracking-tight">AI Agent</span>
-        {items.length > 0 && (
-          <Hint label={t("ล้างแชท")}>
+        <div className="ml-auto flex items-center gap-0.5">
+          {items.length > 0 && (
+            <Hint label={t("ล้างแชท")}>
+              <button
+                onClick={() => clearChat(chatKey)}
+                className="no-drag flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              >
+                <RotateCcw className="size-3.5" />
+              </button>
+            </Hint>
+          )}
+          <Hint label={t('ซ่อนแผง AI Agent')} side="left">
             <button
-              onClick={() => clearChat(chatKey)}
-              className="no-drag ml-auto flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              onClick={onToggle}
+              className="no-drag flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
             >
-              <RotateCcw className="size-3.5" />
+              <PanelRightClose className="size-4" />
             </button>
           </Hint>
-        )}
+        </div>
       </div>
 
       {!configured && (

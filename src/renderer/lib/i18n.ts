@@ -7,6 +7,17 @@ export type Lang = 'th' | 'en'
  * ข้อดี: UI ไทยเดิมไม่เปลี่ยน และถ้าคำไหนยังไม่มีคำแปล จะ fallback เป็นไทยอัตโนมัติ
  */
 const EN: Record<string, string> = {
+  // --- v1.8.0: ย่อ/ขยายแถบ, progress ในรายการไฟล์, เลือกทั้งหมด ---
+  'เปิดแผง AI Agent': 'Show AI Agent panel',
+  'ซ่อนแผง AI Agent': 'Hide AI Agent panel',
+  'ทำงานอยู่': 'running',
+  'ขยายแถบ server': 'Expand server bar',
+  'ย่อแถบ server': 'Collapse server bar',
+  'คัดลอก path แล้ว': 'Path copied',
+  'คัดลอก path': 'Copy path',
+  'ตรวจไฟล์ตรงกัน': 'checksum verified',
+  'เสร็จแล้ว': 'finished',
+  'ไม่สำเร็จ': 'failed',
   'เปิดอยู่': 'open',
   // --- v1.7.0: snapshot/diff, host key, guard, คิวโอนไฟล์, tunnel, systemd ---
   '(เว้นว่างถ้าไม่เปลี่ยน)': '(leave blank to keep unchanged)',

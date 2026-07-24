@@ -23,6 +23,53 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.2',
+    title: 'กด refresh แล้วงานไม่หาย + ปรับหน้าจอให้ยืดหยุ่นขึ้น',
+    titleEn: 'Refresh no longer loses your work + a more flexible layout',
+    items: [
+      {
+        icon: '🔄',
+        text: 'กด refresh หรือหน้าจอสะดุด แล้ว terminal ที่เปิดไว้ไม่หายอีกต่อไป — กลับมาครบทั้ง tab และข้อความในจอ',
+        textEn:
+          'Refreshing (or a hiccup in the interface) no longer wipes your open terminals — tabs and their on-screen output come back'
+      },
+      {
+        icon: '🚀',
+        text: 'เปิดโปรแกรมแล้วได้ local terminal ทันที ไม่ต้องกดเปิดเอง',
+        textEn: 'A local terminal is ready the moment the app opens'
+      },
+      {
+        icon: '📊',
+        text: 'ดาวน์โหลด/อัปโหลดไฟล์ เห็นความคืบหน้าใต้ชื่อไฟล์นั้นเลย และมีแจ้งเตือนเมื่อเสร็จ',
+        textEn:
+          'File transfers show progress right under the file itself, with a notification when they finish'
+      },
+      {
+        icon: '↔️',
+        text: 'ย่อแถบ server เหลือแค่ไอคอน และปิด/เปิดแผง AI Agent ได้ — จำไว้ให้ว่าตั้งไว้แบบไหน',
+        textEn:
+          'Collapse the server bar to icons and hide or show the AI Agent panel — your choice is remembered'
+      },
+      {
+        icon: '➡️',
+        text: 'รับคำแนะนำคำสั่งด้วยลูกศรขวาได้แล้ว นอกเหนือจาก Tab',
+        textEn: 'Accept a command suggestion with the right arrow key as well as Tab'
+      },
+      {
+        icon: '☑️',
+        text: 'ไฟล์บนเซิร์ฟเวอร์: เลือกทั้งหมดในโฟลเดอร์ทีเดียว (ใช้บีบอัด/ดาวน์โหลดทั้ง dir) และคัดลอก path ปัจจุบันได้',
+        textEn:
+          'Server files: select everything in a folder at once (to zip or download the whole directory), and copy the current path'
+      },
+      {
+        icon: '📦',
+        text: 'Docker: ย่อ compose stack ได้ ตอนย่อจะสรุปให้เห็นว่ามีกี่ตัวที่ยังทำงานอยู่',
+        textEn:
+          'Docker: collapse a compose stack — collapsed stacks still show how many containers are running'
+      }
+    ]
+  },
+  {
     version: '1.7.1',
     title: 'ปรับหน้าตาให้อ่านง่ายขึ้น',
     titleEn: 'Easier on the eyes',

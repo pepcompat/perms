@@ -17,6 +17,7 @@ import { Resizer, useResizable } from './components/Resizer'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { logoUrl } from './lib/logo'
 import { useTabs } from './store/useTabs'
+import { usePersistedFlag } from './lib/persisted'
 import { useSettings } from './store/useSettings'
 import { toast } from './store/useToast'
 import { useT } from './lib/i18n'
@@ -32,6 +33,9 @@ export default function App(): JSX.Element {
   const [appVersion, setAppVersion] = useState('')
   const [whatsNew, setWhatsNew] = useState<ChangelogEntry[]>([])
   const [changelogOpen, setChangelogOpen] = useState(false)
+  // จำไว้ว่าผู้ใช้ย่อ/ขยายแถบไหนไว้ (ข้ามการเปิดแอป)
+  const [aiOpen, setAiOpen] = usePersistedFlag('ui.aiOpen', true)
+  const [railCollapsed, setRailCollapsed] = usePersistedFlag('ui.sidebarCollapsed', false)
 
   const sidebar = useResizable('ui.sidebarWidth', 256, 180, 460, 'left')
   const ai = useResizable('ui.aiWidth', 384, 280, 640, 'right')
@@ -42,18 +46,39 @@ export default function App(): JSX.Element {
 
   // session อยู่ใน main process ไม่ได้ตายไปกับหน้าจอ — พอ renderer โหลดใหม่
   // (กด refresh หรือ UI แครช) ให้ถามกลับว่ามีอะไรเปิดค้างอยู่แล้วสร้าง tab คืน
+  // ถ้าไม่มีอะไรค้างเลย = เปิดแอปใหม่จริง ๆ → เปิด local terminal ให้พร้อมใช้เลย
   useEffect(() => {
-    void window.api.terminal.list().then((live) => {
-      if (!live.length) return
-      restoreTabs(
-        live.map((s) => ({
-          sessionId: s.sessionId,
-          title: s.title,
-          kind: s.kind,
-          serverId: s.serverId
-        }))
-      )
+    let cancelled = false
+    void window.api.terminal.list().then(async (live) => {
+      if (cancelled) return
+      if (live.length) {
+        restoreTabs(
+          live.map((s) => ({
+            sessionId: s.sessionId,
+            title: s.title,
+            kind: s.kind,
+            serverId: s.serverId
+          }))
+        )
+        return
+      }
+      try {
+        const res = await window.api.terminal.open({ cols: 80, rows: 24 })
+        if (!cancelled) {
+          useTabs.getState().addTab({
+            sessionId: res.sessionId,
+            title: res.title,
+            kind: res.kind,
+            serverId: null
+          })
+        }
+      } catch {
+        /* เปิด shell ไม่ได้ (เช่นเครื่องตั้งค่าแปลก) — ปล่อยให้เป็นหน้าว่างตามเดิม */
+      }
     })
+    return () => {
+      cancelled = true
+    }
   }, [restoreTabs])
 
   // AI บันทึกความรู้ → toast
@@ -76,7 +101,9 @@ export default function App(): JSX.Element {
     <TooltipProvider delayDuration={120} skipDelayDuration={400}>
       <div className="flex h-full w-full bg-background text-foreground">
         <ServerList
-          width={sidebar.width}
+          width={railCollapsed ? 56 : sidebar.width}
+          collapsed={railCollapsed}
+          onToggleCollapsed={() => setRailCollapsed((v) => !v)}
           version={appVersion}
           onOpenSettings={() => setShowSettings(true)}
           onOpenHistory={() => setShowHistory(true)}
@@ -84,7 +111,9 @@ export default function App(): JSX.Element {
           onOpenChangelog={() => setChangelogOpen(true)}
         />
 
-        <Resizer onMouseDown={sidebar.startDrag} active={sidebar.dragging} />
+        {!railCollapsed && (
+          <Resizer onMouseDown={sidebar.startDrag} active={sidebar.dragging} />
+        )}
 
         <div className="flex min-w-0 flex-1 flex-col">
           <TabBar />
@@ -109,9 +138,13 @@ export default function App(): JSX.Element {
           </div>
         </div>
 
-        <Resizer onMouseDown={ai.startDrag} active={ai.dragging} />
+        {aiOpen && <Resizer onMouseDown={ai.startDrag} active={ai.dragging} />}
 
-        <AISidebar width={ai.width} />
+        <AISidebar
+          width={ai.width}
+          open={aiOpen}
+          onToggle={() => setAiOpen((v) => !v)}
+        />
 
         {showSettings && <Settings open onClose={() => setShowSettings(false)} />}
         {showHistory && <SessionHistory open onClose={() => setShowHistory(false)} />}

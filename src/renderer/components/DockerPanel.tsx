@@ -9,7 +9,8 @@ import {
   Loader2,
   ArrowLeft,
   SquareTerminal,
-  Boxes
+  Boxes,
+  ChevronRight
 } from 'lucide-react'
 import type { DockerContainer } from '@shared/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
@@ -19,6 +20,7 @@ import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import DockerIcon from './DockerIcon'
 import { useT } from '../lib/i18n'
+import { usePersistedSet } from '../lib/persisted'
 
 const TONE: Record<string, string> = {
   primary: 'text-primary hover:bg-primary/10',
@@ -55,6 +57,8 @@ export default function DockerPanel({
   const [busyId, setBusyId] = useState<string | null>(null)
   const [groupBusy, setGroupBusy] = useState<string | null>(null)
   const [logs, setLogs] = useState<{ name: string; text: string; loading: boolean } | null>(null)
+  // compose stack ไหนถูกย่อไว้ (จำข้ามการเปิดแอป)
+  const stackCollapsed = usePersistedSet('ui.dockerStacksCollapsed')
 
   const load = async (): Promise<void> => {
     setLoading(true)
@@ -217,11 +221,42 @@ export default function DockerPanel({
             {[...composeGroups.entries()].map(([project, list]) => (
               <div key={project} className="space-y-1.5">
                 <div className="flex items-center gap-2 px-0.5">
-                  <Boxes className="size-3.5 shrink-0 text-primary/70" />
-                  <span className="truncate text-xs font-semibold">{project}</span>
-                  <Badge variant="secondary" className="shrink-0">
-                    {list.length}
-                  </Badge>
+                  {/* กดหัวชุดเพื่อย่อ/ขยาย — stack ใหญ่ ๆ จะได้ไม่ยาวจนหาอะไรไม่เจอ */}
+                  <button
+                    onClick={() => stackCollapsed.toggle(project)}
+                    className="flex min-w-0 flex-1 items-center gap-2 rounded text-left transition-colors hover:text-foreground"
+                  >
+                    <ChevronRight
+                      className={cn(
+                        'size-3.5 shrink-0 text-muted-foreground transition-transform',
+                        !stackCollapsed.has(project) && 'rotate-90'
+                      )}
+                    />
+                    <Boxes className="size-3.5 shrink-0 text-primary/70" />
+                    <span className="truncate text-xs font-semibold">{project}</span>
+                    <Badge variant="secondary" className="shrink-0">
+                      {list.length}
+                    </Badge>
+                    {/* ย่ออยู่ → สรุปให้เห็นว่ามีตัวไหนไม่ทำงานไหม จะได้ไม่ต้องกางดู */}
+                    {stackCollapsed.has(project) &&
+                      (() => {
+                        const up = list.filter((c) => c.state === 'running').length
+                        return (
+                          <span
+                            className={cn(
+                              'shrink-0 text-[11px]',
+                              up === list.length
+                                ? 'text-[hsl(var(--success))]'
+                                : up === 0
+                                  ? 'text-muted-foreground'
+                                  : 'text-[hsl(var(--warning))]'
+                            )}
+                          >
+                            {up}/{list.length} {t('ทำงานอยู่')}
+                          </span>
+                        )
+                      })()}
+                  </button>
                   <div className="ml-auto flex shrink-0 items-center gap-0.5">
                     {groupBusy === project && <Loader2 className="mr-0.5 size-3 animate-spin text-primary" />}
                     <IconBtn tone="green" title={t("เริ่มทั้งชุด")} onClick={() => actGroup('start', project, list)} disabled={groupBusy === project}>
@@ -235,7 +270,9 @@ export default function DockerPanel({
                     </IconBtn>
                   </div>
                 </div>
-                <div className="space-y-1.5 border-l-2 border-border/60 pl-2">{list.map(row)}</div>
+                {!stackCollapsed.has(project) && (
+                  <div className="space-y-1.5 border-l-2 border-border/60 pl-2">{list.map(row)}</div>
+                )}
               </div>
             ))}
 

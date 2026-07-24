@@ -281,8 +281,17 @@ export default function TerminalView({
         if (e.type === 'keydown') setSearchOpen(false)
         return false
       }
-      // Tab → รับ suggestion จากประวัติ ถ้ามี (ไม่งั้นปล่อยให้ shell ทำ completion เอง)
-      if (e.key === 'Tab' && !e.shiftKey && !e.metaKey && !e.ctrlKey && !e.altKey) {
+      // Tab หรือ ลูกศรขวา → รับ suggestion จากประวัติ ถ้ามี
+      // (Tab: ถ้าไม่มี suggestion ปล่อยให้ shell ทำ completion เอง)
+      // ลูกศรขวาปลอดภัยเพราะถ้าเคยกดลูกศรมาก่อน เราจะ desync แล้วล้าง suggestion ทิ้ง
+      // แปลว่าตอนที่ suggestion ยังอยู่ เคอร์เซอร์ต้องอยู่ท้ายบรรทัดเสมอ
+      if (
+        (e.key === 'Tab' || e.key === 'ArrowRight') &&
+        !e.shiftKey &&
+        !e.metaKey &&
+        !e.ctrlKey &&
+        !e.altKey
+      ) {
         const s = suggRef.current
         if (s && trackingRef.current) {
           if (e.type === 'keydown') {
@@ -671,7 +680,7 @@ export default function TerminalView({
         </div>
       )}
 
-      {/* ghost text อินไลน์ตรงเคอร์เซอร์ (แนะนำจากประวัติ · กด Tab เพื่อรับ) */}
+      {/* ghost text อินไลน์ตรงเคอร์เซอร์ (แนะนำจากประวัติ · กด Tab หรือลูกศรขวาเพื่อรับ) */}
       {ghost && ghost.text && !searchOpen && (
         <div
           className="pointer-events-none absolute z-30 select-none whitespace-pre"
@@ -706,7 +715,7 @@ export default function TerminalView({
             className="ml-1.5 rounded bg-secondary/60 px-1 text-[9px] text-muted-foreground"
             style={{ verticalAlign: 'top', lineHeight: `${ghost.ch}px` }}
           >
-            ⇥ Tab
+            ⇥ Tab · →
           </span>
         </div>
       )}

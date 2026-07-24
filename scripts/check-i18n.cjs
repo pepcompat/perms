@@ -42,13 +42,25 @@ function dictKeys() {
   // ค่าที่มี apostrophe (เช่น "What's new") จะทำให้ regex คร่อมข้ามหลายบรรทัด
   // แล้วมองไม่เห็นคีย์ถัดไป → รายงานว่า "ยังไม่แปล" ทั้งที่แปลไปแล้ว
   const re = /^\s*(?:'([^']+)'|"([^"]+)"|([^\s:'"][^:]*?))\s*:/
+  const dupes = []
   for (const line of body.split('\n')) {
     const m = re.exec(line)
     if (!m) continue
     const k = (m[1] ?? m[2] ?? m[3] ?? '').trim()
-    if (k && THAI.test(k)) keys.add(k)
+    if (!k || !THAI.test(k)) continue
+    // คีย์ซ้ำ = คำแปลตัวหลังถูกทับเงียบ ๆ (เคยพลาดมาแล้ว 2 ครั้งตอนเติมคำเป็นชุด)
+    if (keys.has(k)) dupes.push(k)
+    keys.add(k)
   }
-  return keys
+  return { keys, dupes }
+}
+
+/**
+ * ตัดคอมเมนต์ทิ้งก่อนสแกน — ข้อความในคอมเมนต์เป็นคำอธิบายให้คนอ่านโค้ด
+ * ไม่ใช่ข้อความที่ผู้ใช้เห็น และมักมีเครื่องหมายคำพูดคร่อมจนถูกจับผิดว่าเป็น literal
+ */
+function stripComments(src) {
+  return src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1')
 }
 
 /** ดึง string literal ที่มีอักษรไทยออกจากไฟล์ (single/double quote และ template ที่ไม่มี ${}) */
@@ -86,14 +98,14 @@ function bareJsxThai(src) {
   return found
 }
 
-const keys = dictKeys()
+const { keys, dupes } = dictKeys()
 const files = walk(RENDERER).filter((f) => !isTest(f) && !SKIP.some((s) => f.endsWith(s)))
 
 const missing = new Map()
 const bare = new Map()
 
 for (const file of files) {
-  const src = fs.readFileSync(file, 'utf8')
+  const src = stripComments(fs.readFileSync(file, 'utf8'))
   const rel = path.relative(ROOT, file)
 
   for (const s of thaiLiterals(src)) {
@@ -107,6 +119,12 @@ for (const file of files) {
 }
 
 let bad = 0
+
+if (dupes.length) {
+  bad += dupes.length
+  console.error(`\n❌ คีย์ซ้ำในดิกชันนารี (${dupes.length} คำ) — ตัวหลังจะทับตัวแรกเงียบ ๆ:`)
+  for (const k of dupes) console.error(`   '${k}'`)
+}
 
 if (bare.size) {
   bad += bare.size

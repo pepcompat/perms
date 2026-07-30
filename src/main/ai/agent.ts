@@ -11,6 +11,7 @@ import { evaluateCall, commandTextOf, buildExtraArgs } from '@shared/ai-guard'
 import { getAiSettings, revealAiKey, getGuardPolicy } from '../db/repos/settings-repo'
 import { appendMessage, listMessages } from '../db/repos/ai-repo'
 import { getSession } from '../db/repos/sessions-repo'
+import { providerMeta } from '@shared/ai-providers'
 import { getServer } from '../db/repos/servers-repo'
 import { searchKnowledge, bumpUseCount } from '../db/repos/knowledge-repo'
 
@@ -62,13 +63,17 @@ function makeProvider(provider: AiProvider): Provider {
     throw new Error(
       `ใช้ API key ของ ${provider} ไม่ได้ — อาจยังไม่ได้ตั้ง หรือถอดรหัสไม่ได้ (Keychain เปลี่ยน) กรุณาใส่ API key ใหม่ใน Settings`
     )
-  switch (provider) {
+  const meta = providerMeta(provider)
+  switch (meta.kind) {
     case 'openai':
       return new OpenAiProvider(apiKey)
     case 'anthropic':
       return new AnthropicProvider(apiKey)
     case 'google':
       return new GoogleProvider(apiKey)
+    case 'openai-compat':
+      // openrouter/deepseek/kimi/glm — OpenAI SDK + baseURL เฉพาะเจ้า
+      return new OpenAiProvider(apiKey, { id: provider, baseURL: meta.baseURL })
   }
 }
 

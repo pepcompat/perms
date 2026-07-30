@@ -1,5 +1,6 @@
 import type { DockerContainer } from '@shared/types'
-import { execSilent } from './terminal/session-manager'
+import { execSilent, getSessionHandle } from './terminal/session-manager'
+import { SshSession } from './terminal/ssh-session'
 import { parseDockerPs, isValidContainerId } from './docker-parse'
 
 const ACTIONS: Record<string, string> = {
@@ -33,9 +34,25 @@ export async function dockerAction(
   return { ok: res.exitCode === 0, output: res.output.trim() }
 }
 
-/** ดู logs ล่าสุดของ container */
+/** ดู logs ล่าสุดของ container (ครั้งเดียว) */
 export async function dockerLogs(sessionId: string, id: string): Promise<string> {
   if (!isValidContainerId(id)) throw new Error('invalid container id')
   const res = await execSilent(sessionId, `docker logs --tail 400 ${id} 2>&1`)
   return res.output
+}
+
+/**
+ * stream log แบบ live (`docker logs -f`) — ป้อนทีละก้อนผ่าน onData
+ * คืนฟังก์ชันหยุด stream (ปิด channel = docker logs ฝั่ง remote จบ)
+ */
+export function dockerLogsStream(
+  sessionId: string,
+  id: string,
+  onData: (chunk: string) => void
+): () => void {
+  if (!isValidContainerId(id)) throw new Error('invalid container id')
+  const s = getSessionHandle(sessionId)
+  if (!(s instanceof SshSession)) throw new Error('live log ใช้ได้เฉพาะ session แบบ SSH')
+  // --tail 400 ให้เห็นของเก่าก่อน แล้ว -f ไหลต่อ · 2>&1 รวม stderr (docker เขียน log ที่ stderr บ่อย)
+  return s.execStream(`docker logs --tail 400 -f ${id} 2>&1`, onData)
 }

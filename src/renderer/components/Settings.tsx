@@ -14,6 +14,7 @@ import type { AiProvider, AiMode } from '@shared/types'
 import { useSettings } from '../store/useSettings'
 import { toast } from '../store/useToast'
 import { MODEL_PRESETS } from '../lib/models'
+import { AI_PROVIDERS, providerMeta } from '@shared/ai-providers'
 import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { useT, useLang } from '../lib/i18n'
@@ -34,11 +35,6 @@ import {
   DropdownMenuItem
 } from './ui/dropdown-menu'
 
-const PROVIDERS: { id: AiProvider; label: string; placeholder: string }[] = [
-  { id: 'openai', label: 'OpenAI', placeholder: 'sk-…' },
-  { id: 'anthropic', label: 'Anthropic', placeholder: 'sk-ant-…' },
-  { id: 'google', label: 'Google', placeholder: 'AIza…' }
-]
 
 export default function Settings({
   open,
@@ -53,6 +49,8 @@ export default function Settings({
   const setLang = useLang((s) => s.setLang)
   const [tab, setTab] = useState<'ai' | 'knowledge' | 'update'>('ai')
   const [keys, setKeys] = useState<Record<string, string>>({})
+  // provider ที่กำลังตั้งค่าอยู่ (เลือกจาก dropdown ก่อน แล้วค่อยโชว์รายละเอียด)
+  const [selected, setSelected] = useState<AiProvider>('openai')
   const [busy, setBusy] = useState<string | null>(null)
   const [appVersion, setAppVersion] = useState('')
   const [checking, setChecking] = useState(false)
@@ -85,7 +83,9 @@ export default function Settings({
 
   if (!settings) return <></>
 
-  const labelOf = (p: AiProvider): string => PROVIDERS.find((x) => x.id === p)?.label ?? p
+  const labelOf = (p: AiProvider): string => providerMeta(p).label
+  // provider ที่ตั้ง API key แล้ว — ใช้เป็น default ได้เฉพาะพวกนี้
+  const connectedProviders = AI_PROVIDERS.filter((p) => settings?.ai.configured[p.id])
 
   const saveKey = async (p: AiProvider): Promise<void> => {
     const key = keys[p]?.trim()
@@ -210,84 +210,132 @@ export default function Settings({
           </span>
         </div>
 
-        <div className="flex items-center gap-2 text-sm font-medium">
-          <KeyRound className="size-4 text-primary" /> AI Providers
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm font-medium">
+            <KeyRound className="size-4 text-primary" /> AI Providers
+          </div>
+          {/* สรุปว่าเชื่อมต่ออะไรแล้วบ้าง */}
+          <span className="text-[11px] text-muted-foreground">
+            {connectedProviders.length
+              ? `${t('เชื่อมต่อแล้ว')}: ${connectedProviders.map((p) => p.label).join(', ')}`
+              : t('ยังไม่ได้เชื่อมต่อ provider ใด')}
+          </span>
         </div>
 
-        <div className="space-y-3">
-          {PROVIDERS.map((p) => {
-            const configured = settings.ai.configured[p.id]
-            return (
-              <div key={p.id} className="rounded-xl border border-border bg-background/40 p-4">
-                <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-semibold">{p.label}</span>
+        {/* เลือก provider ที่จะตั้งค่าก่อน แล้วค่อยโชว์รายละเอียดตัวนั้น */}
+        <div className="flex flex-col gap-1.5">
+          <Label>{t('เลือกผู้ให้บริการ AI')}</Label>
+          <Select value={selected} onValueChange={(v) => setSelected(v as AiProvider)}>
+            <SelectTrigger>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {AI_PROVIDERS.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  <span className="flex items-center gap-2">
+                    {settings.ai.configured[p.id] ? (
+                      <Check className="size-3 text-[hsl(var(--success))]" />
+                    ) : (
+                      <span className="size-3" />
+                    )}
+                    {p.label}
+                  </span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* การ์ดตั้งค่าของ provider ที่เลือก */}
+        {(() => {
+          const meta = providerMeta(selected)
+          const configured = settings.ai.configured[selected]
+          return (
+            <div className="rounded-xl border border-border bg-background/40 p-4">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-semibold">{meta.label}</span>
                   {configured ? (
                     <Badge variant="success">
-                      <Check className="size-2.5" /> {t("ตั้งค่าแล้ว")}
+                      <Check className="size-2.5" /> {t('ตั้งค่าแล้ว')}
                     </Badge>
                   ) : (
                     <Badge variant="outline">{t('ยังไม่ตั้ง')}</Badge>
                   )}
                 </div>
-                <div className="mb-3 flex gap-2">
-                  <Input
-                    type="password"
-                    placeholder={configured ? t('•••••••• (เปลี่ยน key)') : p.placeholder}
-                    value={keys[p.id] ?? ''}
-                    onChange={(e) => setKeys((k) => ({ ...k, [p.id]: e.target.value }))}
-                  />
-                  <Button onClick={() => saveKey(p.id)} disabled={busy === p.id || !keys[p.id]}>
-                    {busy === p.id ? <Loader2 className="size-4 animate-spin" /> : t('บันทึก')}
-                  </Button>
-                  {configured && (
-                    <Button variant="outline" size="icon" onClick={() => clearKey(p.id)}>
+                <button
+                  onClick={() => window.api.openExternal(meta.keyUrl)}
+                  className="shrink-0 text-[11px] text-primary transition-colors hover:underline"
+                >
+                  {t('ขอ API key')} ↗
+                </button>
+              </div>
+              {meta.note && (
+                <p className="mb-2.5 text-[11px] text-muted-foreground">{meta.note}</p>
+              )}
+              <div className="mb-3 flex gap-2">
+                <Input
+                  type="password"
+                  placeholder={configured ? t('•••••••• (เปลี่ยน key)') : meta.keyHint}
+                  value={keys[selected] ?? ''}
+                  onChange={(e) => setKeys((k) => ({ ...k, [selected]: e.target.value }))}
+                />
+                <Button onClick={() => saveKey(selected)} disabled={busy === selected || !keys[selected]}>
+                  {busy === selected ? <Loader2 className="size-4 animate-spin" /> : t('บันทึก')}
+                </Button>
+                {configured && (
+                  <Hint label={t('ลบ API key')}>
+                    <Button variant="outline" size="icon" onClick={() => clearKey(selected)}>
                       <Trash2 className="size-4" />
                     </Button>
-                  )}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Label className="w-12">Model</Label>
-                  <div className="flex flex-1 gap-2">
-                    <Input
-                      value={settings.ai.models[p.id]}
-                      onChange={(e) => updateModel(p.id, e.target.value)}
-                      placeholder={t('เลือกหรือพิมพ์ชื่อโมเดล')}
-                      className="flex-1 font-mono text-xs"
-                    />
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Hint label={t("เลือกโมเดล")}>
-                          <Button variant="outline" size="icon">
-                            <ChevronDown className="size-4" />
-                          </Button>
-                        </Hint>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="max-h-72 min-w-[16rem] overflow-y-auto">
-                        <DropdownMenuLabel>{t('โมเดล')} {p.label}</DropdownMenuLabel>
-                        {MODEL_PRESETS[p.id].map((m) => (
-                          <DropdownMenuItem
-                            key={m}
-                            checked={settings.ai.models[p.id] === m}
-                            onSelect={() => selectModel(p.id, m)}
-                            className="font-mono text-xs"
-                          >
-                            {m}
-                          </DropdownMenuItem>
-                        ))}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
+                  </Hint>
+                )}
+              </div>
+              <div className="flex items-center gap-2">
+                <Label className="w-12">Model</Label>
+                <div className="flex flex-1 gap-2">
+                  <Input
+                    value={settings.ai.models[selected]}
+                    onChange={(e) => updateModel(selected, e.target.value)}
+                    placeholder={t('เลือกหรือพิมพ์ชื่อโมเดล')}
+                    className="flex-1 font-mono text-xs"
+                  />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Hint label={t('เลือกโมเดล')}>
+                        <Button variant="outline" size="icon">
+                          <ChevronDown className="size-4" />
+                        </Button>
+                      </Hint>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="max-h-72 min-w-[16rem] overflow-y-auto">
+                      <DropdownMenuLabel>
+                        {t('โมเดล')} {meta.label}
+                      </DropdownMenuLabel>
+                      {MODEL_PRESETS[selected].map((m) => (
+                        <DropdownMenuItem
+                          key={m}
+                          checked={settings.ai.models[selected] === m}
+                          onSelect={() => selectModel(selected, m)}
+                          className="font-mono text-xs"
+                        >
+                          {m}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
               </div>
-            )
-          })}
-        </div>
+            </div>
+          )
+        })()}
 
         <Separator />
 
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-1.5">
             <Label>{t('Provider เริ่มต้น')}</Label>
+            {/* เลือกได้เฉพาะเจ้าที่เชื่อมต่อแล้ว */}
             <Select
               value={settings.ai.defaultProvider}
               onValueChange={(v) => updateDefault({ defaultProvider: v as AiProvider })}
@@ -296,9 +344,17 @@ export default function Settings({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="openai">OpenAI</SelectItem>
-                <SelectItem value="anthropic">Anthropic</SelectItem>
-                <SelectItem value="google">Google</SelectItem>
+                {connectedProviders.length === 0 ? (
+                  <SelectItem value={settings.ai.defaultProvider} disabled>
+                    {t('ยังไม่มีที่เชื่อมต่อ')}
+                  </SelectItem>
+                ) : (
+                  connectedProviders.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.label}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
           </div>

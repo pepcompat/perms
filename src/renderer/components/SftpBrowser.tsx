@@ -24,6 +24,7 @@ import { Button } from './ui/button'
 import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { humanSize, joinRemote, parentPath, isArchive } from '../lib/format'
+import { resolveCwd } from '@shared/cwd-track'
 import FileEditor from './FileEditor'
 import { useT } from '../lib/i18n'
 import { toast } from '../store/useToast'
@@ -31,11 +32,14 @@ import { toast } from '../store/useToast'
 export default function SftpBrowser({
   sessionId,
   title,
+  initialPath,
   open,
   onClose
 }: {
   sessionId: string
   title: string
+  /** cwd ของ terminal (best-effort) — เปิดที่นี่แทน home ถ้าเข้าได้ */
+  initialPath?: string | null
   open: boolean
   onClose: () => void
 }): JSX.Element {
@@ -92,7 +96,18 @@ export default function SftpBrowser({
     setError('')
     void window.api.sftp
       .home(sessionId)
-      .then((h) => load(h))
+      .then(async (h) => {
+        // เปิดที่ cwd ของ terminal ถ้ารู้และเข้าได้ ไม่งั้นกลับ home
+        const target = resolveCwd(initialPath ?? null, h) ?? h
+        try {
+          const res = await window.api.sftp.list(sessionId, target)
+          setCwd(res.path)
+          setEntries(res.entries)
+          setSelected(new Set())
+        } catch {
+          await load(h)
+        }
+      })
       .catch((e) => setError(e instanceof Error ? e.message : String(e)))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, sessionId])

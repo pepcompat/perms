@@ -5,7 +5,14 @@ import type { HostKeyVerdict } from './host-key'
 
 export type AuthType = 'password' | 'key' | 'agent'
 export type SessionKind = 'ssh' | 'local'
-export type AiProvider = 'openai' | 'anthropic' | 'google'
+export type AiProvider =
+  | 'openai'
+  | 'anthropic'
+  | 'google'
+  | 'openrouter'
+  | 'deepseek'
+  | 'kimi'
+  | 'glm'
 export type AiMode = 'suggest' | 'approve' | 'agentic'
 export type CommandSource = 'user' | 'ai'
 

@@ -7,7 +7,8 @@ import {
   ShieldCheck,
   KeyRound,
   FolderOpen,
-  ChevronDown
+  ChevronDown,
+  Trash2
 } from 'lucide-react'
 import type { ServerRecord, ServerInput, AuthType } from '@shared/types'
 import { useServers } from '../store/useServers'
@@ -161,6 +162,23 @@ export default function ServerForm({
       await refresh()
     }
     onClose()
+  }
+
+  // ลบ server — อยู่ในหน้าแก้ไข (ต้องเปิดเข้ามาก่อน) กันกดพลาดจากการ์ด
+  const handleDelete = async (): Promise<void> => {
+    if (!editing) return
+    if (!confirm(`${t('ลบ server')} "${editing.name}"?\n${t('การลบนี้ย้อนกลับไม่ได้')}`)) return
+    setBusy(true)
+    try {
+      await window.api.servers.remove(editing.id)
+      await refresh()
+      draftRef.current = false // ลบไปแล้ว ไม่ต้องให้ handleClose ลบซ้ำ
+      onClose()
+    } catch (e) {
+      alert(e instanceof Error ? e.message : String(e))
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
@@ -355,10 +373,23 @@ export default function ServerForm({
         )}
 
         <div className="flex items-center justify-between pt-1">
-          <Button variant="outline" onClick={test} disabled={testing || !form.host || !form.username}>
-            {testing ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
-            {t("ทดสอบ")}
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={test} disabled={testing || !form.host || !form.username}>
+              {testing ? <Loader2 className="size-4 animate-spin" /> : <Plug className="size-4" />}
+              {t("ทดสอบ")}
+            </Button>
+            {editing && (
+              <Button
+                variant="outline"
+                onClick={() => void handleDelete()}
+                disabled={busy}
+                className="border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+              >
+                <Trash2 className="size-4" />
+                {t("ลบ")}
+              </Button>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button variant="ghost" onClick={handleClose}>
               {t("ยกเลิก")}

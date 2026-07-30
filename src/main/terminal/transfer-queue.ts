@@ -11,6 +11,7 @@ import {
   shouldRetry,
   nextQueued,
   resumeOffset,
+  shouldEmitProgress,
   type TransferItem,
   type TransferKind
 } from '@shared/transfer-queue'
@@ -27,6 +28,18 @@ function broadcast(): void {
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send(IPC.transferUpdate, list)
   }
+}
+
+/**
+ * ส่งความคืบหน้าระหว่างโอน — จำกัดความถี่ไว้
+ * (ตอนแรกลืมเรียกตรงนี้เลย UI เลยค้างที่ 0% ทั้งที่ไฟล์วิ่งอยู่จริง)
+ */
+let lastProgressEmit = 0
+function broadcastProgress(): void {
+  const now = Date.now()
+  if (!shouldEmitProgress(lastProgressEmit, now)) return
+  lastProgressEmit = now
+  broadcast()
 }
 
 export function listTransfers(): TransferItem[] {
@@ -130,6 +143,11 @@ export function clearFinished(): void {
 
 /** ทำทีละงาน — โอนพร้อมกันหลายไฟล์บน connection เดียวมีแต่จะช้าลง */
 async function pump(): Promise<void> {
+  // กันสถานะค้าง: ถ้า flag บอกว่ากำลังทำงาน แต่จริง ๆ ไม่มีงานไหน running แล้ว
+  // (เคยเกิดตอน stream ไม่ยิง event ที่รอ) → ปลดล็อกให้คิวเดินต่อได้
+  if (pumping && ![...items.values()].some((i) => i.status === 'running')) {
+    pumping = false
+  }
   if (pumping) return
   const next = nextQueued([...items.values()])
   if (!next) return
@@ -137,6 +155,7 @@ async function pump(): Promise<void> {
   pumping = true
   next.status = 'running'
   next.attempts++
+  lastProgressEmit = 0 // งานใหม่ → ให้ความคืบหน้าก้อนแรกออกทันที ไม่ต้องรอครบรอบ
   broadcast()
 
   try {
@@ -183,18 +202,31 @@ async function runTransfer(item: TransferItem): Promise<void> {
       const rs = sftp.createReadStream(item.remotePath, { start: offset })
       const ws = createWriteStream(item.localPath, { flags: offset > 0 ? 'a' : 'w' })
       let got = offset
+      let settled = false
+      // ต้องปิด promise ให้ได้ทุกกรณี ไม่งั้น pumping ค้าง true แล้วคิวตันทั้งหมด
+      // (เดิมรอแค่ 'finish' — พอ cancel ปิด stream มันยิง 'close' ไม่ใช่ 'finish' → ค้าง)
+      const settle = (err?: Error): void => {
+        if (settled) return
+        settled = true
+        if (err) reject(err)
+        else if (canceled()) reject(new Error('canceled'))
+        else resolve()
+      }
       aborters.set(item.id, () => {
         rs.destroy()
         ws.destroy()
+        settle(new Error('canceled'))
       })
       rs.on('data', (c: Buffer) => {
         got += c.length
         item.transferred = got
+        broadcastProgress()
         if (canceled()) rs.destroy()
       })
-      rs.on('error', reject)
-      ws.on('error', reject)
-      ws.on('finish', () => (canceled() ? reject(new Error('canceled')) : resolve()))
+      rs.on('error', settle)
+      ws.on('error', settle)
+      ws.on('finish', () => settle())
+      ws.on('close', () => settle())
       rs.pipe(ws)
     })
 
@@ -228,18 +260,31 @@ async function runTransfer(item: TransferItem): Promise<void> {
     const rs = createReadStream(item.localPath, { start: offset })
     const ws = sftp.createWriteStream(item.remotePath, { flags: offset > 0 ? 'a' : 'w' })
     let sent = offset
+    let settled = false
+    // ปิด promise ให้ได้ทุกกรณี — บาง build ของ ssh2 ยิง 'finish' แต่ไม่ยิง 'close'
+    // ถ้ารออันเดียวแล้วมันไม่มา งานจะค้าง 'running' แล้วอัปโหลดถัดไป "รอคิว" ตลอด
+    const settle = (err?: Error): void => {
+      if (settled) return
+      settled = true
+      if (err) reject(err)
+      else if (canceled()) reject(new Error('canceled'))
+      else resolve()
+    }
     aborters.set(item.id, () => {
       rs.destroy()
       ws.destroy()
+      settle(new Error('canceled'))
     })
     rs.on('data', (c: string | Buffer) => {
       sent += typeof c === 'string' ? Buffer.byteLength(c) : c.length
       item.transferred = sent
+      broadcastProgress()
       if (canceled()) rs.destroy()
     })
-    rs.on('error', reject)
-    ws.on('error', reject)
-    ws.on('close', () => (canceled() ? reject(new Error('canceled')) : resolve()))
+    rs.on('error', settle)
+    ws.on('error', settle)
+    ws.on('finish', () => settle())
+    ws.on('close', () => settle())
     rs.pipe(ws)
   })
 

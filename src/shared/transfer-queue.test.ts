@@ -6,6 +6,7 @@ import {
   nextQueued,
   summarize,
   resumeOffset,
+  shouldEmitProgress,
   MAX_ATTEMPTS,
   type TransferItem
 } from './transfer-queue'
@@ -114,6 +115,20 @@ describe('summarize', () => {
   it('คิวว่าง / ไม่รู้ขนาด → 0% ไม่หารด้วยศูนย์', () => {
     expect(summarize([]).percent).toBe(0)
     expect(summarize([item({ size: 0 })]).percent).toBe(0)
+  })
+})
+
+describe('shouldEmitProgress', () => {
+  it('ครบรอบแล้ว → ส่ง', () => {
+    expect(shouldEmitProgress(1000, 1200, 200)).toBe(true)
+    expect(shouldEmitProgress(1000, 5000, 200)).toBe(true)
+  })
+  it('ยังไม่ครบรอบ → ไม่ส่ง (กัน IPC ท่วมตอนไฟล์ใหญ่)', () => {
+    expect(shouldEmitProgress(1000, 1100, 200)).toBe(false)
+    expect(shouldEmitProgress(1000, 1000, 200)).toBe(false)
+  })
+  it('lastEmit = 0 (งานเพิ่งเริ่ม) → ส่งทันที ไม่ต้องรอ', () => {
+    expect(shouldEmitProgress(0, 1, 200)).toBe(true)
   })
 })
 

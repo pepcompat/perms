@@ -86,6 +86,36 @@ export class SshSession implements TermSession {
     })
   }
 
+  /**
+   * รันคำสั่งแบบ stream — ป้อน output ทีละก้อนผ่าน onData (ใช้กับ `... -f` ที่ไหลตลอด)
+   * คืนฟังก์ชันสำหรับหยุด (ปิด channel = ส่งสัญญาณให้คำสั่งฝั่ง remote จบ)
+   */
+  execStream(command: string, onData: (chunk: string) => void): () => void {
+    let channel: ClientChannel | null = null
+    let stopped = false
+    this.client.exec(command, (err, ch) => {
+      if (stopped) {
+        ch?.close()
+        return
+      }
+      if (err) {
+        onData(`\n[error] ${err.message}\n`)
+        return
+      }
+      channel = ch
+      ch.on('data', (d: Buffer) => onData(d.toString('utf8')))
+      ch.stderr.on('data', (d: Buffer) => onData(d.toString('utf8')))
+    })
+    return () => {
+      stopped = true
+      try {
+        channel?.close()
+      } catch {
+        /* channel อาจปิดไปแล้ว */
+      }
+    }
+  }
+
   dispose(): void {
     try {
       this.shell?.end()

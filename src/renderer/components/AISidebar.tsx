@@ -26,6 +26,7 @@ import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import { useAiChats, EMPTY_THREAD } from '../store/useAiChats'
 import { MODEL_PRESETS } from '../lib/models'
+import { AI_PROVIDERS } from '@shared/ai-providers'
 import Markdown from './Markdown'
 import SupportButton from './SupportButton'
 import { Button } from './ui/button'
@@ -41,11 +42,10 @@ import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import { useT } from '../lib/i18n'
 
-const PROVIDER_OPTS: { id: AiProvider; label: string }[] = [
-  { id: 'openai', label: 'OpenAI' },
-  { id: 'anthropic', label: 'Anthropic' },
-  { id: 'google', label: 'Google' }
-]
+const PROVIDER_OPTS: { id: AiProvider; label: string }[] = AI_PROVIDERS.map((p) => ({
+  id: p.id,
+  label: p.label
+}))
 
 const MODE_OPTS: { id: AiMode; label: string; desc: string }[] = [
   { id: 'suggest', label: 'แนะนำ', desc: 'เสนอคำสั่ง ไม่รันให้' },
@@ -113,6 +113,8 @@ export default function AISidebar({
   }, [items, approval])
 
   const configured = settings?.ai.configured[provider]
+  // provider ที่ตั้ง API key แล้วเท่านั้น (ใช้ได้จริง) — โชว์ใน dropdown
+  const providerOpts = PROVIDER_OPTS.filter((p) => settings?.ai.configured[p.id])
 
   // web search ใช้ได้เฉพาะ provider ที่รองรับ + ไม่ใช่โหมด agentic
   const webSupported = provider === 'anthropic' || provider === 'google'
@@ -395,13 +397,17 @@ export default function AISidebar({
                     {PROVIDER_OPTS.find((p) => p.id === provider)?.label}
                   </Chip>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-[9rem]">
+                <DropdownMenuContent align="end" className="min-w-[10rem]">
                   <DropdownMenuLabel>Provider</DropdownMenuLabel>
-                  {PROVIDER_OPTS.map((p, i) => (
+                  {/* โชว์เฉพาะเจ้าที่ตั้ง API key แล้ว — ใช้ได้จริงเท่านั้น */}
+                  {providerOpts.length === 0 && (
+                    <DropdownMenuItem disabled>{t('ยังไม่ได้ตั้ง API key')}</DropdownMenuItem>
+                  )}
+                  {providerOpts.map((p, i) => (
                     <DropdownMenuItem
                       key={p.id}
                       checked={provider === p.id}
-                      shortcut={String(i + 1)}
+                      shortcut={i < 9 ? String(i + 1) : undefined}
                       onSelect={() => pickProvider(p.id)}
                     >
                       {p.label}

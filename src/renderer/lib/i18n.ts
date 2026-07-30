@@ -7,6 +7,17 @@ export type Lang = 'th' | 'en'
  * ข้อดี: UI ไทยเดิมไม่เปลี่ยน และถ้าคำไหนยังไม่มีคำแปล จะ fallback เป็นไทยอัตโนมัติ
  */
 const EN: Record<string, string> = {
+  // --- v1.8.0: AI providers (จีน/openrouter) + dropdown ---
+  'ยังไม่ได้ตั้ง API key': 'No API key set yet',
+  'เชื่อมต่อแล้ว': 'Connected',
+  'ยังไม่ได้เชื่อมต่อ provider ใด': 'No provider connected yet',
+  'เลือกผู้ให้บริการ AI': 'Choose an AI provider',
+  'ขอ API key': 'Get API key',
+  'ลบ API key': 'Remove API key',
+  'ยังไม่มีที่เชื่อมต่อ': 'None connected yet',
+  'การลบนี้ย้อนกลับไม่ได้': 'This cannot be undone',
+  'สด — อัปเดตตลอด': 'Live — always updating',
+  'กำลังเชื่อมต่อ…': 'Connecting…',
   'เลี้ยงกาแฟ': 'Buy me a coffee',
   'ถ้าชอบ Perms เลี้ยงกาแฟกันได้นะ ☕': 'If Perms helps you, buy me a coffee ☕',
   'สแกน หรือคลิกปุ่มเพื่อเปิดลิงก์': 'Scan, or click the button to open the link',

@@ -66,7 +66,7 @@ import {
   sftpRemoveRemote,
   remoteJoin
 } from '../terminal/sftp'
-import { dockerList, dockerAction, dockerLogs } from '../docker'
+import { dockerList, dockerAction, dockerLogs, dockerLogsStream } from '../docker'
 import { runChat, resolveApproval, cancelRequest } from '../ai/agent'
 import {
   enqueue as transferEnqueue,
@@ -164,6 +164,22 @@ export function registerIpc(): void {
   // ---- นโยบายกรองคำสั่ง AI ----
   ipcMain.handle(IPC.guardGet, () => getGuardPolicy())
   ipcMain.handle(IPC.guardSet, (_e, policy: GuardPolicy) => setGuardPolicy(policy))
+
+  // ---- docker live log stream ----
+  const logStreams = new Map<string, () => void>()
+  ipcMain.handle(IPC.dockerLogsStart, (_e, sessionId: string, id: string) => {
+    const streamId = nanoid()
+    const ch = IPC.dockerLogsDataPrefix + streamId
+    const stop = dockerLogsStream(sessionId, id, (chunk) => {
+      for (const win of BrowserWindow.getAllWindows()) win.webContents.send(ch, chunk)
+    })
+    logStreams.set(streamId, stop)
+    return streamId
+  })
+  ipcMain.handle(IPC.dockerLogsStop, (_e, streamId: string) => {
+    logStreams.get(streamId)?.()
+    logStreams.delete(streamId)
+  })
 
   ipcMain.handle(IPC.sshListKeys, () => listPrivateKeys())
   ipcMain.handle(IPC.sshPickKey, () => pickKeyFile())

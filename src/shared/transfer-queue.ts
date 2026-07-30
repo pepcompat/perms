@@ -110,6 +110,26 @@ export function summarize(items: TransferItem[]): QueueSummary {
   }
 }
 
+/** ส่งความคืบหน้าให้ UI ถี่แค่ไหน — ตาเห็นทันประมาณนี้ และไม่ท่วม IPC */
+export const PROGRESS_INTERVAL_MS = 200
+
+/**
+ * ถึงเวลาส่งความคืบหน้าให้ UI หรือยัง
+ *
+ * ไฟล์ใหญ่ (100MB+) มี data event เป็นหมื่นครั้ง ถ้ายิง IPC ทุกครั้ง
+ * renderer จะรับไม่ทันจน UI กระตุก — ต้องจำกัดความถี่
+ */
+export function shouldEmitProgress(
+  lastEmit: number,
+  now: number,
+  interval = PROGRESS_INTERVAL_MS
+): boolean {
+  // 0 = ยังไม่เคยส่งเลย (งานเพิ่งเริ่ม) → ส่งทันที ไม่ต้องรอครบรอบ
+  // เขียนไว้ให้ชัด ไม่พึ่งว่า Date.now() เป็นเลขใหญ่จนลบแล้วเกิน interval เอง
+  if (lastEmit === 0) return true
+  return now - lastEmit >= interval
+}
+
 /**
  * ตำแหน่งที่ควรเริ่มโอนต่อ — ถ้าไฟล์ปลายทางมีอยู่แล้วบางส่วนให้ต่อจากตรงนั้น
  * ถ้าปลายทางใหญ่กว่าต้นทาง แปลว่าไฟล์คนละตัว/พัง ต้องเริ่มใหม่

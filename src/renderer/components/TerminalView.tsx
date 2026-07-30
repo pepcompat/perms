@@ -26,6 +26,7 @@ import { cn } from '../lib/utils'
 import { redactSecrets } from '@shared/redact'
 import { rankSuggestions, type CommandStat } from '@shared/suggest'
 import { dedupeLive } from '@shared/scrollback'
+import { nextCwd, cwdFromPrompt } from '@shared/cwd-track'
 import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import SftpBrowser from './SftpBrowser'
@@ -110,6 +111,9 @@ export default function TerminalView({
   const typedRef = useRef('') // บรรทัดที่ผู้ใช้พิมพ์อยู่ (best-effort)
   const trackingRef = useRef(true) // false เมื่อ desync (มี control/escape) → หยุดแนะนำจน Enter
   const suggRef = useRef<{ prefix: string; list: string[] } | null>(null)
+  // cwd ของ shell (best-effort จาก cd) — เริ่มที่ home · null = ไม่มั่นใจ
+  const cwdRef = useRef<string | null>('~')
+  const [sftpInitial, setSftpInitial] = useState<string | null>(null)
 
   // ขนาด cell จริงของ xterm (ใช้วาง ghost ให้ตรงกริดตัวอักษร)
   const PAD_L = 12 // ตรงกับ px-3 ของ host
@@ -169,6 +173,8 @@ export default function TerminalView({
         const cmd = line.trim()
         window.api.sessions.recordCommand(sessionId, cmd)
         lastCmdRef.current = cmd
+        // ตาม cwd จากคำสั่ง cd → เปิด SFTP ที่โฟลเดอร์ปัจจุบันได้
+        cwdRef.current = nextCwd(cwdRef.current, cmd)
         // อัปเดตสถิติในเครื่องทันที (ไม่ต้องรอโหลดใหม่) → แนะนำคำสั่งที่เพิ่งใช้ได้เลย
         const i = statsRef.current.findIndex((s) => s.command === cmd)
         if (i >= 0) {
@@ -177,6 +183,9 @@ export default function TerminalView({
         } else {
           statsRef.current.unshift({ command: cmd, count: 1, lastRan: Date.now(), sameServer: 1 })
         }
+      } else if (line.trim()) {
+        // รันคำสั่งตอน desync (ใช้ประวัติ/ลูกศร) — เดา cwd ไม่ได้ ให้ SFTP กลับ home
+        cwdRef.current = null
       }
       typedRef.current = ''
       trackingRef.current = true
@@ -199,6 +208,15 @@ export default function TerminalView({
     // escape sequence / arrows / Tab(native) → desync, หยุดแนะนำจนกว่าจะ Enter
     trackingRef.current = false
     setSuggestion(null)
+  }
+
+  // อ่านบรรทัด prompt ปัจจุบันจาก buffer แล้วดึง cwd ออกมา (best-effort)
+  const promptCwd = (): string | null => {
+    const term = termRef.current
+    const buf = term?.buffer.active
+    if (!buf || buf.type === 'alternate') return null
+    const line = buf.getLine(buf.baseY + buf.cursorY)?.translateToString(true) ?? ''
+    return cwdFromPrompt(line)
   }
 
   const acceptSuggestion = (s: string): void => {
@@ -623,7 +641,15 @@ export default function TerminalView({
             <ToolBtn title={t("อุโมงค์ SSH (port forward)")} onClick={() => setTunnelOpen(true)}>
               <Waypoints className="size-3.5" />
             </ToolBtn>
-            <ToolBtn title={t("ไฟล์ (SFTP)")} onClick={() => setSftpOpen(true)}>
+            <ToolBtn
+              title={t("ไฟล์ (SFTP)")}
+              onClick={() => {
+                // อ่าน cwd จาก prompt ปัจจุบันก่อน (สะท้อนของจริงแม้หลัง refresh/paste)
+                // ไม่ได้ค่อย fallback ไปที่ track จากคำสั่ง cd
+                setSftpInitial(promptCwd() ?? cwdRef.current)
+                setSftpOpen(true)
+              }}
+            >
               <FolderSymlink className="size-3.5" />
             </ToolBtn>
             <div className="mx-0.5 h-4 w-px bg-border" />
@@ -724,6 +750,7 @@ export default function TerminalView({
         <SftpBrowser
           sessionId={sessionId}
           title={tabTitle}
+          initialPath={sftpInitial}
           open={sftpOpen}
           onClose={() => setSftpOpen(false)}
         />

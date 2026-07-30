@@ -227,7 +227,27 @@ const api = {
     ): Promise<{ ok: boolean; output: string }> =>
       ipcRenderer.invoke(IPC.dockerAction, sessionId, action, id),
     logs: (sessionId: string, id: string): Promise<string> =>
-      ipcRenderer.invoke(IPC.dockerLogs, sessionId, id)
+      ipcRenderer.invoke(IPC.dockerLogs, sessionId, id),
+    /** เปิด live log stream — คืน streamId, ป้อน chunk ผ่าน cb, คืนฟังก์ชันปิด */
+    logsStream: (
+      sessionId: string,
+      id: string,
+      cb: (chunk: string) => void
+    ): (() => void) => {
+      let streamId: string | null = null
+      let off: (() => void) | null = null
+      void ipcRenderer.invoke(IPC.dockerLogsStart, sessionId, id).then((sid: string) => {
+        streamId = sid
+        const ch = IPC.dockerLogsDataPrefix + sid
+        const listener = (_e: unknown, chunk: string): void => cb(chunk)
+        ipcRenderer.on(ch, listener)
+        off = () => ipcRenderer.removeListener(ch, listener)
+      })
+      return () => {
+        off?.()
+        if (streamId) void ipcRenderer.invoke(IPC.dockerLogsStop, streamId)
+      }
+    }
   },
 
   sessions: {

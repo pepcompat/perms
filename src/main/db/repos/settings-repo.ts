@@ -2,14 +2,13 @@ import { getDb } from '../index'
 import { upsertSecret, deleteSecret, revealSecret } from '../../secrets/safe-store'
 import type { AiProvider, AiMode, AppSettings, AiSettings } from '@shared/types'
 import { DEFAULT_GUARD_POLICY, type GuardPolicy } from '@shared/ai-guard'
+import { AI_PROVIDERS } from '@shared/ai-providers'
 
-const DEFAULT_MODELS: Record<AiProvider, string> = {
-  openai: 'gpt-4o',
-  anthropic: 'claude-opus-4-8',
-  google: 'gemini-2.0-flash'
-}
+const DEFAULT_MODELS = Object.fromEntries(
+  AI_PROVIDERS.map((p) => [p.id, p.defaultModel])
+) as Record<AiProvider, string>
 
-const PROVIDERS: AiProvider[] = ['openai', 'anthropic', 'google']
+const PROVIDERS: AiProvider[] = AI_PROVIDERS.map((p) => p.id)
 
 function getRaw(key: string): string | null {
   const row = getDb().prepare('SELECT value FROM settings WHERE key = ?').get(key) as

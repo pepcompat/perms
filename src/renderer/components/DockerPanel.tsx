@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import {
   Play,
   Square,
@@ -19,6 +19,7 @@ import { Badge } from './ui/badge'
 import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
 import DockerIcon from './DockerIcon'
+import { stripAnsi, tailLines } from '@shared/ansi'
 import { useT } from '../lib/i18n'
 import { usePersistedSet } from '../lib/persisted'
 
@@ -56,7 +57,7 @@ export default function DockerPanel({
   const [error, setError] = useState('')
   const [busyId, setBusyId] = useState<string | null>(null)
   const [groupBusy, setGroupBusy] = useState<string | null>(null)
-  const [logs, setLogs] = useState<{ name: string; text: string; loading: boolean } | null>(null)
+  const [logs, setLogs] = useState<{ id: string; name: string } | null>(null)
   // compose stack ไหนถูกย่อไว้ (จำข้ามการเปิดแอป)
   const stackCollapsed = usePersistedSet('ui.dockerStacksCollapsed')
 
@@ -109,14 +110,8 @@ export default function DockerPanel({
     }
   }
 
-  const showLogs = async (c: DockerContainer): Promise<void> => {
-    setLogs({ name: c.name, text: '', loading: true })
-    try {
-      const text = await window.api.docker.logs(sessionId, c.id)
-      setLogs({ name: c.name, text: text.trim() || t('(ไม่มี log)'), loading: false })
-    } catch (e) {
-      setLogs({ name: c.name, text: `${t('ดึง log ไม่ได้')}: ${e instanceof Error ? e.message : e}`, loading: false })
-    }
+  const showLogs = (c: DockerContainer): void => {
+    setLogs({ id: c.id, name: c.name })
   }
 
   // จัดกลุ่มตาม compose project (ตัวที่ไม่มี project = แยกเดี่ยว)
@@ -201,14 +196,7 @@ export default function DockerPanel({
         </DialogHeader>
 
         {logs ? (
-          <div className="flex min-h-0 flex-1 flex-col gap-2">
-            <Button variant="ghost" size="sm" className="self-start" onClick={() => setLogs(null)}>
-              <ArrowLeft className="size-3.5" /> {t("กลับไปรายการ")}
-            </Button>
-            <pre className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-foreground">
-              {logs.loading ? t('กำลังโหลด log…') : logs.text}
-            </pre>
-          </div>
+          <LogViewer sessionId={sessionId} containerId={logs.id} onBack={() => setLogs(null)} />
         ) : (
           <div className="-mr-2 min-h-0 flex-1 space-y-3 overflow-y-auto pr-2">
             {error && (
@@ -295,6 +283,86 @@ export default function DockerPanel({
         )}
       </DialogContent>
     </Dialog>
+  )
+}
+
+/**
+ * ดู log ของ container แบบ live (docker logs -f)
+ * - เลื่อนตามล่างสุดอัตโนมัติ (เว้นตอนผู้ใช้เลื่อนขึ้นไปอ่านเอง)
+ * - ล้าง ANSI ให้อ่านง่าย · จำกัด buffer กัน log ยาวกินแรม
+ */
+function LogViewer({
+  sessionId,
+  containerId,
+  onBack
+}: {
+  sessionId: string
+  containerId: string
+  onBack: () => void
+}): JSX.Element {
+  const t = useT()
+  const [text, setText] = useState('')
+  const [live, setLive] = useState(false)
+  const preRef = useRef<HTMLPreElement>(null)
+  const bufRef = useRef('')
+  const stickRef = useRef(true) // เกาะล่างอยู่ไหม (ถ้าผู้ใช้เลื่อนขึ้น = false)
+
+  useEffect(() => {
+    bufRef.current = ''
+    setText('')
+    setLive(false)
+    let raf = 0
+    const stop = window.api.docker.logsStream(sessionId, containerId, (chunk) => {
+      setLive(true)
+      bufRef.current = tailLines(bufRef.current + stripAnsi(chunk), 3000)
+      if (!raf) {
+        raf = requestAnimationFrame(() => {
+          raf = 0
+          setText(bufRef.current)
+        })
+      }
+    })
+    return () => {
+      stop()
+      if (raf) cancelAnimationFrame(raf)
+    }
+  }, [sessionId, containerId])
+
+  // ต่อ output ใหม่ → เลื่อนลงล่างสุด ถ้าผู้ใช้ยังเกาะล่างอยู่
+  useEffect(() => {
+    const el = preRef.current
+    if (el && stickRef.current) el.scrollTop = el.scrollHeight
+  }, [text])
+
+  const onScroll = (): void => {
+    const el = preRef.current
+    if (el) stickRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40
+  }
+
+  return (
+    <div className="flex min-h-0 flex-1 flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="sm" onClick={onBack}>
+          <ArrowLeft className="size-3.5" /> {t('กลับไปรายการ')}
+        </Button>
+        <span className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+          <span
+            className={cn(
+              'size-1.5 rounded-full',
+              live ? 'animate-pulse bg-[hsl(var(--success))]' : 'bg-muted-foreground/40'
+            )}
+          />
+          {live ? t('สด — อัปเดตตลอด') : t('กำลังเชื่อมต่อ…')}
+        </span>
+      </div>
+      <pre
+        ref={preRef}
+        onScroll={onScroll}
+        className="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-all rounded-lg bg-black/40 p-3 font-mono text-[11px] leading-relaxed text-foreground"
+      >
+        {text || (live ? t('(ไม่มี log)') : '')}
+      </pre>
+    </div>
   )
 }
 

@@ -70,6 +70,10 @@ export const IPC = {
   dockerList: 'docker:list',
   dockerAction: 'docker:action',
   dockerLogs: 'docker:logs',
+  dockerLogsStart: 'docker:logsStart',
+  dockerLogsStop: 'docker:logsStop',
+  /** event main→renderer: ต่อท้าย streamId → `docker:logsData:<id>` */
+  dockerLogsDataPrefix: 'docker:logsData:',
 
   // terminal
   terminalOpen: 'terminal:open',

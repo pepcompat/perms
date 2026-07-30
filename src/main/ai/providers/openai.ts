@@ -6,11 +6,13 @@ import type {
 import type { Provider, RunParams, RunResult, ToolCallRequest } from './types'
 
 export class OpenAiProvider implements Provider {
-  readonly id = 'openai' as const
+  readonly id: Provider['id']
   private client: OpenAI
 
-  constructor(apiKey: string) {
-    this.client = new OpenAI({ apiKey })
+  // baseURL: ใส่เพื่อชี้ไป endpoint ที่ compatible กับ OpenAI (openrouter/deepseek/kimi/glm)
+  constructor(apiKey: string, opts?: { id?: Provider['id']; baseURL?: string }) {
+    this.id = opts?.id ?? 'openai'
+    this.client = new OpenAI({ apiKey, baseURL: opts?.baseURL })
   }
 
   async run(params: RunParams): Promise<RunResult> {

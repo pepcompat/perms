@@ -4,7 +4,6 @@ import {
   Plus,
   MonitorDot,
   Pencil,
-  Trash2,
   History,
   BookText,
   Settings as SettingsIcon,
@@ -138,13 +137,6 @@ export default function ServerList({
     void connect(s)
   }
 
-  const remove = async (s: ServerRecord): Promise<void> => {
-    if (confirm(`${t('ลบ server')} "${s.name}"?`)) {
-      await window.api.servers.remove(s.id)
-      await refresh()
-    }
-  }
-
   const groups = servers.reduce<Record<string, ServerRecord[]>>((acc, s) => {
     const g = s.groupName || 'อื่นๆ'
     ;(acc[g] ||= []).push(s)
@@ -216,6 +208,11 @@ export default function ServerList({
                   <span className="text-[11px] opacity-70">
                     {s.username}@{s.host}
                   </span>
+                  {tabCount(s.id) >= 1 && (
+                    <span className="text-[11px] text-[hsl(var(--success))]">
+                      {t('เปิดอยู่')} {tabCount(s.id)} tab
+                    </span>
+                  )}
                 </span>
               }
             >
@@ -229,8 +226,15 @@ export default function ServerList({
                 ) : (
                   s.name.slice(0, 2)
                 )}
-                {isConnected(s.id) && (
-                  <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[hsl(var(--success))] ring-2 ring-sidebar" />
+                {/* หลาย session → ตัวเลข · session เดียว → จุดเขียว · ไม่ต่อ → ไม่มี */}
+                {tabCount(s.id) >= 2 ? (
+                  <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-primary-foreground ring-2 ring-sidebar">
+                    {tabCount(s.id)}
+                  </span>
+                ) : (
+                  isConnected(s.id) && (
+                    <span className="absolute -right-0.5 -top-0.5 size-2 rounded-full bg-[hsl(var(--success))] ring-2 ring-sidebar" />
+                  )
                 )}
               </button>
             </Hint>
@@ -398,26 +402,20 @@ export default function ServerList({
                         </span>
                       </Hint>
                     )}
-                    <div className="hidden gap-0.5 group-hover:flex">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setEditing(s)
-                          setFormOpen(true)
-                        }}
-                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
-                      >
-                        <Pencil className="size-3.5" />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          void remove(s)
-                        }}
-                        className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-destructive"
-                      >
-                        <Trash2 className="size-3.5" />
-                      </button>
+                    {/* แก้ไขเท่านั้น — ปุ่มลบย้ายเข้าไปในหน้าแก้ไข กันกดพลาด */}
+                    <div className="hidden group-hover:flex">
+                      <Hint label={t('แก้ไข')}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setEditing(s)
+                            setFormOpen(true)
+                          }}
+                          className="rounded p-1 text-muted-foreground hover:bg-secondary hover:text-foreground"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                      </Hint>
                     </div>
                   </>
                 )}

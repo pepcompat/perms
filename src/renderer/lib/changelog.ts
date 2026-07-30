@@ -23,6 +23,46 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.4',
+    title: 'โมเดล AI จีน + log สด + แก้เรื่องรับส่งไฟล์',
+    titleEn: 'Chinese AI models + live logs + transfer fixes',
+    items: [
+      {
+        icon: '🤖',
+        text: 'เพิ่มผู้ให้บริการ AI: OpenRouter, DeepSeek, Kimi (Moonshot), GLM (Zhipu) — และปรับหน้า Settings ให้เลือก provider จาก dropdown ก่อน แล้วค่อยแสดงรายละเอียด เลือกเป็นค่าเริ่มต้นได้เฉพาะตัวที่เชื่อมต่อแล้ว',
+        textEn:
+          'New AI providers: OpenRouter, DeepSeek, Kimi (Moonshot), GLM (Zhipu) — and the Settings page now picks a provider from a dropdown first, with only connected ones selectable as the default'
+      },
+      {
+        icon: '📊',
+        text: 'แถบความคืบหน้าตอนดาวน์โหลด/อัปโหลดไฟล์วิ่งจริงแล้ว (เดิมค้างที่ 0%) และแก้อาการอัปโหลดค้าง “รอคิว” ไม่ยอมเริ่ม',
+        textEn:
+          'Download/upload progress bars now move properly (they used to sit at 0%), and fixed uploads getting stuck on “queued” and never starting'
+      },
+      {
+        icon: '🐳',
+        text: 'ดู log ของ Docker container แบบสด (live) เลื่อนตามล่าสุดเสมอ และอ่านง่ายขึ้น (ตัดโค้ดสีที่รกออก)',
+        textEn:
+          'Docker container logs now stream live, always scrolled to the latest, and are cleaner to read (colour codes stripped)'
+      },
+      {
+        icon: '📂',
+        text: 'เปิดหน้าไฟล์ (SFTP) ที่โฟลเดอร์ปัจจุบันของ terminal ให้เลย ไม่ต้องกลับไป home ทุกครั้ง',
+        textEn: 'The file browser (SFTP) opens at the terminal’s current folder instead of always going home'
+      },
+      {
+        icon: '🔢',
+        text: 'ย่อแถบ server แล้วยังเห็นตัวเลขจำนวน session ที่เปิดอยู่บนไอคอน',
+        textEn: 'With the server bar collapsed, the icon still shows how many sessions are open'
+      },
+      {
+        icon: '🛡️',
+        text: 'ย้ายปุ่มลบ server เข้าไปในหน้าแก้ไข เพื่อกันกดพลาดจากการ์ด',
+        textEn: 'Moved the delete-server button into the edit dialog so it can’t be clicked by accident from the card'
+      }
+    ]
+  },
+  {
     version: '1.7.3',
     title: 'Perms ฟรีสำหรับทุกคน ☕',
     titleEn: 'Perms is free for everyone ☕',

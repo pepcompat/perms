@@ -11,6 +11,7 @@ import WhatsNew from './components/WhatsNew'
 import Toaster from './components/Toaster'
 import HostKeyDialog from './components/HostKeyDialog'
 import TransferQueue from './components/TransferQueue'
+import PromptDialog from './components/PromptDialog'
 import { whatsNewFor, CHANGELOG, type ChangelogEntry } from './lib/changelog'
 import { TooltipProvider } from './components/ui/tooltip'
 import { Resizer, useResizable } from './components/Resizer'
@@ -171,6 +172,7 @@ export default function App(): JSX.Element {
         )}
 
         <HostKeyDialog />
+        <PromptDialog />
         <TransferQueue />
         <UpdateToast />
         <Toaster />

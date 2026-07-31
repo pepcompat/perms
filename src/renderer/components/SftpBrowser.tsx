@@ -28,6 +28,7 @@ import { resolveCwd } from '@shared/cwd-track'
 import FileEditor from './FileEditor'
 import { useT } from '../lib/i18n'
 import { toast } from '../store/useToast'
+import { promptText } from '../store/usePrompt'
 
 export default function SftpBrowser({
   sessionId,
@@ -173,7 +174,7 @@ export default function SftpBrowser({
     }
   }
   const mkdir = async (): Promise<void> => {
-    const name = prompt(t("ชื่อโฟลเดอร์ใหม่"))?.trim()
+    const name = (await promptText({ title: t("ชื่อโฟลเดอร์ใหม่") }))?.trim()
     if (!name) return
     try {
       await window.api.sftp.mkdir(sessionId, joinRemote(cwd, name))
@@ -213,7 +214,12 @@ export default function SftpBrowser({
   const zipSelected = async (): Promise<void> => {
     const names = [...selected]
     if (!names.length) return
-    const base = prompt(t("ชื่อไฟล์บีบอัด (ไม่ต้องใส่นามสกุล)"), names.length === 1 ? names[0] : 'archive')?.trim()
+    const base = (
+      await promptText({
+        title: t("ชื่อไฟล์บีบอัด (ไม่ต้องใส่นามสกุล)"),
+        defaultValue: names.length === 1 ? names[0] : 'archive'
+      })
+    )?.trim()
     if (!base) return
     setBusy(true)
     try {

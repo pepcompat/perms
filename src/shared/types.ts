@@ -297,6 +297,22 @@ export interface FileSnapshot {
 /** รายการ snapshot แบบไม่เอาเนื้อหา (ใช้โชว์ list ไม่ต้องโหลดทั้งไฟล์) */
 export type FileSnapshotMeta = Omit<FileSnapshot, 'content'>
 
+/** สถานะทรัพยากรของเซิร์ฟเวอร์ (จาก /proc) — % ที่คิด delta ไม่ได้ยังเป็น null */
+export interface ServerStats {
+  /** 0–100 · null = ยังไม่มี sample ก่อนหน้าให้เทียบ */
+  cpuPercent: number | null
+  memPercent: number
+  memUsedBytes: number
+  memTotalBytes: number
+  /** ดิสก์ราก / · null = อ่าน df ไม่ได้ */
+  diskPercent: number | null
+  diskUsedBytes: number | null
+  diskTotalBytes: number | null
+  /** ไบต์/วินาที · null = ยังไม่มี sample ก่อนหน้า */
+  rxPerSec: number | null
+  txPerSec: number | null
+}
+
 /** service ของ systemd (parse มาจาก systemctl list-units) */
 export interface SystemdUnit {
   unit: string

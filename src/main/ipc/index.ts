@@ -88,6 +88,7 @@ import {
   type SystemdAction
 } from '../systemd'
 import { getGuardPolicy, setGuardPolicy } from '../db/repos/settings-repo'
+import { sampleServerStats } from '../server-stats'
 import type { GuardPolicy } from '@shared/ai-guard'
 
 export function registerIpc(): void {
@@ -164,6 +165,9 @@ export function registerIpc(): void {
   // ---- นโยบายกรองคำสั่ง AI ----
   ipcMain.handle(IPC.guardGet, () => getGuardPolicy())
   ipcMain.handle(IPC.guardSet, (_e, policy: GuardPolicy) => setGuardPolicy(policy))
+
+  // ---- สถานะทรัพยากรเซิร์ฟเวอร์ ----
+  ipcMain.handle(IPC.statsSample, (_e, sessionId: string) => sampleServerStats(sessionId))
 
   // ---- docker live log stream ----
   const logStreams = new Map<string, () => void>()

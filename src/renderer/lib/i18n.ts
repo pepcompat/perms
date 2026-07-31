@@ -7,6 +7,15 @@ export type Lang = 'th' | 'en'
  * ข้อดี: UI ไทยเดิมไม่เปลี่ยน และถ้าคำไหนยังไม่มีคำแปล จะ fallback เป็นไทยอัตโนมัติ
  */
 const EN: Record<string, string> = {
+  'สถานะเซิร์ฟเวอร์ (สด)': 'Server status (live)',
+  'อ่านสถานะไม่ได้ — เซิร์ฟเวอร์นี้อาจไม่ใช่ Linux หรือไม่มีสิทธิ์อ่าน /proc': 'Cannot read status — this server may not be Linux, or /proc is not readable',
+  'กำลังอ่านสถานะ…': 'Reading status…',
+  'หน่วยความจำ (RAM)': 'Memory (RAM)',
+  'เหลือ': 'free',
+  'ทั้งหมด': 'total',
+  'พื้นที่ดิสก์ (/)': 'Disk space (/)',
+  'ตกลง': 'OK',
+  'เครือข่าย': 'Network',
   // --- v1.7.6: friendly SSH / error messages ---
   'ยืนยันตัวตนไม่สำเร็จ — ตรวจ username, รหัสผ่าน, private key หรือ passphrase ให้ถูกต้อง': 'Authentication failed — check the username, password, private key or passphrase',
   'ยืนยัน host key ไม่ผ่าน — เซิร์ฟเวอร์อาจเปลี่ยนกุญแจ หรือถูกยกเลิกการเชื่อมต่อ': 'Host key verification failed — the server may have changed its key, or the connection was rejected',

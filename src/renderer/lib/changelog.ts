@@ -23,6 +23,25 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.8',
+    title: 'ดูสถานะเซิร์ฟเวอร์แบบสด + แก้ปุ่มบีบอัดไฟล์',
+    titleEn: 'Live server monitor + fixed the compress button',
+    items: [
+      {
+        icon: '📈',
+        text: 'เพิ่มปุ่มดูสถานะเซิร์ฟเวอร์แบบสดในแถบเครื่องมือ (ขวาสุด) — เปิดหน้าต่างเห็น CPU, RAM, พื้นที่ดิสก์ (ใช้/เหลือ/ทั้งหมด) และความเร็วเครือข่าย อัปเดตเรียลไทม์',
+        textEn:
+          'Added a live server-status button in the toolbar (far right) — opens a panel showing CPU, RAM, disk space (used/free/total) and network throughput, updating in real time'
+      },
+      {
+        icon: '🗜️',
+        text: 'แก้ปุ่มบีบอัด (zip) และสร้างโฟลเดอร์ที่กดแล้วไม่มีอะไรเกิดขึ้น — ตอนนี้มีกล่องให้กรอกชื่อได้ตามปกติ',
+        textEn:
+          'Fixed the compress (zip) and new-folder buttons that did nothing when clicked — they now show a proper name-input box'
+      }
+    ]
+  },
+  {
     version: '1.7.7',
     title: 'ต่อผ่าน SSH agent บน Windows ได้แล้ว',
     titleEn: 'SSH agent now works on Windows',

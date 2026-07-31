@@ -62,6 +62,9 @@ export const IPC = {
   systemdStatus: 'systemd:status',
   systemdLogs: 'systemd:logs',
 
+  // สถานะทรัพยากรเซิร์ฟเวอร์ (cpu/ram/net)
+  statsSample: 'stats:sample',
+
   // นโยบายกรองคำสั่ง AI
   guardGet: 'guard:get',
   guardSet: 'guard:set',

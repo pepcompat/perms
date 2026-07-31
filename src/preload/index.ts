@@ -29,7 +29,8 @@ import type {
   SystemdUnit,
   JournalLine,
   KnownHostRecord,
-  LiveSession
+  LiveSession,
+  ServerStats
 } from '../shared/types'
 import type { TransferItem } from '../shared/transfer-queue'
 import type { GuardPolicy } from '../shared/ai-guard'
@@ -213,6 +214,11 @@ const api = {
   guard: {
     get: (): Promise<GuardPolicy> => ipcRenderer.invoke(IPC.guardGet),
     set: (policy: GuardPolicy): Promise<void> => ipcRenderer.invoke(IPC.guardSet, policy)
+  },
+
+  stats: {
+    sample: (sessionId: string): Promise<ServerStats | null> =>
+      ipcRenderer.invoke(IPC.statsSample, sessionId)
   },
 
   docker: {

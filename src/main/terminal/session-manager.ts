@@ -3,6 +3,7 @@ import { BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type { OpenSessionInput, OpenSessionResult, LiveSession } from '@shared/types'
 import { appendScrollback } from '@shared/scrollback'
+import { clearServerStats } from '../server-stats'
 import { PtySession } from './pty-session'
 import { SshSession } from './ssh-session'
 import type { TermSession } from './types'
@@ -81,6 +82,7 @@ export async function openSession(input: OpenSessionInput): Promise<OpenSessionR
     endSession(id, code === 0 || code === null ? 'closed' : 'error')
     sessions.delete(id)
     meta.delete(id)
+    clearServerStats(id)
   })
 
   // สร้าง row ใน DB ด้วย id เดียวกับ terminal session (กัน FK พังตอน recordCommand)
@@ -103,6 +105,7 @@ export function closeSession(id: string): void {
     s.dispose()
     sessions.delete(id)
     meta.delete(id)
+    clearServerStats(id)
     endSession(id, 'closed')
   }
 }

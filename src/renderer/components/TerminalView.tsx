@@ -19,7 +19,8 @@ import {
   Sparkles,
   FolderSymlink,
   ServerCog,
-  Waypoints
+  Waypoints,
+  Activity
 } from 'lucide-react'
 import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
@@ -34,6 +35,7 @@ import DockerPanel from './DockerPanel'
 import SystemdPanel from './SystemdPanel'
 import TunnelPanel from './TunnelPanel'
 import DockerIcon from './DockerIcon'
+import ServerStatsModal from './ServerStatsModal'
 import { useT } from '../lib/i18n'
 
 // Catppuccin Mocha — palette ที่เข้ากับธีมม่วงของแอป ทำให้ output (ls, git, ฯลฯ) มีสีสวย
@@ -104,6 +106,7 @@ export default function TerminalView({
   const [systemdOpen, setSystemdOpen] = useState(false)
   const [systemdAvailable, setSystemdAvailable] = useState(false)
   const [tunnelOpen, setTunnelOpen] = useState(false)
+  const [statsOpen, setStatsOpen] = useState(false)
 
   // --- autocomplete จากประวัติคำสั่ง (จัดอันดับด้วย frecency + server เดียวกัน) ---
   const statsRef = useRef<CommandStat[]>([])
@@ -674,7 +677,25 @@ export default function TerminalView({
         <ToolBtn title={t("เพิ่มขนาดฟอนต์")} onClick={() => bumpFont(1)}>
           <AArrowUp className="size-3.5" />
         </ToolBtn>
+        {/* สถานะเซิร์ฟเวอร์ (สด) — ขวาสุด เฉพาะ SSH */}
+        {tabKind === 'ssh' && (
+          <>
+            <div className="mx-0.5 h-4 w-px bg-border" />
+            <ToolBtn title={t("สถานะเซิร์ฟเวอร์ (สด)")} onClick={() => setStatsOpen(true)}>
+              <Activity className="size-3.5 text-primary" />
+            </ToolBtn>
+          </>
+        )}
       </div>
+
+      {tabKind === 'ssh' && statsOpen && (
+        <ServerStatsModal
+          sessionId={sessionId}
+          title={tabTitle}
+          open={statsOpen}
+          onClose={() => setStatsOpen(false)}
+        />
+      )}
 
       {/* search overlay */}
       {searchOpen && (

@@ -23,6 +23,19 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.7',
+    title: 'ต่อผ่าน SSH agent บน Windows ได้แล้ว',
+    titleEn: 'SSH agent now works on Windows',
+    items: [
+      {
+        icon: '🔑',
+        text: 'แก้การเชื่อมต่อแบบ SSH agent บน Windows — เดิมชี้ไป Pageant (ของ PuTTY) เสมอ ทำให้คนที่ใช้ OpenSSH agent (ตัวในตัวของ Windows) ต่อไม่ติด ตอนนี้เลือกให้ถูกตามที่เปิดใช้อยู่จริง',
+        textEn:
+          'Fixed SSH agent connections on Windows — it always targeted Pageant (PuTTY) before, so users of the built-in OpenSSH agent couldn’t connect. It now picks whichever agent is actually running'
+      }
+    ]
+  },
+  {
     version: '1.7.6',
     title: 'จัดการข้อผิดพลาดให้เป็นมิตร ไม่เด้ง dialog แดง',
     titleEn: 'Friendlier error handling — no more scary crash dialog',

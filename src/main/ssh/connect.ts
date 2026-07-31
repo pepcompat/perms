@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs'
+import { readFileSync, existsSync } from 'fs'
 import { homedir } from 'os'
 import { join } from 'path'
 import { Client, type ConnectConfig, type ClientChannel } from 'ssh2'
@@ -6,6 +6,7 @@ import { getServerRow } from '../db/repos/servers-repo'
 import { revealSecret } from '../secrets/safe-store'
 import { checkHostKey } from './host-key-guard'
 import { friendlySshError } from '@shared/ssh-errors'
+import { chooseAgentSock, WIN_OPENSSH_PIPE } from './agent-sock'
 
 /** ขยาย ~ เป็น home directory (เช่น ~/.ssh/id_ed25519) */
 function expandHome(p: string): string {
@@ -58,8 +59,17 @@ function buildConfig(serverId: string): ConnectConfig & { _host: string } {
       break
     }
     case 'agent': {
-      cfg.agent = process.env.SSH_AUTH_SOCK || (process.platform === 'win32' ? 'pageant' : undefined)
-      if (!cfg.agent) throw new Error('No SSH agent available (SSH_AUTH_SOCK not set)')
+      // Windows: เดิม default ไป Pageant เสมอ แต่คนส่วนใหญ่ใช้ OpenSSH agent (คนละ pipe)
+      // → ต่อไม่ติด ตอนนี้เลือกให้ถูกตามที่มีจริง
+      const opensshPipeExists =
+        process.platform === 'win32' ? existsSync(WIN_OPENSSH_PIPE) : false
+      cfg.agent = chooseAgentSock({
+        authSock: process.env.SSH_AUTH_SOCK,
+        platform: process.platform,
+        opensshPipeExists
+      })
+      if (!cfg.agent)
+        throw new Error('ไม่พบ SSH agent — เปิด ssh-agent (มี key โหลดอยู่) หรือเลือก auth วิธีอื่น')
       break
     }
   }

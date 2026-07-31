@@ -301,13 +301,13 @@ export default function Settings({
                     className="flex-1 font-mono text-xs"
                   />
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Hint label={t('เลือกโมเดล')}>
+                    <Hint label={t('เลือกโมเดล')}>
+                      <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="icon">
                           <ChevronDown className="size-4" />
                         </Button>
-                      </Hint>
-                    </DropdownMenuTrigger>
+                      </DropdownMenuTrigger>
+                    </Hint>
                     <DropdownMenuContent align="end" className="max-h-72 min-w-[16rem] overflow-y-auto">
                       <DropdownMenuLabel>
                         {t('โมเดล')} {meta.label}

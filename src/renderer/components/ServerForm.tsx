@@ -240,13 +240,13 @@ export default function ServerForm({
                     onChange={(e) => upd('privateKeyPath', e.target.value)}
                   />
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Hint label={t("เลือก key ในเครื่อง")}>
+                    <Hint label={t("เลือก key ในเครื่อง")}>
+                      <DropdownMenuTrigger asChild>
                         <Button variant="outline" size="icon">
                           <KeyRound className="size-4" />
                         </Button>
-                      </Hint>
-                    </DropdownMenuTrigger>
+                      </DropdownMenuTrigger>
+                    </Hint>
                     <DropdownMenuContent align="end" className="max-h-72 min-w-[17rem] overflow-y-auto">
                       <DropdownMenuLabel>{t("SSH keys ใน ~/.ssh")}</DropdownMenuLabel>
                       {sshKeys.map((k) => (
@@ -299,13 +299,13 @@ export default function ServerForm({
               />
               {existingGroups.length > 0 && (
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Hint label={t("เลือก group ที่มี")}>
+                  <Hint label={t("เลือก group ที่มี")}>
+                    <DropdownMenuTrigger asChild>
                       <Button variant="outline" size="icon">
                         <ChevronDown className="size-4" />
                       </Button>
-                    </Hint>
-                  </DropdownMenuTrigger>
+                    </DropdownMenuTrigger>
+                  </Hint>
                   <DropdownMenuContent align="end" className="max-h-60 min-w-[12rem] overflow-y-auto">
                     <DropdownMenuLabel>{t("Group ที่มีอยู่")}</DropdownMenuLabel>
                     {existingGroups.map((g) => (

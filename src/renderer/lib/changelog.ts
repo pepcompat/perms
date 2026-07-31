@@ -23,6 +23,19 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.5',
+    title: 'แก้ปุ่มเลือก key / group / โมเดล กดไม่ติด',
+    titleEn: 'Fix: key / group / model pickers not opening',
+    items: [
+      {
+        icon: '🐛',
+        text: 'แก้บั๊กที่กดปุ่มเลือก private key, เลือก group (หน้าเพิ่ม/แก้ไข server) และเลือกโมเดล (Settings) แล้วเมนูไม่เด้งขึ้นมา — ตอนนี้เปิดได้ปกติแล้ว',
+        textEn:
+          'Fixed the private key, group (add/edit server) and model (Settings) pickers not opening when clicked — they work again now'
+      }
+    ]
+  },
+  {
     version: '1.7.4',
     title: 'โมเดล AI จีน + log สด + แก้เรื่องรับส่งไฟล์',
     titleEn: 'Chinese AI models + live logs + transfer fixes',

@@ -297,6 +297,18 @@ export interface FileSnapshot {
 /** รายการ snapshot แบบไม่เอาเนื้อหา (ใช้โชว์ list ไม่ต้องโหลดทั้งไฟล์) */
 export type FileSnapshotMeta = Omit<FileSnapshot, 'content'>
 
+/** process ที่กินทรัพยากร (จาก ps) — เรียงตาม CPU */
+export interface ProcessInfo {
+  pid: number
+  /** %CPU */
+  cpu: number
+  /** %MEM */
+  mem: number
+  /** หน่วยความจำจริงที่ใช้ (RSS) เป็นไบต์ */
+  rssBytes: number
+  command: string
+}
+
 /** สถานะทรัพยากรของเซิร์ฟเวอร์ (จาก /proc) — % ที่คิด delta ไม่ได้ยังเป็น null */
 export interface ServerStats {
   /** 0–100 · null = ยังไม่มี sample ก่อนหน้าให้เทียบ */
@@ -311,6 +323,8 @@ export interface ServerStats {
   /** ไบต์/วินาที · null = ยังไม่มี sample ก่อนหน้า */
   rxPerSec: number | null
   txPerSec: number | null
+  /** process ที่กินทรัพยากรมากสุด (เรียงตาม CPU) — ว่างถ้าอ่าน ps ไม่ได้ */
+  processes: ProcessInfo[]
 }
 
 /** service ของ systemd (parse มาจาก systemctl list-units) */

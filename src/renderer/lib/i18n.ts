@@ -7,6 +7,7 @@ export type Lang = 'th' | 'en'
  * ข้อดี: UI ไทยเดิมไม่เปลี่ยน และถ้าคำไหนยังไม่มีคำแปล จะ fallback เป็นไทยอัตโนมัติ
  */
 const EN: Record<string, string> = {
+  'โปรเซสที่กินทรัพยากร': 'Top processes',
   'สถานะเซิร์ฟเวอร์ (สด)': 'Server status (live)',
   'อ่านสถานะไม่ได้ — เซิร์ฟเวอร์นี้อาจไม่ใช่ Linux หรือไม่มีสิทธิ์อ่าน /proc': 'Cannot read status — this server may not be Linux, or /proc is not readable',
   'กำลังอ่านสถานะ…': 'Reading status…',

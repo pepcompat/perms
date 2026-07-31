@@ -1,12 +1,35 @@
-import type { ServerStats } from '@shared/types'
+import type { ServerStats, ProcessInfo } from '@shared/types'
 import { execSilent } from './terminal/session-manager'
 
 // อ่าน CPU/RAM/Network ของเซิร์ฟเวอร์ Linux จาก /proc (ไม่ต้องลง agent)
 // ดึงทั้ง 3 อย่างในคำสั่งเดียว แล้ว parse + คิด delta เทียบ sample ก่อนหน้าใน main
 
-// คำสั่ง: dump /proc/stat, /proc/meminfo, /proc/net/dev + df ของ / คั่นด้วย marker
+// คำสั่ง: dump /proc/stat, /proc/meminfo, /proc/net/dev + df ของ / + ps (top process) คั่นด้วย marker
 const CMD =
-  "cat /proc/stat; echo '@@PERMS@@'; cat /proc/meminfo; echo '@@PERMS@@'; cat /proc/net/dev; echo '@@PERMS@@'; df -kP / 2>/dev/null"
+  "cat /proc/stat; echo '@@PERMS@@'; cat /proc/meminfo; echo '@@PERMS@@'; cat /proc/net/dev; echo '@@PERMS@@'; df -kP / 2>/dev/null; echo '@@PERMS@@'; ps -eo pid,pcpu,pmem,rss,comm --sort=-pcpu 2>/dev/null | head -n 13"
+
+/** parse ผลลัพธ์ ps เป็นรายการ process (เรียงตาม CPU จาก ps อยู่แล้ว) */
+export function parseProcessList(part: string | undefined): ProcessInfo[] {
+  if (!part) return []
+  const out: ProcessInfo[] = []
+  for (const line of part.trim().split('\n')) {
+    const f = line.trim().split(/\s+/)
+    if (f.length < 5) continue
+    const pid = Number(f[0])
+    const cpu = Number(f[1])
+    const mem = Number(f[2])
+    const rssKb = Number(f[3])
+    if (!Number.isInteger(pid) || Number.isNaN(cpu) || Number.isNaN(mem)) continue // ข้ามหัวตาราง
+    out.push({
+      pid,
+      cpu,
+      mem,
+      rssBytes: (rssKb || 0) * 1024,
+      command: f.slice(4).join(' ')
+    })
+  }
+  return out
+}
 
 export interface RawStats {
   /** ผลรวม jiffies ทุก field ของ cpu รวม */
@@ -101,7 +124,8 @@ export function computeStats(
     diskUsedBytes: hasDisk ? (cur.diskUsedKb ?? 0) * 1024 : null,
     diskTotalBytes: hasDisk ? cur.diskTotalKb! * 1024 : null,
     rxPerSec: null,
-    txPerSec: null
+    txPerSec: null,
+    processes: []
   }
   if (prev) {
     const totalDelta = cur.cpuTotal - prev.raw.cpuTotal
@@ -129,7 +153,9 @@ export async function sampleServerStats(sessionId: string): Promise<ServerStats 
   const now = Date.now()
   const prev = lastBySession.get(sessionId) ?? null
   lastBySession.set(sessionId, { raw, at: now })
-  return computeStats(raw, prev, now)
+  const stats = computeStats(raw, prev, now)
+  stats.processes = parseProcessList(r.output.split('@@PERMS@@')[4])
+  return stats
 }
 
 /** ล้าง sample ที่เก็บไว้ตอน session ปิด */

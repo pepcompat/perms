@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { parseProcStats, computeStats } from './server-stats'
+import { parseProcStats, computeStats, parseProcessList } from './server-stats'
 
 const sample = (
   cpu: number[],
@@ -54,6 +54,30 @@ describe('parseProcStats', () => {
 
   it('ไม่มี MemTotal → null', () => {
     expect(parseProcStats('cpu  1 2 3 4 5@@PERMS@@nothing@@PERMS@@x')).toBeNull()
+  })
+})
+
+describe('parseProcessList', () => {
+  const ps = `  PID %CPU %MEM   RSS COMMAND
+ 1234 25.0  4.5 512000 node
+   42  3.2  1.0  65536 nginx
+    1  0.0  0.1   8192 systemd`
+
+  it('อ่าน pid/cpu/mem/rss/command และข้ามหัวตาราง', () => {
+    const list = parseProcessList(ps)
+    expect(list).toHaveLength(3)
+    expect(list[0]).toEqual({ pid: 1234, cpu: 25, mem: 4.5, rssBytes: 512000 * 1024, command: 'node' })
+    expect(list[1].command).toBe('nginx')
+  })
+
+  it('ว่าง/undefined → []', () => {
+    expect(parseProcessList(undefined)).toEqual([])
+    expect(parseProcessList('')).toEqual([])
+  })
+
+  it('command ที่มีช่องว่าง เก็บครบ', () => {
+    const list = parseProcessList('  10  1.0  2.0 1000 my worker')
+    expect(list[0].command).toBe('my worker')
   })
 })
 

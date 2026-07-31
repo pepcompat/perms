@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Activity, Cpu, MemoryStick, HardDrive, ArrowDown, ArrowUp } from 'lucide-react'
+import { Activity, Cpu, MemoryStick, HardDrive, ArrowDown, ArrowUp, ListTree } from 'lucide-react'
 import type { ServerStats } from '@shared/types'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from './ui/dialog'
 import { humanSize } from '../lib/format'
@@ -90,7 +90,7 @@ export default function ServerStatsModal({
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Activity className="size-4 text-primary" />
@@ -152,6 +152,47 @@ export default function ServerStatsModal({
                 </span>
               </div>
             </div>
+
+            {/* Process (top) — เรียงตาม CPU */}
+            {stats.processes.length > 0 && (
+              <div>
+                <div className="mb-1.5 flex items-center gap-2 text-sm font-medium">
+                  <ListTree className="size-4 text-primary" />
+                  {t('โปรเซสที่กินทรัพยากร')}
+                </div>
+                <div className="overflow-hidden rounded-lg border border-border">
+                  <div className="flex items-center gap-2 border-b border-border bg-secondary/40 px-2.5 py-1 text-[10px] font-medium uppercase text-muted-foreground">
+                    <span className="w-12 shrink-0">PID</span>
+                    <span className="min-w-0 flex-1">{t('คำสั่ง')}</span>
+                    <span className="w-12 shrink-0 text-right">CPU</span>
+                    <span className="w-12 shrink-0 text-right">MEM</span>
+                    <span className="w-14 shrink-0 text-right">RSS</span>
+                  </div>
+                  <div className="max-h-52 overflow-y-auto">
+                    {stats.processes.map((p) => (
+                      <div
+                        key={p.pid}
+                        className="flex items-center gap-2 border-b border-border/40 px-2.5 py-1 text-xs last:border-0"
+                      >
+                        <span className="w-12 shrink-0 font-mono text-[11px] text-muted-foreground">
+                          {p.pid}
+                        </span>
+                        <span className="min-w-0 flex-1 truncate font-mono">{p.command}</span>
+                        <span className={cn('w-12 shrink-0 text-right tabular-nums', tone(p.cpu).text)}>
+                          {p.cpu.toFixed(1)}%
+                        </span>
+                        <span className="w-12 shrink-0 text-right tabular-nums text-muted-foreground">
+                          {p.mem.toFixed(1)}%
+                        </span>
+                        <span className="w-14 shrink-0 text-right tabular-nums text-muted-foreground">
+                          {humanSize(p.rssBytes)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </DialogContent>

@@ -23,6 +23,19 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.9',
+    title: 'หน้าสถานะเซิร์ฟเวอร์ โชว์โปรเซสแบบ top',
+    titleEn: 'Server status now lists top processes',
+    items: [
+      {
+        icon: '📋',
+        text: 'หน้าสถานะเซิร์ฟเวอร์ (สด) เพิ่มตารางโปรเซสที่กินทรัพยากร เรียงตาม CPU (คล้ายคำสั่ง top) — เห็น PID, คำสั่ง, %CPU, %MEM และ RAM ที่ใช้ อัปเดตเรียลไทม์',
+        textEn:
+          'The live server-status panel now lists the top resource-hungry processes, sorted by CPU (like the top command) — showing PID, command, %CPU, %MEM and RAM used, in real time'
+      }
+    ]
+  },
+  {
     version: '1.7.8',
     title: 'ดูสถานะเซิร์ฟเวอร์แบบสด + แก้ปุ่มบีบอัดไฟล์',
     titleEn: 'Live server monitor + fixed the compress button',

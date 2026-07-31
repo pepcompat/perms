@@ -7,6 +7,32 @@ import { registerIpc } from './ipc'
 import { disposeAll } from './terminal/session-manager'
 import { initAutoUpdate } from './updater'
 
+// safety net: กัน error ที่หลุดออกมา (ssh2/pty/stream ยิง event error, async ที่ไม่ได้ try)
+// ไม่ให้ Electron เด้ง dialog "A JavaScript error occurred in the main process"
+// — log ไว้ครบ (ยังตามหาบั๊กได้) แล้วเด้ง toast บอกผู้ใช้แบบสุภาพ ไม่ล้มแอป
+let lastErrorNotify = 0
+function reportMainError(scope: string, err: unknown): void {
+  const detail = err instanceof Error ? (err.stack ?? err.message) : String(err)
+  console.error(
+    JSON.stringify({
+      level: 'error',
+      message: `uncaught (${scope})`,
+      detail,
+      timestamp: new Date().toISOString()
+    })
+  )
+  // กัน toast ถล่มตอน error ยิงรัว ๆ
+  const now = Date.now()
+  if (now - lastErrorNotify < 4000) return
+  lastErrorNotify = now
+  const message = err instanceof Error ? err.message : String(err)
+  for (const win of BrowserWindow.getAllWindows()) {
+    if (!win.isDestroyed()) win.webContents.send(IPC.appError, message)
+  }
+}
+process.on('uncaughtException', (err) => reportMainError('uncaughtException', err))
+process.on('unhandledRejection', (reason) => reportMainError('unhandledRejection', reason))
+
 // icon แอปสำหรับ dock/หน้าต่างตอน dev — ใช้ build/icon.png ที่มี padding แบบ macOS แล้ว
 // (ห้ามใช้ public/images/perms-logo.png ที่เต็มขอบ ไม่งั้น dock icon จะดูใหญ่กว่า app อื่น)
 // prod ใช้ .icns ของ bundle ที่ electron-builder สร้างจากไฟล์เดียวกัน

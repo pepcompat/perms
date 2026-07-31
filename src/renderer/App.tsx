@@ -86,6 +86,14 @@ export default function App(): JSX.Element {
     return window.api.onKnowledgeSaved((title) => toast(`💡 บันทึกความรู้: ${title}`))
   }, [])
 
+  // error ที่ไม่คาดคิดจาก main → toast สุภาพ (ไม่เด้ง crash dialog) · รายละเอียดอยู่ใน log
+  useEffect(() => {
+    return window.api.onAppError((message) => {
+      console.warn('main process error:', message)
+      toast(t('เกิดข้อผิดพลาดที่ไม่คาดคิด — ลองอีกครั้ง หรือรีสตาร์ทแอปถ้ายังพบปัญหา'), 'error')
+    })
+  }, [t])
+
   // หลังอัปเดตเวอร์ชัน → เด้ง modal "มีอะไรใหม่" ครั้งแรก แล้วจำว่าเห็นแล้ว
   useEffect(() => {
     void window.api.appVersion().then((v) => {

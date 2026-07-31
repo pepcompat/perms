@@ -23,6 +23,7 @@ import { cn } from '../lib/utils'
 import { logoUrl } from '../lib/logo'
 import { useT } from '../lib/i18n'
 import ServerForm from './ServerForm'
+import { toast } from '../store/useToast'
 
 export default function ServerList({
   width,
@@ -97,15 +98,21 @@ export default function ServerList({
       const res = await window.api.terminal.open({ serverId: s.id, cols: 80, rows: 24 })
       addTab({ sessionId: res.sessionId, title: res.title, kind: res.kind, serverId: s.id })
     } catch (e) {
-      alert(`เชื่อมต่อไม่สำเร็จ: ${e instanceof Error ? e.message : String(e)}`)
+      // ข้อความจาก main ผ่าน friendlySshError แล้ว → t() แปลเป็นอังกฤษให้ถ้าตั้งภาษาไว้
+      const msg = e instanceof Error ? e.message : String(e)
+      toast(`${s.name}: ${t(msg)}`, 'error')
     } finally {
       setConnecting(null)
     }
   }
 
   const openLocal = async (): Promise<void> => {
-    const res = await window.api.terminal.open({ cols: 80, rows: 24 })
-    addTab({ sessionId: res.sessionId, title: res.title, kind: res.kind, serverId: null })
+    try {
+      const res = await window.api.terminal.open({ cols: 80, rows: 24 })
+      addTab({ sessionId: res.sessionId, title: res.title, kind: res.kind, serverId: null })
+    } catch (e) {
+      toast(t(e instanceof Error ? e.message : String(e)), 'error')
+    }
   }
 
   // คลิกเดียว: ไปที่ tab ล่าสุดของ server นั้น (ถ้ายังไม่มี tab → connect ให้)

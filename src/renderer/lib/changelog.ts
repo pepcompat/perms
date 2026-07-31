@@ -23,6 +23,25 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.7.6',
+    title: 'จัดการข้อผิดพลาดให้เป็นมิตร ไม่เด้ง dialog แดง',
+    titleEn: 'Friendlier error handling — no more scary crash dialog',
+    items: [
+      {
+        icon: '🧯',
+        text: 'เชื่อมต่อ SSH ไม่สำเร็จ (รหัส/คีย์/username ผิด, timeout, หา host ไม่เจอ ฯลฯ) จะขึ้นข้อความบอกสาเหตุแบบเข้าใจง่าย แทนที่จะเด้งหน้าต่าง error สีแดงน่ากลัว',
+        textEn:
+          'Failed SSH connections (wrong password/key/username, timeout, host not found, etc.) now show a clear, friendly message instead of a scary red error dialog'
+      },
+      {
+        icon: '🛟',
+        text: 'ข้อผิดพลาดที่ไม่คาดคิดทุกจุดจะถูกดักไว้อย่างนุ่มนวล — แจ้งเตือนสั้น ๆ แทนการปิดแอปหรือเด้ง dialog',
+        textEn:
+          'Unexpected errors anywhere are now caught gracefully — a short notification instead of the app crashing or popping a dialog'
+      }
+    ]
+  },
+  {
     version: '1.7.5',
     title: 'แก้ปุ่มเลือก key / group / โมเดล กดไม่ติด',
     titleEn: 'Fix: key / group / model pickers not opening',

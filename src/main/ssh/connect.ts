@@ -5,6 +5,7 @@ import { Client, type ConnectConfig, type ClientChannel } from 'ssh2'
 import { getServerRow } from '../db/repos/servers-repo'
 import { revealSecret } from '../secrets/safe-store'
 import { checkHostKey } from './host-key-guard'
+import { friendlySshError } from '@shared/ssh-errors'
 
 /** ขยาย ~ เป็น home directory (เช่น ~/.ssh/id_ed25519) */
 function expandHome(p: string): string {
@@ -110,16 +111,18 @@ export async function connectSsh(serverId: string): Promise<Client> {
 
 function waitReady(client: Client, cfg: ConnectConfig): Promise<void> {
   return new Promise((resolve, reject) => {
-    client.once('ready', () => resolve())
-    client.once('error', (err) => {
-      // ssh2 คืน error กว้าง ๆ เวลา hostVerifier ปฏิเสธ — แปลให้ผู้ใช้เข้าใจว่าเกิดอะไรขึ้น
-      const msg = String((err as Error)?.message ?? err)
-      if (/host (key )?verification|handshake failed/i.test(msg)) {
-        reject(new Error('ไม่ได้ยืนยันตัวตนเซิร์ฟเวอร์ (host key) — ยกเลิกการเชื่อมต่อ'))
-      } else {
-        reject(err)
-      }
-    })
+    let settled = false
+    const done = (err?: Error): void => {
+      if (settled) return
+      settled = true
+      if (err) reject(err)
+      else resolve()
+    }
+    // ใช้ on() ไม่ใช่ once() — ssh2 ยิง 'error' ได้หลายครั้ง (auth fail แล้วตอนปิด socket ยิงซ้ำ)
+    // ถ้าใช้ once ตัวที่ 2 จะไม่มีคนดัก → กลายเป็น uncaught exception เด้ง crash dialog
+    // persistent handler + settled guard = error ซ้ำถูกกลืนเงียบ ๆ ไม่ล้ม
+    client.on('error', (err) => done(new Error(friendlySshError(err))))
+    client.once('ready', () => done())
     client.connect(cfg)
   })
 }

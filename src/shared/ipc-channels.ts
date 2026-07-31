@@ -130,6 +130,8 @@ export const IPC = {
   shellOpenExternal: 'shell:openExternal',
   /** เวอร์ชันของแอปตอนนี้ */
   appVersion: 'app:version',
+  /** event main→renderer: error ที่ไม่คาดคิด (แทน crash dialog) → โชว์ toast */
+  appError: 'app:error',
 
   // auto-update
   updateCheck: 'update:check',

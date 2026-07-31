@@ -304,6 +304,13 @@ const api = {
     return () => ipcRenderer.removeListener(IPC.knowledgeSaved, listener)
   },
 
+  /** error ที่ไม่คาดคิดจาก main (แทน crash dialog) */
+  onAppError: (cb: (message: string) => void): (() => void) => {
+    const listener = (_e: unknown, message: string): void => cb(message)
+    ipcRenderer.on(IPC.appError, listener)
+    return () => ipcRenderer.removeListener(IPC.appError, listener)
+  },
+
   updates: {
     check: (): Promise<{
       ok: boolean

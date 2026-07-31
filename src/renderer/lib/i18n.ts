@@ -7,6 +7,19 @@ export type Lang = 'th' | 'en'
  * ข้อดี: UI ไทยเดิมไม่เปลี่ยน และถ้าคำไหนยังไม่มีคำแปล จะ fallback เป็นไทยอัตโนมัติ
  */
 const EN: Record<string, string> = {
+  // --- v1.7.6: friendly SSH / error messages ---
+  'ยืนยันตัวตนไม่สำเร็จ — ตรวจ username, รหัสผ่าน, private key หรือ passphrase ให้ถูกต้อง': 'Authentication failed — check the username, password, private key or passphrase',
+  'ยืนยัน host key ไม่ผ่าน — เซิร์ฟเวอร์อาจเปลี่ยนกุญแจ หรือถูกยกเลิกการเชื่อมต่อ': 'Host key verification failed — the server may have changed its key, or the connection was rejected',
+  'อ่าน private key ไม่ได้ — รูปแบบไฟล์ไม่ถูกต้อง หรือ passphrase ผิด': 'Could not read the private key — wrong format or incorrect passphrase',
+  'เชื่อมต่อไม่ได้ — เซิร์ฟเวอร์ปฏิเสธการเชื่อมต่อ (ตรวจ host/port หรือ SSH เปิดอยู่ไหม)': 'Connection refused — check the host/port, or whether SSH is running',
+  'หมดเวลาเชื่อมต่อ — เข้าถึงเซิร์ฟเวอร์ไม่ได้ (ตรวจเครือข่าย/firewall)': 'Connection timed out — cannot reach the server (check network/firewall)',
+  'หาเซิร์ฟเวอร์ไม่เจอ — ตรวจชื่อ host หรือการตั้งค่า DNS': 'Server not found — check the host name or DNS',
+  'เข้าถึงเซิร์ฟเวอร์ไม่ได้ — ไม่มีเส้นทางไปยัง host': 'Cannot reach the server — no route to host',
+  'การเชื่อมต่อถูกตัด — เซิร์ฟเวอร์ปิดการเชื่อมต่อกะทันหัน': 'Connection reset — the server closed the connection unexpectedly',
+  'ไม่พบ SSH agent — ตรวจว่าเปิด ssh-agent อยู่ (หรือเลือก auth วิธีอื่น)': 'No SSH agent found — make sure ssh-agent is running (or use another auth method)',
+  'ไม่พบไฟล์ private key ตาม path ที่ระบุ': 'Private key file not found at the given path',
+  'เชื่อมต่อไม่สำเร็จ': 'Connection failed',
+  'เกิดข้อผิดพลาดที่ไม่คาดคิด — ลองอีกครั้ง หรือรีสตาร์ทแอปถ้ายังพบปัญหา': 'An unexpected error occurred — try again, or restart the app if it persists',
   // --- v1.8.0: AI providers (จีน/openrouter) + dropdown ---
   'ยังไม่ได้ตั้ง API key': 'No API key set yet',
   'เชื่อมต่อแล้ว': 'Connected',

@@ -137,15 +137,17 @@ export function commandStats(
   serverId: string | null,
   limit = 600
 ): { command: string; count: number; lastRan: number; sameServer: number }[] {
+  // แยกประวัติคำสั่งตาม server — ดึงเฉพาะที่เคยรันบน server เดียวกัน (local ก็แยกของตัวเอง)
+  // เพื่อให้ suggestion ไม่ปะปนข้าม server (server_id NULL = local ทุกตัว share กัน)
   return getDb()
     .prepare(
       `SELECT c.command AS command,
               COUNT(*) AS count,
               MAX(c.ran_at) AS lastRan,
-              MAX(CASE WHEN COALESCE(s.server_id,'') = COALESCE(?,'') THEN 1 ELSE 0 END) AS sameServer
+              1 AS sameServer
        FROM commands c
        JOIN sessions s ON s.id = c.session_id
-       WHERE c.command <> ''
+       WHERE c.command <> '' AND COALESCE(s.server_id,'') = COALESCE(?,'')
        GROUP BY c.command
        ORDER BY lastRan DESC
        LIMIT ?`

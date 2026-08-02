@@ -30,7 +30,8 @@ import type {
   JournalLine,
   KnownHostRecord,
   LiveSession,
-  ServerStats
+  ServerStats,
+  GitInfo
 } from '../shared/types'
 import type { TransferItem } from '../shared/transfer-queue'
 import type { GuardPolicy } from '../shared/ai-guard'
@@ -219,6 +220,11 @@ const api = {
   stats: {
     sample: (sessionId: string): Promise<ServerStats | null> =>
       ipcRenderer.invoke(IPC.statsSample, sessionId)
+  },
+
+  git: {
+    info: (sessionId: string, cwd: string): Promise<GitInfo | null> =>
+      ipcRenderer.invoke(IPC.gitInfo, sessionId, cwd)
   },
 
   docker: {

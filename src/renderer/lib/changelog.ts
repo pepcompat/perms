@@ -23,6 +23,25 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.8.0',
+    title: 'บอก git branch บน SSH + จำ suggestion แยกตามเซิร์ฟเวอร์',
+    titleEn: 'Git branch on SSH + per-server command suggestions',
+    items: [
+      {
+        icon: '🌿',
+        text: 'เทอร์มินัล SSH โชว์ป้าย git มุมซ้ายล่างเมื่ออยู่ในโฟลเดอร์ที่เป็น git repo — บอกชื่อ branch, จำนวน commit และจุดเตือนไฟล์ที่ยังไม่ commit (คล้าย prompt ของ zsh) อัปเดตอัตโนมัติเมื่อเปลี่ยนโฟลเดอร์',
+        textEn:
+          'SSH terminals now show a git badge in the bottom-left when you’re inside a git repo — the branch name, commit count and a dot for uncommitted files (like a zsh prompt), refreshing automatically as you change folders'
+      },
+      {
+        icon: '💡',
+        text: 'คำแนะนำคำสั่ง (auto-suggestion) แยกประวัติตามเซิร์ฟเวอร์ — คำสั่งที่เคยใช้บนเซิร์ฟเวอร์หนึ่งจะไม่เด้งขึ้นมาปะปนบนอีกเซิร์ฟเวอร์ (เทอร์มินัลในเครื่องก็แยกประวัติของตัวเอง)',
+        textEn:
+          'Command auto-suggestions are now scoped per server — commands you ran on one server no longer show up on another (the local terminal keeps its own history too)'
+      }
+    ]
+  },
+  {
     version: '1.7.9',
     title: 'หน้าสถานะเซิร์ฟเวอร์ โชว์โปรเซสแบบ top',
     titleEn: 'Server status now lists top processes',

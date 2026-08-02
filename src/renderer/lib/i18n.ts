@@ -8,6 +8,8 @@ export type Lang = 'th' | 'en'
  */
 const EN: Record<string, string> = {
   'โปรเซสที่กินทรัพยากร': 'Top processes',
+  'จำนวน commit': 'Commits',
+  'ไฟล์ที่ยังไม่ commit': 'Uncommitted files',
   'สถานะเซิร์ฟเวอร์ (สด)': 'Server status (live)',
   'อ่านสถานะไม่ได้ — เซิร์ฟเวอร์นี้อาจไม่ใช่ Linux หรือไม่มีสิทธิ์อ่าน /proc': 'Cannot read status — this server may not be Linux, or /proc is not readable',
   'กำลังอ่านสถานะ…': 'Reading status…',

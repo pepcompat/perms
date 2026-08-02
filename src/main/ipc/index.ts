@@ -89,6 +89,7 @@ import {
 } from '../systemd'
 import { getGuardPolicy, setGuardPolicy } from '../db/repos/settings-repo'
 import { sampleServerStats } from '../server-stats'
+import { getGitInfo } from '../git-info'
 import type { GuardPolicy } from '@shared/ai-guard'
 
 export function registerIpc(): void {
@@ -168,6 +169,7 @@ export function registerIpc(): void {
 
   // ---- สถานะทรัพยากรเซิร์ฟเวอร์ ----
   ipcMain.handle(IPC.statsSample, (_e, sessionId: string) => sampleServerStats(sessionId))
+  ipcMain.handle(IPC.gitInfo, (_e, sessionId: string, cwd: string) => getGitInfo(sessionId, cwd))
 
   // ---- docker live log stream ----
   const logStreams = new Map<string, () => void>()

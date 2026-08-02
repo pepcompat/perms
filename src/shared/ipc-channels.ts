@@ -64,6 +64,8 @@ export const IPC = {
 
   // สถานะทรัพยากรเซิร์ฟเวอร์ (cpu/ram/net)
   statsSample: 'stats:sample',
+  // git ของโฟลเดอร์ปัจจุบัน (chip branch/commit)
+  gitInfo: 'git:info',
 
   // นโยบายกรองคำสั่ง AI
   guardGet: 'guard:get',

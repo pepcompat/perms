@@ -36,6 +36,7 @@ import SystemdPanel from './SystemdPanel'
 import TunnelPanel from './TunnelPanel'
 import DockerIcon from './DockerIcon'
 import ServerStatsModal from './ServerStatsModal'
+import GitChip from './GitChip'
 import { useT } from '../lib/i18n'
 
 // Catppuccin Mocha — palette ที่เข้ากับธีมม่วงของแอป ทำให้ output (ls, git, ฯลฯ) มีสีสวย
@@ -687,6 +688,11 @@ export default function TerminalView({
           </>
         )}
       </div>
+
+      {/* git chip มุมซ้ายล่าง (คล้าย prompt zsh) — เฉพาะ SSH ที่ active */}
+      {tabKind === 'ssh' && visible && !searchOpen && (
+        <GitChip sessionId={sessionId} getCwd={promptCwd} />
+      )}
 
       {tabKind === 'ssh' && statsOpen && (
         <ServerStatsModal

@@ -297,6 +297,15 @@ export interface FileSnapshot {
 /** รายการ snapshot แบบไม่เอาเนื้อหา (ใช้โชว์ list ไม่ต้องโหลดทั้งไฟล์) */
 export type FileSnapshotMeta = Omit<FileSnapshot, 'content'>
 
+/** ข้อมูล git ของโฟลเดอร์ปัจจุบันบนเซิร์ฟเวอร์ (แสดงเป็น chip คล้าย prompt zsh) */
+export interface GitInfo {
+  branch: string
+  /** จำนวน commit ทั้งหมดใน branch นี้ */
+  commits: number
+  /** จำนวนไฟล์ที่ยังไม่ commit (dirty) */
+  dirty: number
+}
+
 /** process ที่กินทรัพยากร (จาก ps) — เรียงตาม CPU */
 export interface ProcessInfo {
   pid: number

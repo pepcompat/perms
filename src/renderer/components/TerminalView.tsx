@@ -20,7 +20,8 @@ import {
   FolderSymlink,
   ServerCog,
   Waypoints,
-  Activity
+  Activity,
+  GitBranch
 } from 'lucide-react'
 import { Hint } from './ui/tooltip'
 import { cn } from '../lib/utils'
@@ -36,7 +37,7 @@ import SystemdPanel from './SystemdPanel'
 import TunnelPanel from './TunnelPanel'
 import DockerIcon from './DockerIcon'
 import ServerStatsModal from './ServerStatsModal'
-import GitChip from './GitChip'
+import { useGitInfo } from './GitChip'
 import { useT } from '../lib/i18n'
 
 // Catppuccin Mocha — palette ที่เข้ากับธีมม่วงของแอป ทำให้ output (ls, git, ฯลฯ) มีสีสวย
@@ -223,6 +224,37 @@ export default function TerminalView({
     return cwdFromPrompt(line)
   }
 
+  // git badge (คล้าย RPROMPT ของ zsh) — โผล่บนบรรทัด prompt ปัจจุบัน ชิดขวา ไม่ทับ output
+  const git = useGitInfo(sessionId, promptCwd, tabKind === 'ssh' && visible)
+  const gitBadgeRef = useRef<HTMLDivElement>(null)
+  const gitTopRef = useRef(PAD_T)
+  // เลื่อน badge ให้อยู่แถวเดียวกับเคอร์เซอร์ (แถวที่กำลังพิมพ์คำสั่ง) — เขียน DOM ตรงๆ เลี่ยง re-render ถี่
+  const updateGitPos = (): void => {
+    const term = termRef.current
+    const host = hostRef.current
+    if (!term || !host) return
+    const alt = term.buffer.active.type === 'alternate' // full-screen app (vim/htop) → ซ่อน
+    // ความสูงต่อแถวคำนวณจากขนาดจริงของ .xterm-screen (= rows × cellH) → ไม่เพี้ยนสะสมเวลาลงแถวล่างๆ
+    const screen = host.querySelector('.xterm-screen') as HTMLElement | null
+    let rowTop: number
+    let cellH: number
+    if (screen && term.rows > 0) {
+      const sRect = screen.getBoundingClientRect()
+      cellH = sRect.height / term.rows
+      rowTop = sRect.top - host.getBoundingClientRect().top + term.buffer.active.cursorY * cellH
+    } else {
+      cellH = cellDims().h
+      rowTop = PAD_T + term.buffer.active.cursorY * cellH
+    }
+    const mid = rowTop + cellH / 2 // กึ่งกลางแถว (badge ใช้ -translate-y-1/2) → ตรงบรรทัด prompt เป๊ะ
+    gitTopRef.current = mid
+    const el = gitBadgeRef.current
+    if (el) {
+      el.style.display = alt ? 'none' : ''
+      el.style.top = `${mid}px`
+    }
+  }
+
   const acceptSuggestion = (s: string): void => {
     const completion = s.slice(typedRef.current.length)
     if (completion) window.api.terminal.write(sessionId, completion)
@@ -341,6 +373,7 @@ export default function TerminalView({
     // เคอร์เซอร์ขยับ (หลัง shell echo คำที่พิมพ์) → ขยับ ghost ให้ตรง
     const cursorDisp = term.onCursorMove(() => {
       if (suggRef.current) updateGhostPos()
+      updateGitPos() // ตาม prompt ไปทุกแถว (ราคาถูก: เขียน style ตรงๆ)
     })
     // เล่น output ที่ค้างอยู่ใน main กลับมาก่อน (หลัง refresh จอจะได้ไม่ว่างเปล่า)
     // ระหว่างรอ buffer ให้พัก output สดไว้ในคิว — ไม่งั้นของใหม่จะไปโผล่ก่อนของเก่า
@@ -413,6 +446,12 @@ export default function TerminalView({
       })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, sessionId])
+
+  // จัด badge git ให้ตรงแถว prompt ทันทีที่โผล่/สลับ tab (ตอน idle เคอร์เซอร์ไม่ขยับ = onCursorMove ไม่ยิง)
+  useEffect(() => {
+    if (git && visible) requestAnimationFrame(() => updateGitPos())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [git, visible])
 
   // SSH: หลังต่อแล้ว เช็คว่ามี docker container ไหม → ถ้ามี โชว์ปุ่ม Docker
   useEffect(() => {
@@ -689,9 +728,30 @@ export default function TerminalView({
         )}
       </div>
 
-      {/* git chip มุมซ้ายล่าง (คล้าย prompt zsh) — เฉพาะ SSH ที่ active */}
-      {tabKind === 'ssh' && visible && !searchOpen && (
-        <GitChip sessionId={sessionId} getCwd={promptCwd} />
+      {/* git badge บนบรรทัด prompt ปัจจุบัน ชิดขวา (คล้าย RPROMPT ของ zsh) — ไม่ทับ output */}
+      {tabKind === 'ssh' && git && !searchOpen && (
+        <div
+          ref={gitBadgeRef}
+          className="pointer-events-none absolute right-3 z-20 flex -translate-y-1/2 items-center gap-1.5 rounded-full border border-border/50 bg-card/80 px-2 py-0.5 text-[11px] shadow-md backdrop-blur"
+          style={{ top: gitTopRef.current }}
+        >
+          <GitBranch className="size-3 text-[hsl(var(--success))]" />
+          <span className="font-medium text-foreground">{git.branch}</span>
+          {git.commits > 0 && (
+            <span className="text-muted-foreground" title={t('จำนวน commit')}>
+              {git.commits}
+            </span>
+          )}
+          {git.dirty > 0 && (
+            <span
+              className="flex items-center gap-0.5 text-[hsl(var(--warning))]"
+              title={t('ไฟล์ที่ยังไม่ commit')}
+            >
+              <span className="size-1.5 rounded-full bg-[hsl(var(--warning))]" />
+              {git.dirty}
+            </span>
+          )}
+        </div>
       )}
 
       {tabKind === 'ssh' && statsOpen && (

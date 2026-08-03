@@ -23,15 +23,28 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.8.1',
+    title: 'ป้าย git ไปอยู่บนบรรทัด prompt (คล้าย RPROMPT ของ zsh)',
+    titleEn: 'Git badge now sits on the prompt line (zsh-style RPROMPT)',
+    items: [
+      {
+        icon: '🌿',
+        text: 'ย้ายป้าย git ไปเกาะบนบรรทัด prompt ที่กำลังพิมพ์คำสั่ง (ชิดขวา คล้าย RPROMPT ของ zsh) แทนการลอยมุมซ้ายล่างที่ไปบัง output — เลื่อนตาม prompt ลงมาเรื่อยๆ ตรงบรรทัดพอดี และซ่อนเองเมื่อเข้าโปรแกรมเต็มจอ (vim/htop)',
+        textEn:
+          'Moved the git badge onto the active command-prompt line (right-aligned, like zsh’s RPROMPT) instead of floating in the bottom-left corner where it covered output — it now tracks the prompt line exactly and hides itself inside full-screen apps (vim/htop)'
+      }
+    ]
+  },
+  {
     version: '1.8.0',
     title: 'บอก git branch บน SSH + จำ suggestion แยกตามเซิร์ฟเวอร์',
     titleEn: 'Git branch on SSH + per-server command suggestions',
     items: [
       {
         icon: '🌿',
-        text: 'เทอร์มินัล SSH โชว์ป้าย git มุมซ้ายล่างเมื่ออยู่ในโฟลเดอร์ที่เป็น git repo — บอกชื่อ branch, จำนวน commit และจุดเตือนไฟล์ที่ยังไม่ commit (คล้าย prompt ของ zsh) อัปเดตอัตโนมัติเมื่อเปลี่ยนโฟลเดอร์',
+        text: 'เทอร์มินัล SSH โชว์ป้าย git เมื่ออยู่ในโฟลเดอร์ที่เป็น git repo — บอกชื่อ branch, จำนวน commit และจุดเตือนไฟล์ที่ยังไม่ commit (คล้าย prompt ของ zsh) อัปเดตอัตโนมัติเมื่อเปลี่ยนโฟลเดอร์',
         textEn:
-          'SSH terminals now show a git badge in the bottom-left when you’re inside a git repo — the branch name, commit count and a dot for uncommitted files (like a zsh prompt), refreshing automatically as you change folders'
+          'SSH terminals now show a git badge when you’re inside a git repo — the branch name, commit count and a dot for uncommitted files (like a zsh prompt), refreshing automatically as you change folders'
       },
       {
         icon: '💡',

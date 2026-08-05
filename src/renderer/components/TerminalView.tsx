@@ -29,6 +29,7 @@ import { redactSecrets } from '@shared/redact'
 import { rankSuggestions, type CommandStat } from '@shared/suggest'
 import { dedupeLive } from '@shared/scrollback'
 import { nextCwd, cwdFromPrompt } from '@shared/cwd-track'
+import { KILL_LINE, moveCursorSeq, cellFromPoint, deleteSelectionSeq } from '@shared/line-edit'
 import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import SftpBrowser from './SftpBrowser'
@@ -335,6 +336,37 @@ export default function TerminalView({
         if (e.type === 'keydown') setSearchOpen(false)
         return false
       }
+      // แก้บรรทัดคำสั่งแบบ text editor — เฉพาะตอนไม่ได้อยู่ใน full-screen app (vim/less/htop)
+      if (term.buffer.active.type !== 'alternate') {
+        // Cmd/Ctrl+Backspace → ลบทั้งบรรทัด (เหมือนคีย์ลัดปกติของ text field)
+        if ((e.metaKey || e.ctrlKey) && (e.key === 'Backspace' || e.key === 'Delete')) {
+          if (e.type === 'keydown') {
+            e.preventDefault() // กัน Electron เผลอ "ย้อนกลับ" หน้า
+            window.api.terminal.write(sessionId, KILL_LINE)
+            typedRef.current = ''
+            trackingRef.current = true // บรรทัดว่าง = กลับมา sync แนะนำต่อได้เลย
+            setSuggestion(null)
+          }
+          return false
+        }
+        // ลากคลุมข้อความบนบรรทัด prompt แล้วกด Backspace/Delete → ลบเฉพาะส่วนที่เลือก
+        if ((e.key === 'Backspace' || e.key === 'Delete') && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          const sel = term.getSelectionPosition()
+          const buf = term.buffer.active
+          const curAbs = buf.baseY + buf.cursorY
+          const n = term.getSelection().length
+          if (sel && n > 0 && sel.start.y === curAbs && sel.end.y === curAbs) {
+            if (e.type === 'keydown') {
+              e.preventDefault()
+              window.api.terminal.write(sessionId, deleteSelectionSeq(buf.cursorX, sel.start.x, n))
+              term.clearSelection()
+              trackingRef.current = false // เคอร์เซอร์ไม่อยู่ท้ายบรรทัดแล้ว → หยุดแนะนำจน Enter
+              setSuggestion(null)
+            }
+            return false
+          }
+        }
+      }
       // Tab หรือ ลูกศรขวา → รับ suggestion จากประวัติ ถ้ามี
       // (Tab: ถ้าไม่มี suggestion ปล่อยให้ shell ทำ completion เอง)
       // ลูกศรขวาปลอดภัยเพราะถ้าเคยกดลูกศรมาก่อน เราจะ desync แล้วล้าง suggestion ทิ้ง
@@ -411,6 +443,31 @@ export default function TerminalView({
     const ro = new ResizeObserver(() => refit())
     ro.observe(hostRef.current)
 
+    // คลิกวางเคอร์เซอร์ตรงไหนก็ได้บนบรรทัด prompt — ส่งลูกศร ←/→ ให้ shell ขยับเคอร์เซอร์ไปจุดนั้น
+    const hostEl = hostRef.current
+    const onHostClick = (e: MouseEvent): void => {
+      const tm = termRef.current
+      if (!tm || tm.buffer.active.type === 'alternate') return
+      if (tm.getSelection()) return // มีการลากคลุมอยู่ = กำลังเลือกข้อความ ไม่ใช่คลิกวางเคอร์เซอร์
+      const screen = hostEl.querySelector('.xterm-screen') as HTMLElement | null
+      if (!screen) return
+      const buf = tm.buffer.active
+      const { col, row } = cellFromPoint(
+        e.clientX,
+        e.clientY,
+        screen.getBoundingClientRect(),
+        tm.cols,
+        tm.rows
+      )
+      if (row !== buf.cursorY) return // คลิกได้เฉพาะบรรทัดที่เคอร์เซอร์อยู่ (คำสั่งบรรทัดเดียว)
+      const seq = moveCursorSeq(buf.cursorX, col)
+      if (!seq) return
+      window.api.terminal.write(sessionId, seq)
+      trackingRef.current = false // เคอร์เซอร์อาจไม่อยู่ท้ายบรรทัด → หยุดแนะนำจน Enter
+      setSuggestion(null)
+    }
+    hostEl.addEventListener('click', onHostClick)
+
     return () => {
       disposedRef.current = true
       try {
@@ -422,6 +479,7 @@ export default function TerminalView({
       offData()
       offExit()
       ro.disconnect()
+      hostEl.removeEventListener('click', onHostClick)
       // dispose WebGL addon ก่อน term เสมอ — กัน exception ตอนปิด session
       try {
         webglRef.current?.dispose()

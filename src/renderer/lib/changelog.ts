@@ -23,6 +23,31 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.8.2',
+    title: 'แก้บรรทัดคำสั่งบนเทอร์มินัลได้แบบ text editor',
+    titleEn: 'Edit the command line like a text editor',
+    items: [
+      {
+        icon: '⌨️',
+        text: 'กด Cmd/Ctrl+Backspace เพื่อลบทั้งบรรทัดคำสั่งได้ทันที (เหมือนคีย์ลัดในช่องพิมพ์ทั่วไป) ไม่ว่าเคอร์เซอร์จะอยู่ตรงไหน',
+        textEn:
+          'Press Cmd/Ctrl+Backspace to wipe the whole command line at once (like the usual text-field shortcut), no matter where the cursor is'
+      },
+      {
+        icon: '👆',
+        text: 'คลิกตรงไหนก็ได้บนบรรทัดคำสั่งเพื่อวางเคอร์เซอร์ตรงนั้น (แก้/แทรกกลางคำสั่งได้เลย ไม่ต้องกดลูกศรทีละที)',
+        textEn:
+          'Click anywhere on the command line to drop the cursor there — edit or insert mid-command without tapping the arrow keys'
+      },
+      {
+        icon: '🖱️',
+        text: 'ลากคลุมข้อความบนบรรทัดคำสั่งแล้วกด Backspace/Delete เพื่อลบเฉพาะส่วนที่เลือก',
+        textEn:
+          'Drag-select text on the command line, then press Backspace/Delete to remove just the selected part'
+      }
+    ]
+  },
+  {
     version: '1.8.1',
     title: 'ป้าย git ไปอยู่บนบรรทัด prompt (คล้าย RPROMPT ของ zsh)',
     titleEn: 'Git badge now sits on the prompt line (zsh-style RPROMPT)',

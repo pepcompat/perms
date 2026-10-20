@@ -17,7 +17,16 @@ export interface ToolCallRequest {
 export type ChatMessage =
   | { role: 'system'; content: string }
   | { role: 'user'; content: string }
-  | { role: 'assistant'; content: string; toolCalls?: ToolCallRequest[] }
+  | {
+      role: 'assistant'
+      content: string
+      toolCalls?: ToolCallRequest[]
+      /**
+       * content ดิบของ provider (เช่น block thinking/server tool ของ Anthropic) — ส่งกลับไปตามเดิม
+       * ระหว่าง agent loop ในรอบเดียวกัน (ไม่ persist ลง DB)
+       */
+      raw?: unknown
+    }
   | { role: 'tool'; toolCallId: string; name: string; content: string }
 
 export interface RunParams {
@@ -32,9 +41,15 @@ export interface RunParams {
   onText: (delta: string) => void
 }
 
+/** เหตุผลที่โมเดลหยุด (normalize จากแต่ละเจ้า) */
+export type StopReason = 'end_turn' | 'tool_use' | 'max_tokens' | 'pause_turn' | 'refusal' | 'other'
+
 export interface RunResult {
   text: string
   toolCalls: ToolCallRequest[]
+  stopReason: StopReason
+  /** content ดิบของ assistant turn นี้ — แนบกลับใน ChatMessage.raw */
+  raw?: unknown
 }
 
 /** อินเทอร์เฟซกลางของ AI provider */

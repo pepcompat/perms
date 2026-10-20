@@ -1,5 +1,5 @@
 import { GoogleGenAI, type Content, type Part, type FunctionDeclaration } from '@google/genai'
-import type { Provider, RunParams, RunResult, ToolCallRequest } from './types'
+import type { Provider, RunParams, RunResult, StopReason, ToolCallRequest } from './types'
 
 export class GoogleProvider implements Provider {
   readonly id = 'google' as const
@@ -59,10 +59,12 @@ export class GoogleProvider implements Provider {
     let text = ''
     const toolCalls: ToolCallRequest[] = []
     let callIdx = 0
+    let finish: string | undefined
 
     for await (const chunk of stream) {
       if (params.signal?.aborted) break
       const cand = chunk.candidates?.[0]
+      if (cand?.finishReason) finish = String(cand.finishReason)
       const parts = cand?.content?.parts ?? []
       for (const part of parts) {
         if (part.text) {
@@ -71,7 +73,7 @@ export class GoogleProvider implements Provider {
         }
         if (part.functionCall) {
           toolCalls.push({
-            id: `${part.functionCall.name}-${callIdx++}`,
+            id: part.functionCall.id || `${part.functionCall.name}-${Date.now().toString(36)}-${callIdx++}`,
             name: part.functionCall.name ?? '',
             arguments: (part.functionCall.args as Record<string, unknown>) ?? {}
           })
@@ -79,6 +81,13 @@ export class GoogleProvider implements Provider {
       }
     }
 
-    return { text, toolCalls }
+    const stopReason: StopReason = toolCalls.length
+      ? 'tool_use'
+      : finish === 'MAX_TOKENS'
+        ? 'max_tokens'
+        : finish === 'SAFETY'
+          ? 'refusal'
+          : 'end_turn'
+    return { text, toolCalls, stopReason }
   }
 }

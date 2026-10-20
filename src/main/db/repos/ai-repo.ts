@@ -48,19 +48,26 @@ export function appendMessage(
   return toRecord(getDb().prepare('SELECT * FROM ai_history WHERE id = ?').get(id) as AiRow)
 }
 
-export function listMessages(sessionId: string | null, limit = 200): AiMessageRecord[] {
-  const rows = (
-    sessionId
-      ? getDb()
-          .prepare(
-            'SELECT * FROM ai_history WHERE session_id = ? ORDER BY created_at ASC LIMIT ?'
-          )
-          .all(sessionId, limit)
-      : getDb()
-          .prepare(
-            'SELECT * FROM ai_history WHERE session_id IS NULL ORDER BY created_at ASC LIMIT ?'
-          )
-          .all(limit)
-  ) as AiRow[]
+/**
+ * ข้อความของ session เรียงเก่า→ใหม่ — เอา "ล่าสุด" limit แถว
+ * (เดิม ORDER BY ASC LIMIT ได้ 200 แถวแรกสุด → บทสนทนายาวแล้ว AI ไม่เห็นของใหม่เลย)
+ */
+export function listMessages(sessionId: string | null, limit = 400): AiMessageRecord[] {
+  const where = sessionId ? 'session_id = ?' : 'session_id IS NULL'
+  const args = sessionId ? [sessionId, limit] : [limit]
+  const rows = getDb()
+    .prepare(
+      `SELECT * FROM (
+         SELECT rowid AS rid, * FROM ai_history WHERE ${where}
+         ORDER BY created_at DESC, rowid DESC LIMIT ?
+       ) ORDER BY created_at ASC, rid ASC`
+    )
+    .all(...args) as AiRow[]
   return rows.map(toRecord)
+}
+
+/** ล้างบทสนทนาของ session (ปุ่มล้างแชท) — ให้ AI ลืมจริง ไม่ใช่แค่ล้างหน้าจอ */
+export function clearMessages(sessionId: string | null): void {
+  if (sessionId) getDb().prepare('DELETE FROM ai_history WHERE session_id = ?').run(sessionId)
+  else getDb().prepare('DELETE FROM ai_history WHERE session_id IS NULL').run()
 }

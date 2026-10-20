@@ -33,6 +33,19 @@ function apiKeySecretKey(provider: AiProvider): string {
   return `ai.${provider}.secretId`
 }
 
+function cliEnabledKey(provider: AiProvider): string {
+  return `ai.${provider}.cliEnabled`
+}
+
+export function isCliEnabled(provider: AiProvider): boolean {
+  return getRaw(cliEnabledKey(provider)) === '1'
+}
+
+export function setCliEnabled(provider: AiProvider, enabled: boolean): void {
+  if (enabled) setRaw(cliEnabledKey(provider), '1')
+  else deleteRaw(cliEnabledKey(provider))
+}
+
 function modelKey(provider: AiProvider): string {
   return `ai.${provider}.model`
 }
@@ -43,7 +56,10 @@ export function getAiSettings(): AiSettings {
   for (const p of PROVIDERS) {
     const m = getRaw(modelKey(p))
     if (m) models[p] = m
-    configured[p] = !!getRaw(apiKeySecretKey(p))
+    // provider แบบ CLI (subscription) ไม่มี key — "ตั้งค่าแล้ว" = ผู้ใช้เปิดใช้เองใน Settings
+    configured[p] = AI_PROVIDERS.find((x) => x.id === p)?.kind === 'cli'
+      ? getRaw(cliEnabledKey(p)) === '1'
+      : !!getRaw(apiKeySecretKey(p))
   }
   return {
     defaultProvider: (getRaw('ai.defaultProvider') as AiProvider) ?? 'anthropic',

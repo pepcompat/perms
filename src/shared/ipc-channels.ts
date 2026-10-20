@@ -106,6 +106,9 @@ export const IPC = {
   aiApprove: 'ai:approve',
   aiCancel: 'ai:cancel',
   aiHistory: 'ai:history',
+  aiClear: 'ai:clear',
+  aiCliStatus: 'ai:cli-status',
+  aiCliEnable: 'ai:cli-enable',
   /** event main→renderer: `ai:stream:<requestId>` */
   aiStreamPrefix: 'ai:stream:',
 

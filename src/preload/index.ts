@@ -10,6 +10,7 @@ import type {
   AiChatInput,
   AiStreamEvent,
   AiMessageRecord,
+  AiCliStatus,
   AiProvider,
   AiMode,
   RunbookRecord,
@@ -282,6 +283,10 @@ const api = {
     cancel: (requestId: string): void => ipcRenderer.send(IPC.aiCancel, requestId),
     history: (sessionId: string | null): Promise<AiMessageRecord[]> =>
       ipcRenderer.invoke(IPC.aiHistory, sessionId),
+    clear: (sessionId: string | null): Promise<void> => ipcRenderer.invoke(IPC.aiClear, sessionId),
+    cliStatus: (provider: AiProvider): Promise<AiCliStatus> => ipcRenderer.invoke(IPC.aiCliStatus, provider),
+    setCliEnabled: (provider: AiProvider, enabled: boolean): Promise<AppSettings> =>
+      ipcRenderer.invoke(IPC.aiCliEnable, provider, enabled),
     onStream: (requestId: string, cb: (event: AiStreamEvent) => void): (() => void) => {
       const ch = IPC.aiStreamPrefix + requestId
       const listener = (_e: unknown, event: AiStreamEvent): void => cb(event)

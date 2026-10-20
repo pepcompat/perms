@@ -13,6 +13,8 @@ export type AiProvider =
   | 'deepseek'
   | 'kimi'
   | 'glm'
+  | 'codex-cli'
+  | 'claude-cli'
 export type AiMode = 'suggest' | 'approve' | 'agentic'
 export type CommandSource = 'user' | 'ai'
 
@@ -132,6 +134,18 @@ export interface AiSettings {
   models: Record<AiProvider, string>
   /** provider ไหนตั้ง API key ไว้แล้วบ้าง (ไม่คืนค่า key จริง) */
   configured: Record<AiProvider, boolean>
+}
+
+/** สถานะ CLI ของ subscription (codex / claude) ที่ติดตั้งในเครื่องผู้ใช้ */
+export interface AiCliStatus {
+  installed: boolean
+  version: string | null
+  loggedIn: boolean
+  /** วิธี login ที่ CLI รายงาน เช่น "ChatGPT", "claude.ai" — ไม่มี token ใด ๆ */
+  authMethod: string | null
+  /** ผู้ใช้เปิดใช้ใน Settings แล้ว */
+  enabled: boolean
+  error?: string
 }
 
 export interface AppSettings {

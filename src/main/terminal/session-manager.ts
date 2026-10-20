@@ -3,6 +3,8 @@ import { BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type { OpenSessionInput, OpenSessionResult, LiveSession } from '@shared/types'
 import { appendScrollback } from '@shared/scrollback'
+import { stripAnsi, tailLines } from '@shared/ansi'
+import { wrapWithCwd, splitCwdMarker } from '@shared/cwd-exec'
 import { clearServerStats } from '../server-stats'
 import { PtySession } from './pty-session'
 import { SshSession } from './ssh-session'
@@ -22,6 +24,9 @@ interface SessionMeta {
 }
 const meta = new Map<string, SessionMeta>()
 
+/** ผู้ฟัง output ชั่วคราวต่อ session (ใช้เก็บผลของคำสั่งที่ AI พิมพ์ลง terminal) */
+const taps = new Map<string, Set<(data: string) => void>>()
+
 function broadcast(channel: string, payload: unknown): void {
   for (const win of BrowserWindow.getAllWindows()) {
     win.webContents.send(channel, payload)
@@ -35,6 +40,7 @@ function broadcast(channel: string, payload: unknown): void {
 function emitData(id: string, data: string): void {
   const m = meta.get(id)
   if (m) m.scrollback = appendScrollback(m.scrollback, data)
+  taps.get(id)?.forEach((cb) => cb(data))
   broadcast(IPC.terminalDataPrefix + id, data)
 }
 
@@ -114,21 +120,34 @@ export function getSessionHandle(id: string): TermSession | undefined {
   return sessions.get(id)
 }
 
-/** ใช้โดย AI agent: รันคำสั่ง + บันทึกประวัติ + echo ลง terminal ของ user */
+/**
+ * ใช้โดย AI agent: รันคำสั่ง + บันทึกประวัติ + echo ลง terminal ของ user
+ * opts.cwd (ส่งมา = ใช้โหมดจำ cwd): เริ่มที่ cwd นั้น (null = home) และคืน cwd หลังรันกลับไป
+ */
 export async function execInSession(
   id: string,
   command: string,
-  source: 'user' | 'ai' = 'ai'
-): Promise<{ output: string; exitCode: number | null }> {
+  source: 'user' | 'ai' = 'ai',
+  opts: { cwd?: string | null } = {}
+): Promise<{ output: string; exitCode: number | null; cwd: string | null }> {
   const s = sessions.get(id)
   if (!s) throw new Error('Session not found or not active')
+  // shell ฝั่ง Windows ไม่ใช่ POSIX — ห่อ cd/printf ไม่ได้
+  const track = opts.cwd !== undefined && !(s.kind === 'local' && process.platform === 'win32')
   // echo คำสั่งให้ user เห็นใน terminal
   emitData(id, `\r\n\x1b[36m$ ${command}\x1b[0m\r\n`)
-  const result = await s.exec(command)
-  emitData(id, result.output.replace(/\n/g, '\r\n'))
-  const preview = result.output.slice(0, 2000)
+  const result = await s.exec(track ? wrapWithCwd(command, opts.cwd ?? null) : command)
+  let output = result.output
+  let cwd: string | null = opts.cwd ?? null
+  if (track) {
+    const split = splitCwdMarker(output)
+    output = split.output
+    cwd = split.cwd ?? cwd
+  }
+  emitData(id, output.replace(/\n/g, '\r\n'))
+  const preview = output.slice(0, 2000)
   recordCommand(id, command, source, preview, result.exitCode)
-  return result
+  return { output, exitCode: result.exitCode, cwd }
 }
 
 /**
@@ -141,6 +160,76 @@ export function runInTerminal(id: string, command: string): void {
   if (!s) throw new Error('Session not found or not active')
   s.write(command + '\n')
   recordCommand(id, command, 'ai', null, null)
+}
+
+/**
+ * เหมือน runInTerminal แต่รอเก็บ output ที่ตามมาด้วย — ให้ AI อ่านผลแล้วทำขั้นต่อไปได้
+ * ถือว่าจบเมื่อ output เงียบไป idleMs (หรือครบ maxMs) — คำสั่งยาว/รอ input จะได้ผลเท่าที่มี
+ */
+export function runInTerminalCapture(
+  id: string,
+  command: string,
+  opts: { idleMs?: number; maxMs?: number; signal?: AbortSignal } = {}
+): Promise<{ output: string; settled: boolean }> {
+  const idleMs = opts.idleMs ?? 2000
+  const maxMs = opts.maxMs ?? 30000
+  const s = sessions.get(id)
+  if (!s) throw new Error('Session not found or not active')
+  return new Promise((resolve) => {
+    let buf = ''
+    let idleTimer: ReturnType<typeof setTimeout> | null = null
+    const set = taps.get(id) ?? new Set()
+    taps.set(id, set)
+    const finish = (settled: boolean): void => {
+      if (idleTimer) clearTimeout(idleTimer)
+      clearTimeout(maxTimer)
+      set.delete(onData)
+      opts.signal?.removeEventListener('abort', onAbort)
+      resolve({ output: buf, settled })
+    }
+    const armIdle = (): void => {
+      if (idleTimer) clearTimeout(idleTimer)
+      idleTimer = setTimeout(() => finish(true), idleMs)
+    }
+    const onData = (d: string): void => {
+      buf += d
+      if (buf.length > 512 * 1024) buf = buf.slice(-256 * 1024)
+      armIdle()
+    }
+    const onAbort = (): void => finish(false)
+    const maxTimer = setTimeout(() => finish(false), maxMs)
+    opts.signal?.addEventListener('abort', onAbort)
+    set.add(onData)
+    s.write(command + '\n')
+    recordCommand(id, command, 'ai', null, null)
+    armIdle()
+  })
+}
+
+/** สภาพ terminal ตอนนี้ (cwd จริงถ้าหาได้ + output ล่าสุดแบบข้อความล้วน) — ใส่เป็น context ให้ AI */
+export async function terminalContext(
+  id: string,
+  maxLines = 40
+): Promise<{ cwd: string | null; recentOutput: string }> {
+  const s = sessions.get(id)
+  const cwd = s?.getCwd ? await s.getCwd().catch(() => null) : null
+  const raw = terminalText(meta.get(id)?.scrollback.slice(-64 * 1024) ?? '')
+  return { cwd, recentOutput: tailLines(raw.trimEnd(), maxLines) }
+}
+
+/** แปลง output ดิบของ terminal เป็นข้อความล้วน — ตัดโค้ดสี และเก็บแค่ส่วนท้ายของบรรทัดที่ถูก \r เขียนทับ (progress bar) */
+export function terminalText(raw: string): string {
+  return stripAnsi(raw)
+    .split('\n')
+    .map((l) => {
+      let t = l.replace(/\r+$/, '')
+      t = t.slice(t.lastIndexOf('\r') + 1)
+      // backspace (line editor ของ zsh ลบ/พิมพ์ทับ) — ลบตัวก่อนหน้าทิ้ง
+      // eslint-disable-next-line no-control-regex
+      while (t.includes('\x08')) t = t.replace(/[^\x08]?\x08/, '')
+      return t
+    })
+    .join('\n')
 }
 
 /** รันคำสั่งเบื้องหลัง (ไม่ echo ลง terminal, ไม่บันทึกประวัติ) — ใช้ query สถานะ เช่น docker */

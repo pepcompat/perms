@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { AiMode, AiProvider, AiStreamEvent } from '@shared/types'
+import type { AiMessageRecord, AiMode, AiProvider, AiStreamEvent } from '@shared/types'
 import type { PayloadPreview } from '@shared/ai-guard'
 import { translate, useLang } from '../lib/i18n'
 
@@ -29,6 +29,8 @@ export interface ChatThread {
   mode?: AiMode
   model?: string
   webSearch?: boolean
+  /** โหลดประวัติจาก DB แล้ว (กันโหลดซ้ำ) */
+  hydrated?: boolean
 }
 
 export type ChatConfig = Pick<ChatThread, 'provider' | 'mode' | 'model' | 'webSearch'>
@@ -54,7 +56,8 @@ interface State {
   setInput: (key: string, input: string) => void
   appendInput: (key: string, text: string) => void
   setConfig: (key: string, patch: ChatConfig) => void
-  clear: (key: string) => void
+  clear: (key: string, sessionId: string | null) => void
+  hydrate: (key: string, sessionId: string | null) => Promise<void>
   send: (key: string, sessionId: string | null, opts: SendOpts) => Promise<void>
   approve: (key: string, approved: boolean) => void
   cancel: (key: string) => void
@@ -69,6 +72,34 @@ function updateLast(items: ChatItem[], fn: (a: ChatItem) => ChatItem): ChatItem[
   const last = next[next.length - 1]
   if (last.role === 'assistant') next[next.length - 1] = fn(last)
   return next
+}
+
+/** แปลงประวัติจาก DB เป็นรายการแชทบนจอ — assistant หลายขั้นติดกันรวมเป็นกล่องเดียว */
+function itemsFromHistory(records: AiMessageRecord[]): ChatItem[] {
+  const items: ChatItem[] = []
+  for (const r of records) {
+    if (r.role === 'user') {
+      items.push({ role: 'user', text: r.content })
+    } else if (r.role === 'assistant') {
+      let last = items[items.length - 1]
+      if (!last || last.role !== 'assistant') {
+        last = { role: 'assistant', text: '' }
+        items.push(last)
+      }
+      if (r.content) last.text = last.text ? `${last.text}\n\n${r.content}` : r.content
+      if (r.toolCalls?.length) {
+        last.tools = [
+          ...(last.tools ?? []),
+          ...r.toolCalls.map((t) => ({
+            name: t.name,
+            args: JSON.stringify(t.arguments),
+            result: t.result?.slice(0, 800)
+          }))
+        ]
+      }
+    }
+  }
+  return items
 }
 
 export const useAiChats = create<State>((set, get) => {
@@ -136,17 +167,34 @@ export const useAiChats = create<State>((set, get) => {
     appendInput: (key, text) =>
       patch(key, (t) => ({ ...t, input: t.input ? t.input + '\n' + text : text })),
     setConfig: (key, cfg) => patch(key, (t) => ({ ...t, ...cfg })),
-    clear: (key) => {
+    clear: (key, sessionId) => {
+      const rid = get().threads[key]?.requestId
+      if (get().threads[key]?.running && rid) window.api.ai.cancel(rid)
       offs.get(key)?.()
       offs.delete(key)
+      // ล้างความจำฝั่ง main ด้วย — ไม่งั้นจอว่างแต่ AI ยังจำของเก่าอยู่
+      void window.api.ai.clear(sessionId)
       // เก็บค่าตั้ง (provider/mode/model/webSearch) ไว้ ล้างแค่บทสนทนา
       patch(key, (t) => ({
         ...EMPTY_THREAD,
         provider: t.provider,
         mode: t.mode,
         model: t.model,
-        webSearch: t.webSearch
+        webSearch: t.webSearch,
+        hydrated: true
       }))
+    },
+    hydrate: async (key, sessionId) => {
+      if (get().threads[key]?.hydrated) return
+      patch(key, (t) => ({ ...t, hydrated: true }))
+      try {
+        const records = await window.api.ai.history(sessionId)
+        if (!records.length) return
+        // ระหว่างรอ ผู้ใช้อาจเริ่มพิมพ์ส่งไปแล้ว — เติมเฉพาะตอนจอยังว่าง
+        patch(key, (t) => (t.items.length ? t : { ...t, items: itemsFromHistory(records) }))
+      } catch {
+        /* โหลดไม่ได้ก็เริ่มแชทว่างได้ */
+      }
     },
     approve: (key, approved) => {
       const a = get().threads[key]?.approval

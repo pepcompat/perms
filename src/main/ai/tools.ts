@@ -1,7 +1,13 @@
 import { BrowserWindow } from 'electron'
 import { IPC } from '@shared/ipc-channels'
 import type { ToolSchema } from './providers/types'
-import { execInSession, runInTerminal } from '../terminal/session-manager'
+import {
+  execInSession,
+  runInTerminal,
+  runInTerminalCapture,
+  terminalText,
+  getSessionHandle
+} from '../terminal/session-manager'
 import { listServers } from '../db/repos/servers-repo'
 import { getSession, searchCommands } from '../db/repos/sessions-repo'
 import { saveKnowledge, searchKnowledge } from '../db/repos/knowledge-repo'
@@ -13,7 +19,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'run_command',
     description:
-      'Run a NON-INTERACTIVE shell command and get its stdout/stderr + exit code back. Runs in a fresh non-TTY shell each time (state like cd/env does NOT persist). Use for quick inspection/diagnostics (ls, df, systemctl status, cat, grep). Do NOT use for interactive programs that prompt for input or need a TTY — use run_in_terminal for those.',
+      'Run a NON-INTERACTIVE shell command and get its stdout/stderr, exit code and the resulting working directory back. Each call is a fresh non-TTY shell, but the working directory DOES persist between run_command calls (a `cd` carries over); env vars/exports do not. Use for inspection and for ordinary non-interactive work (mkdir, file edits, builds, ls, systemctl status, grep...). Do NOT use for programs that prompt for input or need a TTY — use run_in_terminal for those.',
     parameters: {
       type: 'object',
       properties: {
@@ -25,7 +31,7 @@ export const TOOL_SCHEMAS: ToolSchema[] = [
   {
     name: 'run_in_terminal',
     description:
-      "Type a command into the user's REAL interactive terminal (with a TTY) so it runs live and the user can see it and respond to any prompts. Use for: interactive installers that ask y/n (e.g. apt install, bash install scripts), TUI apps (vim, htop, top, less), long-running/streaming processes, or command sequences that need persistent shell state (cd, export, source). NOTE: you do NOT get the output back — the user watches it. After it likely finishes, you can run a quick read-only run_command to verify the result.",
+      "Type a command into the user's REAL interactive terminal (with a TTY) so it runs live and the user can see it and respond to any prompts. Use for: interactive installers that ask y/n (e.g. apt install, bash install scripts), TUI apps (vim, htop, top, less), long-running/streaming processes, or anything that must change the user's own shell state (export, source). Returns the terminal output captured until the output goes quiet for a couple of seconds (up to ~30s) — a long-running or prompting command may still be running; check again with run_command if needed.",
     parameters: {
       type: 'object',
       properties: {
@@ -139,6 +145,28 @@ export function dangerousReasonForCall(name: string, args: Record<string, unknow
 
 export interface ToolContext {
   sessionId: string | null
+  signal?: AbortSignal
+}
+
+/**
+ * cwd ของ AI ต่อ session — run_command แต่ละครั้งเป็น shell ใหม่ เลยต้องจำเองว่าอยู่ที่ไหน
+ * เริ่มจาก cwd จริงของ terminal (local) ไม่งั้น home · คงอยู่ข้ามรอบสนทนาจนกว่า session จะปิด
+ */
+const agentCwds = new Map<string, string | null>()
+
+export async function agentCwd(sessionId: string): Promise<string | null> {
+  if (agentCwds.has(sessionId)) return agentCwds.get(sessionId) ?? null
+  const handle = getSessionHandle(sessionId)
+  const cwd = handle?.getCwd ? await handle.getCwd().catch(() => null) : null
+  agentCwds.set(sessionId, cwd)
+  return cwd
+}
+
+/** ผลยาวเกิน → เก็บหัว+ท้าย (error มักอยู่ท้าย) */
+function clip(text: string, max: number): string {
+  if (text.length <= max) return text
+  const head = Math.floor(max * 0.3)
+  return `${text.slice(0, head)}\n…[${text.length - max} chars truncated]…\n${text.slice(-(max - head))}`
 }
 
 /** เรียกใช้ tool จริง (ฝั่ง main) */
@@ -154,8 +182,11 @@ export async function executeTool(
       }
       const command = String(args.command ?? '')
       if (!command) return 'Error: empty command'
-      const res = await execInSession(ctx.sessionId, command, 'ai')
-      return `exit_code=${res.exitCode}\n${res.output.slice(0, 6000)}`
+      const res = await execInSession(ctx.sessionId, command, 'ai', {
+        cwd: await agentCwd(ctx.sessionId)
+      })
+      agentCwds.set(ctx.sessionId, res.cwd)
+      return `exit_code=${res.exitCode}${res.cwd ? `\ncwd=${res.cwd}` : ''}\n${clip(res.output, 8000)}`
     }
     case 'run_in_terminal': {
       if (!ctx.sessionId) {
@@ -163,8 +194,13 @@ export async function executeTool(
       }
       const command = String(args.command ?? '')
       if (!command) return 'Error: empty command'
-      runInTerminal(ctx.sessionId, command)
-      return 'Command sent to the interactive terminal. The user can see it and respond to any prompts. Output is not captured here — verify later with a quick run_command if needed.'
+      const res = await runInTerminalCapture(ctx.sessionId, command, { signal: ctx.signal })
+      const out = clip(terminalText(res.output).trim(), 6000)
+      return `${
+        res.settled
+          ? 'Command sent to the interactive terminal; output went quiet.'
+          : 'Command sent to the interactive terminal; it may still be running or waiting for user input.'
+      }\nTerminal output:\n${out || '(no output)'}`
     }
     case 'list_servers': {
       const servers = listServers().map((s) => ({

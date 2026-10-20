@@ -20,6 +20,7 @@ import { cn } from '../lib/utils'
 import { useT, useLang } from '../lib/i18n'
 import { logoUrl } from '../lib/logo'
 import KnowledgePanel from './KnowledgePanel'
+import AiCliSection from './AiCliSection'
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog'
 import { Button } from './ui/button'
 import { Input } from './ui/input'
@@ -267,30 +268,34 @@ export default function Settings({
                   onClick={() => window.api.openExternal(meta.keyUrl)}
                   className="shrink-0 text-[11px] text-primary transition-colors hover:underline"
                 >
-                  {t('ขอ API key')} ↗
+                  {meta.kind === 'cli' ? t('เอกสาร') : t('ขอ API key')} ↗
                 </button>
               </div>
               {meta.note && (
                 <p className="mb-2.5 text-[11px] text-muted-foreground">{meta.note}</p>
               )}
-              <div className="mb-3 flex gap-2">
-                <Input
-                  type="password"
-                  placeholder={configured ? t('•••••••• (เปลี่ยน key)') : meta.keyHint}
-                  value={keys[selected] ?? ''}
-                  onChange={(e) => setKeys((k) => ({ ...k, [selected]: e.target.value }))}
-                />
-                <Button onClick={() => saveKey(selected)} disabled={busy === selected || !keys[selected]}>
-                  {busy === selected ? <Loader2 className="size-4 animate-spin" /> : t('บันทึก')}
-                </Button>
-                {configured && (
-                  <Hint label={t('ลบ API key')}>
-                    <Button variant="outline" size="icon" onClick={() => clearKey(selected)}>
-                      <Trash2 className="size-4" />
-                    </Button>
-                  </Hint>
-                )}
-              </div>
+              {meta.kind === 'cli' ? (
+                <AiCliSection provider={selected} onSettings={set} onClose={onClose} />
+              ) : (
+                <div className="mb-3 flex gap-2">
+                  <Input
+                    type="password"
+                    placeholder={configured ? t('•••••••• (เปลี่ยน key)') : meta.keyHint}
+                    value={keys[selected] ?? ''}
+                    onChange={(e) => setKeys((k) => ({ ...k, [selected]: e.target.value }))}
+                  />
+                  <Button onClick={() => saveKey(selected)} disabled={busy === selected || !keys[selected]}>
+                    {busy === selected ? <Loader2 className="size-4 animate-spin" /> : t('บันทึก')}
+                  </Button>
+                  {configured && (
+                    <Hint label={t('ลบ API key')}>
+                      <Button variant="outline" size="icon" onClick={() => clearKey(selected)}>
+                        <Trash2 className="size-4" />
+                      </Button>
+                    </Hint>
+                  )}
+                </div>
+              )}
               <div className="flex items-center gap-2">
                 <Label className="w-12">Model</Label>
                 <div className="flex flex-1 gap-2">

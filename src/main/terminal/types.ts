@@ -15,5 +15,7 @@ export interface TermSession {
   onExit(cb: (code: number | null) => void): void
   /** รันคำสั่งแบบ one-off เพื่อเก็บ output (ใช้โดย AI agent) */
   exec(command: string): Promise<ExecResult>
+  /** cwd จริงของ shell ใน terminal (ถ้าหาได้) — ให้ AI เริ่มทำงานในโฟลเดอร์เดียวกับผู้ใช้ */
+  getCwd?(): Promise<string | null>
   dispose(): void
 }

@@ -23,6 +23,42 @@ export function pickLang(th: string, en: string, lang: Lang): string {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.9.0',
+    title: 'AI ทำงานต่อเนื่องจนจบ จำบทสนทนาได้ และใช้ subscription ของ ChatGPT/Claude ได้',
+    titleEn: 'AI works through tasks end to end, remembers the chat, and can use your ChatGPT/Claude subscription',
+    items: [
+      {
+        icon: '🔁',
+        text: 'AI ทำงานหลายขั้นต่อกันจนเสร็จในคำสั่งเดียว (รันคำสั่ง → อ่านผล → ทำขั้นต่อไป) ไม่หยุดรอให้สั่งใหม่ทุกครั้ง',
+        textEn:
+          'The AI now chains multi-step work in one go (run → read the result → next step) instead of stopping after every command'
+      },
+      {
+        icon: '🧠',
+        text: 'จำบทสนทนาในแชทเดิมได้จริง (ถามต่อเรื่องเดิมได้) · บทสนทนายาวจะย่อของเก่าแทนการลืมทั้งหมด · reload หน้าจอแล้วแชทยังอยู่ · ปุ่มล้างแชทล้างความจำด้วย',
+        textEn:
+          'Follow-up questions now remember the chat · long chats condense older parts instead of forgetting everything · the chat survives a window reload · Clear chat also clears the AI memory'
+      },
+      {
+        icon: '📂',
+        text: 'AI จำโฟลเดอร์ที่ cd ไว้ข้ามคำสั่ง รู้ว่า terminal อยู่โฟลเดอร์ไหนและเห็น output ล่าสุดบนจอ · คำสั่งที่พิมพ์ลง terminal จะส่งผลกลับให้ AI อ่านต่อได้',
+        textEn:
+          'The AI keeps its working directory across commands, knows your terminal folder and recent output, and now reads back the output of commands it types into the terminal'
+      },
+      {
+        icon: '🎟️',
+        text: 'ใช้แพ็ก ChatGPT ได้ผ่าน Codex CLI ที่ login ไว้ในเครื่อง และใช้แพ็ก Claude ผ่าน Claude Code CLI (โหมดทดลอง มีคำเตือนเงื่อนไขการใช้งาน) — ตั้งค่าใน Settings › AI, Perms ไม่เห็น/ไม่เก็บ token',
+        textEn:
+          'Use your ChatGPT plan via a signed-in Codex CLI, or your Claude plan via Claude Code CLI (experimental, with a terms-of-service warning) — set up in Settings › AI; Perms never sees your tokens'
+      },
+      {
+        icon: '✨',
+        text: 'อัปเดตรายชื่อโมเดล Claude เป็นรุ่นล่าสุด (ค่าเริ่มต้น claude-opus-5-5)',
+        textEn: 'Updated the Claude model list to the latest models (default claude-opus-5-5)'
+      }
+    ]
+  },
+  {
     version: '1.8.2',
     title: 'แก้บรรทัดคำสั่งบนเทอร์มินัลได้แบบ text editor',
     titleEn: 'Edit the command line like a text editor',

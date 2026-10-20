@@ -4,7 +4,7 @@ import type { AiProvider } from './types'
 // provider จีน/รวม (openrouter, deepseek, kimi, glm) เป็น OpenAI-compatible ทั้งหมด
 // → ใช้ SDK ของ openai ตัวเดิม แค่เปลี่ยน baseURL
 
-export type ProviderKind = 'openai' | 'anthropic' | 'google' | 'openai-compat'
+export type ProviderKind = 'openai' | 'anthropic' | 'google' | 'openai-compat' | 'cli'
 
 export interface ProviderMeta {
   id: AiProvider
@@ -23,6 +23,8 @@ export interface ProviderMeta {
   keyUrl: string
   /** คำอธิบายสั้น ๆ โชว์ใน UI */
   note?: string
+  /** kind 'cli': ชื่อโปรแกรม + คำสั่ง login ที่ให้ผู้ใช้รันเองใน terminal */
+  cli?: { bin: 'codex' | 'claude'; loginCommand: string; experimental?: boolean }
 }
 
 export const AI_PROVIDERS: ProviderMeta[] = [
@@ -40,14 +42,15 @@ export const AI_PROVIDERS: ProviderMeta[] = [
     label: 'Anthropic',
     kind: 'anthropic',
     models: [
+      'claude-opus-5-5',
+      'claude-sonnet-5-5',
+      'claude-haiku-5-5',
+      'claude-fable-5-1',
       'claude-opus-4-8',
       'claude-sonnet-4-6',
-      'claude-haiku-4-5-20251001',
-      'claude-fable-5',
-      'claude-3-7-sonnet-latest',
-      'claude-3-5-haiku-latest'
+      'claude-haiku-4-5'
     ],
-    defaultModel: 'claude-opus-4-8',
+    defaultModel: 'claude-opus-5-5',
     keyHint: 'sk-ant-…',
     keyUrl: 'https://console.anthropic.com/settings/keys'
   },
@@ -117,6 +120,29 @@ export const AI_PROVIDERS: ProviderMeta[] = [
     keyHint: '••••••.••••••',
     keyUrl: 'https://open.bigmodel.cn/usercenter/apikeys',
     note: 'โมเดลจีน (智谱 GLM)'
+  },
+  {
+    id: 'codex-cli',
+    label: 'ChatGPT (subscription)',
+    kind: 'cli',
+    // 'default' = ตามที่ตั้งใน ~/.codex/config.toml · พิมพ์ชื่ออื่นเองได้
+    models: ['default', 'gpt-6-luna', 'gpt-5.6-terra', 'gpt-5.6-luna'],
+    defaultModel: 'default',
+    keyHint: 'codex login',
+    keyUrl: 'https://developers.openai.com/codex/auth',
+    note: 'ใช้แพ็ก ChatGPT ของคุณผ่าน Codex CLI ที่ติดตั้งและ login ไว้ในเครื่อง — Perms ไม่เห็น/ไม่เก็บ token',
+    cli: { bin: 'codex', loginCommand: 'codex login' }
+  },
+  {
+    id: 'claude-cli',
+    label: 'Claude (subscription · ทดลอง)',
+    kind: 'cli',
+    models: ['default', 'opus', 'sonnet', 'haiku'],
+    defaultModel: 'default',
+    keyHint: 'claude auth login',
+    keyUrl: 'https://code.claude.com/docs/en/legal-and-compliance',
+    note: 'ใช้แพ็ก Claude ของคุณผ่าน Claude Code CLI ที่ติดตั้งและ login ไว้ในเครื่อง — Perms ไม่เห็น/ไม่เก็บ token',
+    cli: { bin: 'claude', loginCommand: 'claude auth login', experimental: true }
   }
 ]
 

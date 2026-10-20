@@ -3,7 +3,7 @@ import type {
   ChatCompletionMessageParam,
   ChatCompletionTool
 } from 'openai/resources/chat/completions'
-import type { Provider, RunParams, RunResult, ToolCallRequest } from './types'
+import type { Provider, RunParams, RunResult, StopReason, ToolCallRequest } from './types'
 
 export class OpenAiProvider implements Provider {
   readonly id: Provider['id']
@@ -53,9 +53,11 @@ export class OpenAiProvider implements Provider {
     )
 
     let text = ''
+    let finish: string | null = null
     const toolAcc = new Map<number, { id: string; name: string; args: string }>()
 
     for await (const chunk of stream) {
+      if (chunk.choices[0]?.finish_reason) finish = chunk.choices[0].finish_reason
       const delta = chunk.choices[0]?.delta
       if (!delta) continue
       if (delta.content) {
@@ -80,7 +82,14 @@ export class OpenAiProvider implements Provider {
       arguments: safeParse(t.args)
     }))
 
-    return { text, toolCalls }
+    const stopReason: StopReason = toolCalls.length
+      ? 'tool_use'
+      : finish === 'length'
+        ? 'max_tokens'
+        : finish === 'content_filter'
+          ? 'refusal'
+          : 'end_turn'
+    return { text, toolCalls, stopReason }
   }
 }
 

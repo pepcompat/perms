@@ -38,9 +38,11 @@ import {
   getAppSettings,
   setAiKey,
   clearAiKey,
-  updateAiSettings
+  updateAiSettings,
+  setCliEnabled
 } from '../db/repos/settings-repo'
-import { listMessages } from '../db/repos/ai-repo'
+import { listMessages, clearMessages } from '../db/repos/ai-repo'
+import { cliStatus } from '../ai/cli-status'
 import { testConnection } from '../ssh/connect'
 import { listPrivateKeys, pickKeyFile } from '../ssh/keys'
 import {
@@ -351,6 +353,12 @@ export function registerIpc(): void {
   )
   ipcMain.on(IPC.aiCancel, (_e, requestId: string) => cancelRequest(requestId))
   ipcMain.handle(IPC.aiHistory, (_e, sessionId: string | null) => listMessages(sessionId))
+  ipcMain.handle(IPC.aiClear, (_e, sessionId: string | null) => clearMessages(sessionId))
+  ipcMain.handle(IPC.aiCliStatus, (_e, provider: AiProvider) => cliStatus(provider))
+  ipcMain.handle(IPC.aiCliEnable, (_e, provider: AiProvider, enabled: boolean) => {
+    setCliEnabled(provider, enabled)
+    return getAppSettings()
+  })
 
   // ---- runbooks ----
   ipcMain.handle(IPC.runbooksList, () => listRunbooks())

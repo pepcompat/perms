@@ -1,5 +1,6 @@
 import { spawn as ptySpawn, type IPty } from 'node-pty'
-import { exec as cpExec, execFileSync } from 'child_process'
+import { exec as cpExec, execFile, execFileSync } from 'child_process'
+import { readlink } from 'fs/promises'
 import { platform } from 'os'
 import type { TermSession, ExecResult } from './types'
 
@@ -50,7 +51,7 @@ function loginPath(): string | null {
  * env สำหรับ pty — ใส่ PATH จริงจาก login shell + บังคับ locale เป็น UTF-8 ถ้ายังไม่ตั้ง
  * (แอปที่เปิดจาก Finder/dock มักไม่มี LANG ทำให้ ls แสดงชื่อไฟล์ไทยเป็น ?)
  */
-function buildEnv(): Record<string, string> {
+export function buildEnv(): Record<string, string> {
   const env = { ...process.env } as Record<string, string>
   if (platform() !== 'win32') {
     const p = loginPath()
@@ -126,6 +127,20 @@ export class PtySession implements TermSession {
           resolve({ output, exitCode })
         }
       )
+    })
+  }
+
+  async getCwd(): Promise<string | null> {
+    const pid = this.pty.pid
+    if (platform() === 'linux') return readlink(`/proc/${pid}/cwd`).catch(() => null)
+    if (platform() !== 'darwin') return null
+    // macOS ไม่มี /proc — ถาม lsof (บรรทัดที่ขึ้นต้นด้วย n = path)
+    return new Promise((resolve) => {
+      execFile('lsof', ['-a', '-p', String(pid), '-d', 'cwd', '-Fn'], { timeout: 3000 }, (err, out) => {
+        if (err) return resolve(null)
+        const line = out.split('\n').find((l) => l.startsWith('n/'))
+        resolve(line ? line.slice(1) : null)
+      })
     })
   }
 

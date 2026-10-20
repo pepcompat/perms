@@ -26,7 +26,7 @@ import { useTabs } from '../store/useTabs'
 import { useAiDraft } from '../store/useAiDraft'
 import { useAiChats, EMPTY_THREAD } from '../store/useAiChats'
 import { MODEL_PRESETS } from '../lib/models'
-import { AI_PROVIDERS } from '@shared/ai-providers'
+import { AI_PROVIDERS, providerMeta } from '@shared/ai-providers'
 import Markdown from './Markdown'
 import SupportButton from './SupportButton'
 import { Button } from './ui/button'
@@ -85,6 +85,7 @@ export default function AISidebar({
   const clearChat = useAiChats((s) => s.clear)
   const approveAction = useAiChats((s) => s.approve)
   const cancelAction = useAiChats((s) => s.cancel)
+  const hydrate = useAiChats((s) => s.hydrate)
 
   const { items, input, running, approval } = thread
 
@@ -99,6 +100,11 @@ export default function AISidebar({
     setConfig(chatKey, { provider: p, model: settings?.ai.models[p] })
   const pickModel = (m: string): void => setConfig(chatKey, { model: m })
   const toggleWeb = (): void => setConfig(chatKey, { webSearch: !webSearch })
+
+  // เปิด tab นี้ครั้งแรก (หรือหลัง reload หน้าจอ) → ดึงบทสนทนาเดิมจาก DB มาแสดง
+  useEffect(() => {
+    void hydrate(chatKey, activeId)
+  }, [chatKey, activeId, hydrate])
 
   // ข้อความที่ "ส่งเข้า AI" จาก terminal → เติมในช่อง input ของ tab ปัจจุบัน
   useEffect(() => {
@@ -160,7 +166,7 @@ export default function AISidebar({
           {items.length > 0 && (
             <Hint label={t("ล้างแชท")}>
               <button
-                onClick={() => clearChat(chatKey)}
+                onClick={() => clearChat(chatKey, activeId)}
                 className="no-drag flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               >
                 <RotateCcw className="size-3.5" />
@@ -181,7 +187,10 @@ export default function AISidebar({
       {!configured && (
         <div className="flex items-center gap-2 border-b border-border bg-[hsl(var(--warning))]/10 px-3 py-2 text-xs text-[hsl(var(--warning))]">
           <AlertTriangle className="size-3.5 shrink-0" />
-          {t('ยังไม่ได้ตั้ง API key ของ')} {provider} — {t('ไปที่ Settings')}
+          {providerMeta(provider).kind === 'cli'
+            ? `${t('ยังไม่ได้เปิดใช้')} ${providerMeta(provider).label}`
+            : `${t('ยังไม่ได้ตั้ง API key ของ')} ${provider}`}{' '}
+          — {t('ไปที่ Settings')}
         </div>
       )}
 

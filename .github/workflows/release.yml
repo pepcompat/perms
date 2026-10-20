@@ -6,6 +6,15 @@ on:
     tags:
       - 'v*.*.*'
   workflow_dispatch:
+    inputs:
+      platforms:
+        description: 'runner ที่จะ build (JSON) เช่น ["macos-latest"] — เว้นว่าง = ทุกตัว'
+        required: false
+        default: ''
+      publish:
+        description: 'อัปโหลดขึ้น perms-desktop (false = build/sign ทดสอบเฉย ๆ)'
+        type: boolean
+        default: true
 
 permissions:
   contents: read
@@ -17,7 +26,8 @@ jobs:
       matrix:
         # windows-2022 = Visual Studio 2022 (v17) ที่ node-gyp รองรับ
         # (windows-latest เลื่อนไป VS 18 ที่ node-gyp ยัง detect ไม่ได้)
-        os: [macos-latest, windows-2022, ubuntu-latest]
+        # สั่งรันเองเลือกเฉพาะบาง runner ได้ (เช่น build mac ใหม่ตัวเดียวหลังพัง)
+        os: ${{ fromJSON(inputs.platforms != '' && inputs.platforms || '["macos-latest","windows-2022","ubuntu-latest"]') }}
     runs-on: ${{ matrix.os }}
 
     env:
@@ -52,16 +62,42 @@ jobs:
       - name: Type check
         run: pnpm run typecheck
 
+      # import cert เข้า keychain ที่สร้างเองตามแบบที่ GitHub แนะนำ แทนให้ electron-builder สร้าง temp keychain
+      # (runner macOS ตั้งแต่ ต.ค. 2026 ปลดล็อก keychain ที่ electron-builder สร้างไม่ได้:
+      #  "SecKeychainUnlock: The user name or passphrase you entered is not correct")
+      - name: Import signing certificate (macOS)
+        if: runner.os == 'macOS'
+        env:
+          MAC_CERT_BASE64: ${{ secrets.MAC_CERT_BASE64 }}
+          MAC_CERT_PASSWORD: ${{ secrets.MAC_CERT_PASSWORD }}
+        run: |
+          if [ -z "$MAC_CERT_BASE64" ]; then echo "no cert — unsigned build"; exit 0; fi
+          KEYCHAIN="$RUNNER_TEMP/perms-signing.keychain-db"
+          KEYCHAIN_PASSWORD="$(openssl rand -hex 24)"
+          echo "$MAC_CERT_BASE64" | base64 --decode > "$RUNNER_TEMP/cert.p12"
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security import "$RUNNER_TEMP/cert.p12" -P "$MAC_CERT_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN"
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN"
+          security list-keychains -d user -s "$KEYCHAIN" $(security list-keychains -d user | tr -d '"')
+          rm -f "$RUNNER_TEMP/cert.p12"
+          security find-identity -v -p codesigning "$KEYCHAIN"
+
       - name: Build & publish
         env:
           # PAT ที่มีสิทธิ์ contents:write ของ repo perms-desktop
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-          # macOS code-sign cert (.p12 base64) — เฉพาะ runner mac เท่านั้น
-          # (ถ้าใส่ตอน build win/linux electron-builder จะเข้าใจผิดว่าเป็น cert ของ OS นั้น)
-          CSC_LINK: ${{ matrix.os == 'macos-latest' && secrets.MAC_CERT_BASE64 || '' }}
-          CSC_KEY_PASSWORD: ${{ matrix.os == 'macos-latest' && secrets.MAC_CERT_PASSWORD || '' }}
+          # mac: cert อยู่ใน keychain จากขั้นก่อนแล้ว — electron-builder หา Developer ID identity เอง
+          # (ไม่ส่ง CSC_LINK เพื่อไม่ให้มันสร้าง temp keychain ของตัวเองที่พังบน runner ใหม่)
           # notarization (afterSign hook อ่านค่าพวกนี้ — runner อื่นจะถูกข้าม)
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-        run: pnpm run release
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.publish }}" = "false" ]; then
+            pnpm exec electron-vite build && pnpm exec electron-builder --publish never
+          else
+            pnpm run release
+          fi
